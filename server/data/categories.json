@@ -1,0 +1,17 @@
+[
+  {
+    "id": "CAT-BOOKS",
+    "name": "Books",
+    "description": "Textbooks and references"
+  },
+  {
+    "id": "CAT-STATIONERY",
+    "name": "Stationery",
+    "description": "Pens, notebooks, etc."
+  },
+  {
+    "id": "CAT-UNIFORMS",
+    "name": "Uniforms",
+    "description": "School uniforms"
+  }
+]

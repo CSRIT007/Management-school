@@ -1,0 +1,16 @@
+[
+  {
+    "id": "C101",
+    "name": "Intro to Programming",
+    "instructor": "Mr. Kim",
+    "schedule": "Mon/Wed 9-10",
+    "capacity": "15/20"
+  },
+  {
+    "id": "C205",
+    "name": "UI/UX Basics",
+    "instructor": "Ms. Heung",
+    "schedule": "Tue/Thu 14-16",
+    "capacity": "20/20"
+  }
+]

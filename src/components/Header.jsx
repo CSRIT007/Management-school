@@ -1,7 +1,18 @@
 import { useTheme } from '../context/ThemeContext.jsx'
+import { useAuth } from '../context/AuthContext.jsx'
+import { useNavigate } from 'react-router-dom'
 
 export default function Header({ onToggleSidebar, collapsed }) {
   const { isDark, toggleTheme } = useTheme()
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login', { replace: true })
+  }
+
+  const initials = user?.name?.slice(0, 2).toUpperCase() || 'AD'
 
   return (
     <header className="sticky top-0 z-20 h-16 border-b border-slate-200/80 bg-white/80 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/80">
@@ -61,15 +72,23 @@ export default function Header({ onToggleSidebar, collapsed }) {
 
           <div className="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white py-1.5 pl-1.5 pr-3 dark:border-slate-700 dark:bg-slate-800">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-xs font-bold text-white">
-              SC
+              {initials}
             </div>
             {!collapsed && (
               <div className="hidden lg:block">
-                <div className="text-xs font-semibold text-slate-800 dark:text-slate-100">Saroeurn Chea</div>
-                <div className="text-[10px] text-slate-400">Admin</div>
+                <div className="text-xs font-semibold text-slate-800 dark:text-slate-100">{user?.name || 'Admin'}</div>
+                <div className="text-[10px] text-slate-400">{user?.email || 'admin@gmail.com'}</div>
               </div>
             )}
           </div>
+
+          <button
+            onClick={handleLogout}
+            className="hidden sm:flex h-9 items-center rounded-xl border border-slate-200 px-3 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-rose-600 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-rose-400"
+            title="Logout"
+          >
+            Logout
+          </button>
         </div>
       </div>
     </header>

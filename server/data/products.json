@@ -1,0 +1,29 @@
+[
+  {
+    "id": "P001",
+    "name": "Intro to JS",
+    "category": "Books",
+    "stock": 12,
+    "price": 15,
+    "cost": 8,
+    "sku": "BK-JS-001"
+  },
+  {
+    "id": "P002",
+    "name": "A4 Notebook",
+    "category": "Stationery",
+    "stock": 50,
+    "price": 2.5,
+    "cost": 1,
+    "sku": "ST-NB-A4"
+  },
+  {
+    "id": "P003",
+    "name": "Uniform Shirt",
+    "category": "Uniforms",
+    "stock": 20,
+    "price": 18,
+    "cost": 9,
+    "sku": "UN-SHIRT-01"
+  }
+]

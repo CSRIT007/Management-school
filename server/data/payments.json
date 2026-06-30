@@ -1,0 +1,18 @@
+[
+  {
+    "id": "INV-1001",
+    "studentName": "Jane Doe",
+    "date": "2025-09-10",
+    "amount": 120,
+    "method": "Card",
+    "status": "Paid"
+  },
+  {
+    "id": "INV-1002",
+    "studentName": "John Smith",
+    "date": "2025-09-11",
+    "amount": 200,
+    "method": "Cash",
+    "status": "Pending"
+  }
+]
