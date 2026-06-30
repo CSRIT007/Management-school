@@ -1,0 +1,29 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    image: saroeurnchea/management-school-api:latest
+    container_name: management-school-api
+    environment:
+      PORT: 4000
+    volumes:
+      - api-data:/app/server/data
+    ports:
+      - "4000:4000"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    image: saroeurnchea/management-school-web:latest
+    container_name: management-school-web
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  api-data:

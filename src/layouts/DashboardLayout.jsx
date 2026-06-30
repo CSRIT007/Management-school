@@ -7,12 +7,17 @@ export default function DashboardLayout() {
   const [collapsed, setCollapsed] = useState(false)
 
   return (
-    <div className="min-h-screen bg-gray-100 text-gray-800">
-      <Header onToggleSidebar={() => setCollapsed(v => !v)} />
-      <div className="flex">
-        <Sidebar collapsed={collapsed} />
-        <main className="flex-1 p-6">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+    <div className="min-h-screen bg-slate-100 dark:bg-slate-950 transition-colors">
+      <Sidebar collapsed={collapsed} />
+      <div
+        className={[
+          'min-h-screen transition-all duration-300',
+          collapsed ? 'pl-[72px]' : 'pl-64',
+        ].join(' ')}
+      >
+        <Header onToggleSidebar={() => setCollapsed((v) => !v)} collapsed={collapsed} />
+        <main className="p-6 lg:p-8">
+          <div className="mx-auto max-w-7xl">
             <Outlet />
           </div>
         </main>
@@ -20,4 +25,3 @@ export default function DashboardLayout() {
     </div>
   )
 }
-
