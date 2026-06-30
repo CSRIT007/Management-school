@@ -66,7 +66,7 @@ export default function Header({ onToggleSidebar, collapsed }) {
             {!collapsed && (
               <div className="hidden lg:block">
                 <div className="text-xs font-semibold text-slate-800 dark:text-slate-100">Saroeurn Chea</div>
-                <div className="text-[10px] text-slate-400">Administrator</div>
+                <div className="text-[10px] text-slate-400">Admin</div>
               </div>
             )}
           </div>
