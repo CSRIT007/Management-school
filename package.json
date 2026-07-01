@@ -13,7 +13,9 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.1.13",
     "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
     "express": "^5.1.0",
+    "pg": "^8.22.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-router-dom": "^6.30.1"

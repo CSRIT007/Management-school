@@ -1,6 +1,6 @@
 import express from 'express'
 import cors from 'cors'
-import { db } from './db.js'
+import { db, checkConnection } from './db.js'
 
 const app = express()
 const PORT = process.env.PORT || 4000
@@ -9,7 +9,14 @@ app.use(cors())
 app.use(express.json({ limit: '1mb' }))
 
 // Health
-app.get('/api/health', (req, res) => res.json({ ok: true }))
+app.get('/api/health', async (req, res) => {
+  try {
+    const dbStatus = await checkConnection()
+    res.json({ ok: true, database: 'connected', time: dbStatus.now })
+  } catch (e) {
+    res.status(503).json({ ok: false, database: 'disconnected', error: e.message })
+  }
+})
 
 // Generic collections
 const valid = new Set(['students','classes','deadlines','payments','bookIssues','alumni','categories','products','orders'])
@@ -114,7 +121,12 @@ app.post('/api/pos/checkout', async (req, res) => {
 })
 
 // Start
-db.seedIfEmpty().then(() => {
-  app.listen(PORT, () => console.log(`API server on http://localhost:${PORT}`))
-})
+db.seedIfEmpty()
+  .then(() => {
+    app.listen(PORT, () => console.log(`API server on http://localhost:${PORT}`))
+  })
+  .catch((err) => {
+    console.error('Failed to start server:', err.message)
+    process.exit(1)
+  })
 
