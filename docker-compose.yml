@@ -32,6 +32,9 @@ services:
       PUBLIC_URL: ${PUBLIC_URL:-http://localhost:8080}
     expose:
       - "4000"
+    ports:
+      # Local dev (npm run dev) can proxy /api here
+      - "127.0.0.1:4000:4000"
     depends_on:
       db:
         condition: service_healthy
