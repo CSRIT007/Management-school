@@ -28,8 +28,8 @@ export default function Header({ onToggleSidebar, collapsed }) {
         </button>
 
         <div className="hidden sm:block">
-          <div className="text-sm font-semibold text-slate-800 dark:text-slate-100">Kimheng Management System</div>
-          <div className="text-xs text-slate-400 dark:text-slate-500">School administration portal</div>
+          <div className="text-sm font-semibold text-slate-800 dark:text-slate-100">Management System</div>
+          <div className="text-xs text-slate-400 dark:text-slate-500">School Admin Portal</div>
         </div>
 
         <div className="flex-1" />
