@@ -7,7 +7,8 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: management_school
     ports:
-      - "5433:5432"
+      # Database: local machine only (DBeaver) — NOT exposed to public internet
+      - "127.0.0.1:5433:5432"
     volumes:
       - pg-data:/var/lib/postgresql/data
       - ./server/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
@@ -26,9 +27,11 @@ services:
     container_name: management-school-api
     environment:
       PORT: 4000
+      HOST: 0.0.0.0
       DATABASE_URL: postgresql://postgres:postgres@db:5432/management_school
-    ports:
-      - "4000:4000"
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:8080}
+    expose:
+      - "4000"
     depends_on:
       db:
         condition: service_healthy
@@ -41,7 +44,8 @@ services:
     image: saroeurnchea/management-school-web:latest
     container_name: management-school-web
     ports:
-      - "8080:80"
+      # App: bind all interfaces so public IP / LAN can reach it
+      - "0.0.0.0:${WEB_PORT:-8080}:80"
     depends_on:
       - api
     restart: unless-stopped
