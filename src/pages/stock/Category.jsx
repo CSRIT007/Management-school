@@ -1,51 +1,127 @@
 import { useEffect, useState } from 'react'
-import { get, post, del } from '../../lib/api.js'
+import { get, post, put, del } from '../../lib/api.js'
 import PageHeader from '../../components/ui/PageHeader.jsx'
 import Button from '../../components/ui/Button.jsx'
+import FormAlert from '../../components/ui/FormAlert.jsx'
+
+const emptyForm = { id: '', name: '', description: '' }
 
 export default function CategoryManagement() {
   const [items, setItems] = useState([])
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
+  const [form, setForm] = useState(emptyForm)
+  const [editingId, setEditingId] = useState(null)
+  const [saving, setSaving] = useState(false)
+  const [message, setMessage] = useState('')
+  const [error, setError] = useState(false)
 
-  const load = async () => setItems(await get('/api/categories'))
+  const load = async () => {
+    try {
+      setItems(await get('/api/categories'))
+    } catch (e) {
+      showMsg(e.message, true)
+    }
+  }
+
   useEffect(() => { load() }, [])
 
-  const add = async () => {
-    if (!name.trim()) return
-    await post('/api/categories', { name: name.trim(), description })
-    setName('')
-    setDescription('')
-    await load()
+  const showMsg = (text, isError = false) => {
+    setMessage(text)
+    setError(isError)
+  }
+
+  const reset = () => {
+    setForm(emptyForm)
+    setEditingId(null)
+    setMessage('')
+    setError(false)
+  }
+
+  const startEdit = (c) => {
+    setEditingId(c.id)
+    setForm({ id: c.id, name: c.name || '', description: c.description || '' })
+    setMessage('')
+    setError(false)
+  }
+
+  const submit = async (e) => {
+    e.preventDefault()
+    if (!form.name.trim()) return
+    setSaving(true)
+    setMessage('')
+    setError(false)
+    try {
+      const payload = { name: form.name.trim(), description: form.description }
+      if (editingId) {
+        await put(`/api/categories/${editingId}`, payload)
+        showMsg('Category updated successfully.')
+      } else {
+        if (form.id.trim()) payload.id = form.id.trim().toUpperCase()
+        await post('/api/categories', payload)
+        showMsg('Category added successfully.')
+      }
+      reset()
+      await load()
+    } catch (err) {
+      showMsg(err.message, true)
+    } finally {
+      setSaving(false)
+    }
   }
 
   const remove = async (id) => {
-    await del(`/api/categories/${id}`)
-    await load()
+    if (!confirm(`Delete category ${id}?`)) return
+    try {
+      await del(`/api/categories/${id}`)
+      if (editingId === id) reset()
+      await load()
+      showMsg('Category deleted.')
+    } catch (err) {
+      showMsg(err.message, true)
+    }
   }
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Category Management"
-        subtitle="Organize products into categories"
+        subtitle="Create, view, update, and delete product categories"
       />
 
+      <FormAlert message={message} error={error} />
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="panel p-6 lg:col-span-1">
-          <h3 className="mb-5 text-base font-bold text-slate-900 dark:text-slate-100">Add New Category</h3>
+        <form onSubmit={submit} className="panel p-6 lg:col-span-1">
+          <h3 className="mb-5 text-base font-bold text-slate-900 dark:text-slate-100">
+            {editingId ? `Edit Category` : 'Add New Category'}
+          </h3>
           <div className="space-y-4">
             <div>
+              <label className="label">Category ID</label>
+              <input
+                value={form.id}
+                onChange={(e) => setForm((f) => ({ ...f, id: e.target.value.toUpperCase() }))}
+                className="input"
+                placeholder="Auto-generated if empty"
+                disabled={!!editingId}
+                readOnly={!!editingId}
+              />
+            </div>
+            <div>
               <label className="label">Category Name</label>
-              <input value={name} onChange={(e) => setName(e.target.value)} className="input" placeholder="Books" />
+              <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} className="input" placeholder="Books" required />
             </div>
             <div>
               <label className="label">Description</label>
-              <textarea value={description} onChange={(e) => setDescription(e.target.value)} className="input resize-none" rows={3} placeholder="Optional description" />
+              <textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} className="input resize-none" rows={3} placeholder="Optional description" />
             </div>
-            <Button onClick={add} className="w-full">Add Category</Button>
+            <div className="flex gap-2">
+              {editingId && <Button type="button" variant="secondary" onClick={reset} className="flex-1">Cancel</Button>}
+              <Button type="submit" disabled={saving} className="flex-1">
+                {saving ? 'Saving…' : editingId ? 'Update' : 'Add Category'}
+              </Button>
+            </div>
           </div>
-        </div>
+        </form>
 
         <div className="panel lg:col-span-2">
           <div className="border-b border-slate-100 dark:border-slate-800 px-6 py-4">
@@ -66,10 +142,14 @@ export default function CategoryManagement() {
                   </div>
                   <div>
                     <div className="font-semibold text-slate-900 dark:text-slate-100">{c.name}</div>
+                    <div className="text-xs text-slate-400">{c.id}</div>
                     {c.description && <div className="text-sm text-slate-500 dark:text-slate-400">{c.description}</div>}
                   </div>
                 </div>
-                <Button size="sm" variant="danger" onClick={() => remove(c.id)}>Delete</Button>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="secondary" onClick={() => startEdit(c)}>Edit</Button>
+                  <Button size="sm" variant="danger" onClick={() => remove(c.id)}>Delete</Button>
+                </div>
               </li>
             ))}
           </ul>
