@@ -18,47 +18,7 @@ app.get('/api/health', async (req, res) => {
   }
 })
 
-// Generic collections
-const valid = new Set(['students','classes','deadlines','payments','bookIssues','alumni','categories','products','orders'])
-
-app.get('/api/:col', async (req, res) => {
-  const { col } = req.params
-  if (!valid.has(col)) return res.status(404).json({ error: 'Unknown collection' })
-  const rows = await db.list(col)
-  res.json(rows)
-})
-
-app.post('/api/:col', async (req, res) => {
-  const { col } = req.params
-  if (!valid.has(col)) return res.status(404).json({ error: 'Unknown collection' })
-  const created = await db.add(col, req.body || {})
-  res.status(201).json(created)
-})
-
-app.get('/api/:col/:id', async (req, res) => {
-  const { col, id } = req.params
-  if (!valid.has(col)) return res.status(404).json({ error: 'Unknown collection' })
-  const row = await db.get(col, id)
-  if (!row) return res.status(404).json({ error: 'Not found' })
-  res.json(row)
-})
-
-app.put('/api/:col/:id', async (req, res) => {
-  const { col, id } = req.params
-  if (!valid.has(col)) return res.status(404).json({ error: 'Unknown collection' })
-  const updated = await db.update(col, id, req.body || {})
-  if (!updated) return res.status(404).json({ error: 'Not found' })
-  res.json(updated)
-})
-
-app.delete('/api/:col/:id', async (req, res) => {
-  const { col, id } = req.params
-  if (!valid.has(col)) return res.status(404).json({ error: 'Unknown collection' })
-  await db.remove(col, id)
-  res.json({ ok: true })
-})
-
-// Reports
+// Reports (must be registered before /api/:col routes)
 app.get('/api/reports/summary', async (req, res) => {
   const products = await db.list('products')
   const lowStock = products.filter(p => (p.stock ?? 0) <= 3).length
@@ -98,6 +58,76 @@ app.get('/api/reports/low-stock', async (req, res) => {
   const products = await db.list('products')
   const low = products.filter(p => (p.stock ?? 0) <= 3)
   res.json(low)
+})
+
+// Generic collections
+const valid = new Set(['students','classes','deadlines','payments','bookIssues','alumni','categories','products','orders'])
+
+app.get('/api/students/next-id', async (req, res) => {
+  try {
+    const id = await db.nextStudentId()
+    res.json({ id })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.get('/api/:col', async (req, res) => {
+  const { col } = req.params
+  if (!valid.has(col)) return res.status(404).json({ error: 'Unknown collection' })
+  const rows = await db.list(col)
+  res.json(rows)
+})
+
+app.post('/api/:col', async (req, res) => {
+  const { col } = req.params
+  if (!valid.has(col)) return res.status(404).json({ error: 'Unknown collection' })
+  try {
+    const strict = col === 'students'
+    const created = await db.add(col, req.body || {}, { upsert: !strict })
+    res.status(201).json(created)
+  } catch (e) {
+    if (e.code === '23505') {
+      return res.status(409).json({ error: e.message || 'Duplicate ID' })
+    }
+    console.error(e)
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.put('/api/:col/:id', async (req, res) => {
+  const { col, id } = req.params
+  if (!valid.has(col)) return res.status(404).json({ error: 'Unknown collection' })
+  try {
+    const updated = await db.update(col, id, req.body || {})
+    if (!updated) return res.status(404).json({ error: 'Not found' })
+    res.json(updated)
+  } catch (e) {
+    console.error(e)
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.delete('/api/:col/:id', async (req, res) => {
+  const { col, id } = req.params
+  if (!valid.has(col)) return res.status(404).json({ error: 'Unknown collection' })
+  try {
+    const existing = await db.get(col, id)
+    if (!existing) return res.status(404).json({ error: 'Not found' })
+    await db.remove(col, id)
+    res.json({ ok: true })
+  } catch (e) {
+    console.error(e)
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.get('/api/:col/:id', async (req, res) => {
+  const { col, id } = req.params
+  if (!valid.has(col)) return res.status(404).json({ error: 'Unknown collection' })
+  const row = await db.get(col, id)
+  if (!row) return res.status(404).json({ error: 'Not found' })
+  res.json(row)
 })
 
 // POS order creation convenience endpoint

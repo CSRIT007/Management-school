@@ -18,6 +18,7 @@ export default function ProductManagement() {
   useEffect(() => { load() }, [])
 
   const save = async () => {
+    if (!form.name.trim()) return
     const body = { ...form, price: +form.price || 0, cost: +form.cost || 0, stock: +form.stock || 0 }
     await post('/api/products', body)
     setForm({ name: '', description: '', category: '', price: '', cost: '', stock: '', sku: '' })

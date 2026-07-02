@@ -34,6 +34,21 @@ function makeId() {
   return (Date.now().toString(36) + Math.random().toString(36).slice(2, 8)).toUpperCase()
 }
 
+async function nextStudentId() {
+  const { rows } = await pool.query(`
+    SELECT COALESCE(MAX(CAST(SUBSTRING(id FROM 5) AS INTEGER)), 0) + 1 AS next
+    FROM records
+    WHERE collection = 'students' AND id ~ '^STU-[0-9]+$'
+  `)
+  return `STU-${String(rows[0].next).padStart(4, '0')}`
+}
+
+function buildRecord(name, obj) {
+  const { id: rawId, ...rest } = obj
+  const id = String(rawId || '').trim()
+  return { ...rest, id: id || (name === 'students' ? null : makeId()) }
+}
+
 function splitSqlStatements(sql) {
   const statements = []
   let current = ''
@@ -100,22 +115,52 @@ async function get(name, itemId) {
   return rows[0]?.data ?? null
 }
 
-async function add(name, obj) {
-  const record = { id: obj.id || makeId(), ...obj }
+async function add(name, obj, { upsert = true } = {}) {
+  let record = buildRecord(name, obj)
+  if (name === 'students' && !record.id) {
+    record.id = await nextStudentId()
+  }
+  if (!record.id) {
+    record.id = makeId()
+  }
+
+  if (!upsert) {
+    const exists = await get(name, record.id)
+    if (exists) {
+      const err = new Error(`Student ID "${record.id}" already exists`)
+      err.code = '23505'
+      throw err
+    }
+    try {
+      await pool.query(
+        `INSERT INTO records (collection, id, data) VALUES ($1, $2, $3::jsonb)`,
+        [name, record.id, JSON.stringify({ ...record, id: record.id })]
+      )
+    } catch (e) {
+      if (e.code === '23505') {
+        throw Object.assign(new Error(`Student ID "${record.id}" already exists`), { code: '23505' })
+      }
+      throw e
+    }
+    return { ...record, id: record.id }
+  }
+
+  const final = { ...record, id: record.id }
   await pool.query(
     `INSERT INTO records (collection, id, data)
      VALUES ($1, $2, $3::jsonb)
      ON CONFLICT (collection, id) DO UPDATE
      SET data = EXCLUDED.data, updated_at = NOW()`,
-    [name, record.id, JSON.stringify(record)]
+    [name, final.id, JSON.stringify(final)]
   )
-  return record
+  return final
 }
 
 async function update(name, itemId, obj) {
   const existing = await get(name, itemId)
   if (!existing) return null
-  const updated = { ...existing, ...obj, id: itemId }
+  const { id: _ignored, ...fields } = obj || {}
+  const updated = { ...existing, ...fields, id: itemId }
   const { rowCount } = await pool.query(
     `UPDATE records SET data = $1::jsonb, updated_at = NOW()
      WHERE collection = $2 AND id = $3`,
@@ -200,4 +245,4 @@ async function seedIfEmpty() {
   await add('alumni', { id: makeId(), name: 'John Smith', program: 'Business Administration', date: '2025-05-20', grade: 'B', cert: false })
 }
 
-export const db = { list, get, add, update, remove: remove_, seedIfEmpty, checkConnection }
+export const db = { list, get, add, update, remove: remove_, seedIfEmpty, checkConnection, nextStudentId }

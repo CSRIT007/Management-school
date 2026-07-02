@@ -4,7 +4,16 @@ export async function api(method, url, body) {
     headers: { 'Content-Type': 'application/json' },
     body: body ? JSON.stringify(body) : undefined,
   })
-  if (!res.ok) throw new Error(`API ${method} ${url} failed: ${res.status}`)
+  if (!res.ok) {
+    let detail = ''
+    try {
+      const err = await res.json()
+      detail = err.error || err.message || ''
+    } catch {
+      detail = await res.text()
+    }
+    throw new Error(detail || `API ${method} ${url} failed: ${res.status}`)
+  }
   return res.json()
 }
 
