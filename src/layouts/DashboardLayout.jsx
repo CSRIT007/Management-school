@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom'
 import Header from '../components/Header.jsx'
+import Footer from '../components/Footer.jsx'
 import Sidebar from '../components/Sidebar.jsx'
 import { useState } from 'react'
 
@@ -11,16 +12,17 @@ export default function DashboardLayout() {
       <Sidebar collapsed={collapsed} />
       <div
         className={[
-          'min-h-screen transition-all duration-300',
+          'flex min-h-screen flex-col transition-all duration-300',
           collapsed ? 'pl-[72px]' : 'pl-64',
         ].join(' ')}
       >
         <Header onToggleSidebar={() => setCollapsed((v) => !v)} collapsed={collapsed} />
-        <main className="p-6 lg:p-8">
+        <main className="flex-1 p-6 lg:p-8">
           <div className="mx-auto max-w-7xl">
             <Outlet />
           </div>
         </main>
+        <Footer />
       </div>
     </div>
   )
