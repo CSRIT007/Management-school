@@ -1,6 +1,50 @@
 import Badge from './ui/Badge.jsx'
 import Button from './ui/Button.jsx'
 
+const INVOICE_CONTACT = {
+  website: 'www.schoolmanagement.com',
+  email: 'email@schoolmanagement.com',
+  location: 'Phnom Penh, Cambodia',
+  phone: 'Phone: +855 12 345 6789',
+}
+
+function InvoiceContactFooter({ className = '' }) {
+  return (
+    <div className={`border-t border-slate-200 pt-4 text-xs text-slate-600 ${className}`}>
+      <div className="flex items-stretch justify-center gap-4">
+        <div className="space-y-1 text-right leading-relaxed">
+          <p>{INVOICE_CONTACT.website}</p>
+          <p>{INVOICE_CONTACT.email}</p>
+        </div>
+        <div className="flex shrink-0 items-center self-stretch text-base text-slate-300" aria-hidden="true">
+          |
+        </div>
+        <div className="space-y-1 text-left leading-relaxed">
+          <p>{INVOICE_CONTACT.location}</p>
+          <p>{INVOICE_CONTACT.phone}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function contactFooterHtml() {
+  return `
+    <div class="contact-footer">
+      <div class="contact-row">
+        <div class="contact-col contact-left">
+          <div>${INVOICE_CONTACT.website}</div>
+          <div>${INVOICE_CONTACT.email}</div>
+        </div>
+        <div class="contact-sep">|</div>
+        <div class="contact-col contact-right">
+          <div>${INVOICE_CONTACT.location}</div>
+          <div>${INVOICE_CONTACT.phone}</div>
+        </div>
+      </div>
+    </div>`
+}
+
 function formatMoney(amount) {
   return `$${Number(amount || 0).toFixed(2)}`
 }
@@ -26,7 +70,7 @@ export default function InvoiceDocument({ invoice, compact = false, showActions 
   return (
     <div
       className={[
-        'invoice-document overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-800 shadow-sm dark:border-slate-700 dark:bg-white dark:text-slate-800',
+        'invoice-document flex min-h-[32rem] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-800 shadow-sm dark:border-slate-700 dark:bg-white dark:text-slate-800',
         compact ? 'text-sm' : '',
       ].join(' ')}
     >
@@ -40,7 +84,7 @@ export default function InvoiceDocument({ invoice, compact = false, showActions 
               </div>
               <div>
                 <h2 className="text-lg font-bold tracking-tight">Management School</h2>
-                <p className="text-xs text-indigo-100">School Admin Portal · Phnom Penh, Cambodia</p>
+                <p className="text-xs text-indigo-100">School Admin Portal</p>
               </div>
             </div>
           </div>
@@ -52,7 +96,7 @@ export default function InvoiceDocument({ invoice, compact = false, showActions 
         </div>
       </div>
 
-      <div className={`space-y-6 ${compact ? 'p-5' : 'p-6 sm:p-8'}`}>
+      <div className={`flex-1 space-y-6 ${compact ? 'p-5' : 'p-6 sm:p-8'}`}>
         {/* Bill to + meta */}
         <div className="grid gap-6 sm:grid-cols-2">
           <div>
@@ -137,6 +181,8 @@ export default function InvoiceDocument({ invoice, compact = false, showActions 
           </div>
         )}
       </div>
+
+      <InvoiceContactFooter className={`mt-auto shrink-0 ${compact ? 'px-5 pb-5' : 'px-6 pb-6 sm:px-8 sm:pb-8'}`} />
     </div>
   )
 }
@@ -155,7 +201,10 @@ export function printInvoice(invoice) {
   <title>Invoice ${invoice.id}</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, -apple-system, sans-serif; color: #1e293b; padding: 32px; }
+    html, body { height: 100%; }
+    body { font-family: system-ui, -apple-system, sans-serif; color: #1e293b; }
+    .page { min-height: 100vh; display: flex; flex-direction: column; padding: 32px; }
+    .invoice-main { flex: 1; }
     .header { background: linear-gradient(135deg, #4f46e5, #6d28d9); color: white; padding: 24px 32px; border-radius: 12px 12px 0 0; display: flex; justify-content: space-between; align-items: flex-start; }
     .brand { display: flex; gap: 12px; align-items: center; }
     .logo { width: 44px; height: 44px; background: rgba(255,255,255,0.15); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; }
@@ -170,17 +219,29 @@ export function printInvoice(invoice) {
     .totals div { display: flex; justify-content: space-between; padding: 6px 0; }
     .total-row { border-top: 2px solid #e2e8f0; padding-top: 12px !important; font-size: 18px; font-weight: bold; color: #4338ca; }
     .note { background: #f8fafc; padding: 12px 16px; border-radius: 8px; font-size: 12px; color: #64748b; margin-top: 24px; }
+    .contact-footer { border-top: 1px solid #e2e8f0; margin-top: auto; padding-top: 16px; font-size: 11px; color: #475569; }
+    .contact-row { display: flex; align-items: stretch; justify-content: center; gap: 16px; }
+    .contact-col { line-height: 1.7; }
+    .contact-col div + div { margin-top: 2px; }
+    .contact-left { text-align: right; }
+    .contact-right { text-align: left; }
+    .contact-sep { display: flex; align-items: center; align-self: stretch; color: #cbd5e1; font-size: 18px; padding: 0 4px; }
     .status { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 500; background: #ecfdf5; color: #047857; }
-    @media print { body { padding: 0; } }
+    @media print {
+      .page { min-height: 100vh; padding: 0.5in; }
+      .contact-footer { position: fixed; bottom: 0.5in; left: 0.5in; right: 0.5in; background: white; }
+    }
   </style>
 </head>
 <body>
+  <div class="page">
+  <div class="invoice-main">
   <div class="header">
     <div class="brand">
       <div class="logo">MS</div>
       <div>
         <h1 style="font-size: 18px;">Management School</h1>
-        <p style="font-size: 12px; opacity: 0.85;">School Admin Portal · Phnom Penh, Cambodia</p>
+        <p style="font-size: 12px; opacity: 0.85;">School Admin Portal</p>
       </div>
     </div>
     <div style="text-align: right;">
@@ -232,6 +293,9 @@ export function printInvoice(invoice) {
       Thank you for your payment. Please retain this invoice for your records.
       For questions, contact the school administration office.
     </div>
+  </div>
+  </div>
+  ${contactFooterHtml()}
   </div>
   <script>window.onload = () => { window.print(); }</script>
 </body>
