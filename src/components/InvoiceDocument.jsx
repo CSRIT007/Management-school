@@ -87,7 +87,7 @@ export default function InvoiceDocument({ invoice, compact = false, showActions 
               <tr className="border-b border-slate-100">
                 <td className="px-4 py-4">
                   <p className="font-medium text-slate-900">School tuition / fee payment</p>
-                  <p className="mt-0.5 text-xs text-slate-500">Academic services — {invoice.id}</p>
+                  <p className="mt-0.5 text-xs text-slate-500">Academic services</p>
                 </td>
                 <td className="px-4 py-4 text-right text-slate-600">1</td>
                 <td className="px-4 py-4 text-right text-slate-600">{formatMoney(amount)}</td>
@@ -215,7 +215,7 @@ export function printInvoice(invoice) {
         <tr>
           <td>
             <strong>School tuition / fee payment</strong><br>
-            <span style="font-size: 12px; color: #64748b;">Academic services — ${invoice.id}</span>
+            <span style="font-size: 12px; color: #64748b;">Academic services</span>
           </td>
           <td class="right">1</td>
           <td class="right">${fmt(amount)}</td>

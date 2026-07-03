@@ -217,7 +217,7 @@ export default function StudentPayment() {
             disabled={saving || !form.studentName || !form.amount}
             onClick={() => savePayment(true)}
           >
-            {saving ? 'Saving…' : 'Save & Print'}
+            {saving ? 'Printing…' : 'Print'}
           </Button>
         </div>
       </form>
