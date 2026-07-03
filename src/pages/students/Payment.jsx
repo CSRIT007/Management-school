@@ -78,8 +78,7 @@ export default function StudentPayment() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const submit = async (e) => {
-    e.preventDefault()
+  const savePayment = async (andPrint = false) => {
     setSaving(true)
     setMessage('')
     setError(false)
@@ -91,21 +90,28 @@ export default function StudentPayment() {
         method: form.method,
         status: form.status,
       }
+      let saved
       if (editingId) {
-        await put(`/api/payments/${editingId}`, payload)
-        showMsg('Payment updated successfully.')
+        saved = await put(`/api/payments/${editingId}`, payload)
+        showMsg(andPrint ? 'Payment updated and sent to printer.' : 'Payment updated. Print anytime from Payment History.')
       } else {
         payload.id = form.id.trim() || nextInvoiceId(payments)
-        await post('/api/payments', payload)
-        showMsg('Payment recorded successfully.')
+        saved = await post('/api/payments', payload)
+        showMsg(andPrint ? 'Payment saved and sent to printer.' : 'Payment saved. Print the invoice anytime from Payment History.')
       }
       reset()
       await load()
+      if (andPrint && saved) printInvoice(saved)
     } catch (err) {
       showMsg(err.message, true)
     } finally {
       setSaving(false)
     }
+  }
+
+  const submit = (e) => {
+    e.preventDefault()
+    savePayment(false)
   }
 
   const remove = async (id) => {
@@ -121,15 +127,6 @@ export default function StudentPayment() {
     }
   }
 
-  const previewInvoice = {
-    id: form.id || nextInvoiceId(payments),
-    studentName: form.studentName,
-    date: form.date,
-    amount: form.amount,
-    method: form.method,
-    status: form.status,
-  }
-
   const columns = [
     { key: 'id', label: 'Invoice #', className: 'font-semibold text-slate-900 dark:text-slate-100' },
     { key: 'studentName', label: 'Student Name' },
@@ -143,7 +140,9 @@ export default function StudentPayment() {
       className: 'text-right',
       render: (row) => (
         <div className="flex justify-end gap-2">
-          <Button size="sm" variant="secondary" onClick={() => setViewInvoice(row)}>Invoice</Button>
+          <Button size="sm" variant="secondary" onClick={() => setViewInvoice(row)} title="View or print invoice">
+            Print
+          </Button>
           <Button size="sm" variant="secondary" onClick={() => startEdit(row)}>Edit</Button>
           <Button size="sm" variant="danger" onClick={() => remove(row.id)}>Delete</Button>
         </div>
@@ -155,98 +154,87 @@ export default function StudentPayment() {
     <div className="space-y-6">
       <PageHeader
         title="Student & Payment"
-        subtitle="Create invoices, record payments, and print receipts"
+        subtitle="Record payments and print invoices when needed"
       />
 
       <FormAlert message={message} error={error} />
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        {/* Form */}
-        <form onSubmit={submit} className="panel p-6">
-          <h3 className="mb-4 text-base font-bold text-slate-900 dark:text-slate-100">
-            {editingId ? `Edit Payment — ${editingId}` : 'New Invoice'}
-          </h3>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="label">Invoice #</label>
-              <input
-                className="input font-mono"
-                value={form.id}
-                onChange={(e) => setForm((f) => ({ ...f, id: e.target.value.toUpperCase() }))}
-                disabled={!!editingId}
-                readOnly={!!editingId}
-              />
-            </div>
-            <div>
-              <label className="label">Date</label>
-              <input type="date" className="input" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} required />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="label">Student</label>
-              <select className="input" value={form.studentName} onChange={(e) => setForm((f) => ({ ...f, studentName: e.target.value }))} required>
-                <option value="">Select student</option>
-                {students.map((s) => <option key={s.id} value={s.name}>{s.name}</option>)}
-                <option value="Walk-in">Walk-in</option>
-              </select>
-            </div>
-            <div>
-              <label className="label">Amount ($)</label>
-              <input type="number" step="0.01" min="0" className="input" placeholder="0.00" value={form.amount} onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))} required />
-            </div>
-            <div>
-              <label className="label">Payment Method</label>
-              <select className="input" value={form.method} onChange={(e) => setForm((f) => ({ ...f, method: e.target.value }))}>
-                <option>Cash</option>
-                <option>Card</option>
-                <option>QR</option>
-              </select>
-            </div>
-            <div className="sm:col-span-2">
-              <label className="label">Status</label>
-              <select className="input" value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}>
-                <option>Paid</option>
-                <option>Pending</option>
-                <option>Failed</option>
-              </select>
-            </div>
+      <form onSubmit={submit} className="panel p-6">
+        <h3 className="mb-4 text-base font-bold text-slate-900 dark:text-slate-100">
+          {editingId ? `Edit Payment — ${editingId}` : 'Record Payment'}
+        </h3>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div>
+            <label className="label">Invoice #</label>
+            <input
+              className="input font-mono"
+              value={form.id}
+              onChange={(e) => setForm((f) => ({ ...f, id: e.target.value.toUpperCase() }))}
+              disabled={!!editingId}
+              readOnly={!!editingId}
+            />
           </div>
-          <div className="mt-6 flex flex-wrap justify-end gap-3 border-t border-slate-100 dark:border-slate-800 pt-6">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => printInvoice(previewInvoice)}
-              disabled={!form.studentName || !form.amount}
-            >
-              Print Preview
-            </Button>
-            <Button type="button" variant="secondary" onClick={reset}>Cancel</Button>
-            <Button type="submit" disabled={saving}>
-              {saving ? 'Saving…' : editingId ? 'Update Payment' : 'Save & Issue Invoice'}
-            </Button>
+          <div>
+            <label className="label">Student</label>
+            <select className="input" value={form.studentName} onChange={(e) => setForm((f) => ({ ...f, studentName: e.target.value }))} required>
+              <option value="">Select student</option>
+              {students.map((s) => <option key={s.id} value={s.name}>{s.name}</option>)}
+              <option value="Walk-in">Walk-in</option>
+            </select>
           </div>
-        </form>
-
-        {/* Live invoice preview */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between px-1">
-            <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Invoice Preview</h3>
-            <span className="text-xs text-slate-400">Updates as you type</span>
+          <div>
+            <label className="label">Date</label>
+            <input type="date" className="input" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} required />
           </div>
-          <InvoiceDocument invoice={previewInvoice} compact />
+          <div>
+            <label className="label">Amount ($)</label>
+            <input type="number" step="0.01" min="0" className="input" placeholder="0.00" value={form.amount} onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))} required />
+          </div>
+          <div>
+            <label className="label">Payment Method</label>
+            <select className="input" value={form.method} onChange={(e) => setForm((f) => ({ ...f, method: e.target.value }))}>
+              <option>Cash</option>
+              <option>Card</option>
+              <option>QR</option>
+            </select>
+          </div>
+          <div>
+            <label className="label">Status</label>
+            <select className="input" value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}>
+              <option>Paid</option>
+              <option>Pending</option>
+              <option>Failed</option>
+            </select>
+          </div>
         </div>
-      </div>
+        <div className="mt-6 flex flex-wrap justify-end gap-3 border-t border-slate-100 dark:border-slate-800 pt-6">
+          <Button type="button" variant="secondary" onClick={reset}>Cancel</Button>
+          <Button type="submit" variant="secondary" disabled={saving}>
+            {saving ? 'Saving…' : 'Save'}
+          </Button>
+          <Button
+            type="button"
+            disabled={saving || !form.studentName || !form.amount}
+            onClick={() => savePayment(true)}
+          >
+            {saving ? 'Saving…' : 'Save & Print'}
+          </Button>
+        </div>
+      </form>
 
       <div>
-        <h3 className="mb-4 text-lg font-bold text-slate-900 dark:text-slate-100">
+        <h3 className="mb-1 text-lg font-bold text-slate-900 dark:text-slate-100">
           Payment History ({payments.length})
         </h3>
+        <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
+          Click <strong>Print</strong> on any row to view or print the invoice later.
+        </p>
         <DataTable columns={columns} rows={payments} emptyMessage="No payment records found." />
       </div>
 
-      {/* Invoice modal */}
       {viewInvoice && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm print:hidden"
           onClick={() => setViewInvoice(null)}
         >
           <div
