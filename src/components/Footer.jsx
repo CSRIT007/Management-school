@@ -16,14 +16,14 @@ export default function Footer() {
         </div>
 
         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-          <span className="hidden sm:inline">School Admin Portal</span>
+          <span className="hidden sm:inline">www.schoolmanagement.com</span>
           <span className="hidden h-3 w-px bg-slate-200 dark:bg-slate-700 sm:inline" />
-          <span>v1.0.0</span>
+          <span>email@schoolmanagement.com</span>
         </div>
 
         <div className="flex items-center gap-1.5">
           <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-          <span>System online</span>
+          <span>Phnom Penh, Cambodia, Phone: +855 12 345 6789</span>
         </div>
       </div>
     </footer>
