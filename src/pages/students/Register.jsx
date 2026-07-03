@@ -6,6 +6,20 @@ import DataTable from '../../components/ui/DataTable.jsx'
 
 const emptyForm = { id: '', name: '', email: '', phone: '', address: '', dob: '', emergency: '', program: '' }
 
+function validateForm(form) {
+  const errors = {}
+  const name = form.name.trim()
+  const email = form.email.trim()
+  const dob = form.dob.trim()
+
+  if (!name) errors.name = 'Full name is required.'
+  if (!email) errors.email = 'Email is required.'
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = 'Enter a valid email address.'
+  if (!dob) errors.dob = 'Date of birth is required.'
+
+  return errors
+}
+
 export default function StudentRegister() {
   const [form, setForm] = useState(emptyForm)
   const [students, setStudents] = useState([])
@@ -13,6 +27,7 @@ export default function StudentRegister() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState({})
 
   const load = async () => {
     try {
@@ -47,6 +62,7 @@ export default function StudentRegister() {
     setEditingId(null)
     setMessage('')
     setError(false)
+    setFieldErrors({})
   }
 
   const startCreate = async () => {
@@ -68,18 +84,36 @@ export default function StudentRegister() {
     })
     setMessage('')
     setError(false)
+    setFieldErrors({})
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const clearFieldError = (field) => {
+    setFieldErrors((prev) => {
+      if (!prev[field]) return prev
+      const next = { ...prev }
+      delete next[field]
+      return next
+    })
   }
 
   const submit = async (e) => {
     e.preventDefault()
+    const errors = validateForm(form)
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors)
+      showMsg('Please fill in all required fields before saving.', true)
+      return
+    }
+
     setSaving(true)
     setMessage('')
     setError(false)
+    setFieldErrors({})
     try {
       const payload = {
-        name: form.name,
-        email: form.email,
+        name: form.name.trim(),
+        email: form.email.trim(),
         phone: form.phone,
         address: form.address,
         dob: form.dob,
@@ -153,6 +187,9 @@ export default function StudentRegister() {
         <h3 className="mb-4 text-base font-bold text-slate-900 dark:text-slate-100">
           {editingId ? `Edit Student — ${editingId}` : 'Register New Student'}
         </h3>
+        <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
+          Fields marked with <span className="text-rose-500">*</span> are required.
+        </p>
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <div>
             <label className="label">Student ID</label>
@@ -169,12 +206,37 @@ export default function StudentRegister() {
             )}
           </div>
           <div>
-            <label className="label">Full Name</label>
-            <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} className="input" placeholder="Jane Doe" required />
+            <label className="label">
+              Full Name <span className="text-rose-500">*</span>
+            </label>
+            <input
+              value={form.name}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, name: e.target.value }))
+                clearFieldError('name')
+              }}
+              className={`input ${fieldErrors.name ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/20' : ''}`}
+              placeholder="Jane Doe"
+              required
+            />
+            {fieldErrors.name && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{fieldErrors.name}</p>}
           </div>
           <div>
-            <label className="label">Email</label>
-            <input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} className="input" placeholder="jane@example.com" />
+            <label className="label">
+              Email <span className="text-rose-500">*</span>
+            </label>
+            <input
+              type="email"
+              value={form.email}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, email: e.target.value }))
+                clearFieldError('email')
+              }}
+              className={`input ${fieldErrors.email ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/20' : ''}`}
+              placeholder="jane@example.com"
+              required
+            />
+            {fieldErrors.email && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{fieldErrors.email}</p>}
           </div>
           <div>
             <label className="label">Phone Number</label>
@@ -185,8 +247,20 @@ export default function StudentRegister() {
             <input value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} className="input" placeholder="Street, City" />
           </div>
           <div>
-            <label className="label">Date of Birth</label>
-            <input type="date" value={form.dob} onChange={(e) => setForm((f) => ({ ...f, dob: e.target.value }))} className="input" />
+            <label className="label">
+              Date of Birth <span className="text-rose-500">*</span>
+            </label>
+            <input
+              type="date"
+              value={form.dob}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, dob: e.target.value }))
+                clearFieldError('dob')
+              }}
+              className={`input ${fieldErrors.dob ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/20' : ''}`}
+              required
+            />
+            {fieldErrors.dob && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{fieldErrors.dob}</p>}
           </div>
           <div>
             <label className="label">Emergency Contact</label>
