@@ -1,6 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import { db, checkConnection } from './db.js'
+import { getLanIp, printAppUrls } from './network.js'
 
 const app = express()
 const PORT = process.env.PORT || 4000
@@ -155,9 +156,9 @@ app.post('/api/pos/checkout', async (req, res) => {
 db.seedIfEmpty()
   .then(() => {
     app.listen(PORT, HOST, () => {
-      const url = process.env.PUBLIC_URL || `http://localhost:${PORT}`
+      const webPort = process.env.WEB_PORT || 8080
       console.log(`API server listening on ${HOST}:${PORT}`)
-      console.log(`Public app URL: ${url}`)
+      printAppUrls({ apiPort: PORT, webPort, mode: 'api' })
     })
   })
   .catch((err) => {
