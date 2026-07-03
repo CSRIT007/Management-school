@@ -1,6 +1,7 @@
 import { useTheme } from '../context/ThemeContext.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { useNavigate } from 'react-router-dom'
+import GlobalSearch from './GlobalSearch.jsx'
 
 export default function Header({ onToggleSidebar, collapsed }) {
   const { isDark, toggleTheme } = useTheme()
@@ -35,16 +36,7 @@ export default function Header({ onToggleSidebar, collapsed }) {
         <div className="flex-1" />
 
         <div className="flex items-center gap-3">
-          <div className="relative hidden md:block">
-            <input
-              type="text"
-              placeholder="Search students, products…"
-              className="input w-64 py-2 pl-10"
-            />
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400">
-              <path fillRule="evenodd" d="M10.5 3.75a6.75 6.75 0 015.132 11.205l4.206 4.207-1.061 1.06-4.206-4.206A6.75 6.75 0 1110.5 3.75zm0 1.5a5.25 5.25 0 100 10.5 5.25 5.25 0 000-10.5z" clipRule="evenodd" />
-            </svg>
-          </div>
+          <GlobalSearch />
 
           <button
             onClick={toggleTheme}

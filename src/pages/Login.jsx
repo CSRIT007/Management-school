@@ -128,7 +128,7 @@ export default function Login() {
         </form>
 
         <p className="mt-6 text-center text-xs text-slate-400 dark:text-slate-500">
-          Kimheng Management System · Admin Portal
+         Management System · Admin Portal
         </p>
       </div>
     </div>
