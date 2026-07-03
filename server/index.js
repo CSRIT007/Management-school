@@ -62,6 +62,25 @@ app.get('/api/reports/low-stock', async (req, res) => {
   res.json(low)
 })
 
+app.get('/api/dashboard/stats', async (req, res) => {
+  try {
+    const [students, classes, payments, products] = await Promise.all([
+      db.list('students'),
+      db.list('classes'),
+      db.list('payments'),
+      db.list('products'),
+    ])
+    res.json({
+      activeStudents: students.length,
+      openClasses: classes.length,
+      pendingPayments: payments.filter((p) => p.status === 'Pending').length,
+      productsInStock: products.reduce((sum, p) => sum + (Number(p.stock) || 0), 0),
+    })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
 // Generic collections
 const valid = new Set(['students','classes','deadlines','payments','bookIssues','alumni','categories','products','orders'])
 

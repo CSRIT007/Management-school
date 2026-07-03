@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { get } from '../lib/api.js'
 import StatCard from '../components/ui/StatCard.jsx'
 
 const quickLinks = [
@@ -19,7 +21,35 @@ const icons = {
   cart: <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />,
 }
 
+const defaultStats = {
+  activeStudents: 0,
+  openClasses: 0,
+  pendingPayments: 0,
+  productsInStock: 0,
+}
+
 export default function DashboardHome() {
+  const [stats, setStats] = useState(defaultStats)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let active = true
+    ;(async () => {
+      try {
+        const data = await get('/api/dashboard/stats')
+        if (active) setStats(data)
+      } catch (e) {
+        if (active) setError(e.message)
+      } finally {
+        if (active) setLoading(false)
+      }
+    })()
+    return () => { active = false }
+  }, [])
+
+  const display = (n) => (loading ? '…' : Number(n).toLocaleString())
+
   return (
     <div className="space-y-8">
       {/* Hero */}
@@ -34,11 +64,17 @@ export default function DashboardHome() {
         </div>
       </div>
 
+      {error && (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-400">
+          Could not load dashboard stats: {error}
+        </div>
+      )}
+
       {/* Stats */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Active Students"
-          value="128"
+          value={display(stats.activeStudents)}
           accent="indigo"
           icon={
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5">
@@ -48,7 +84,7 @@ export default function DashboardHome() {
         />
         <StatCard
           label="Open Classes"
-          value="12"
+          value={display(stats.openClasses)}
           accent="emerald"
           icon={
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5">
@@ -58,7 +94,7 @@ export default function DashboardHome() {
         />
         <StatCard
           label="Pending Payments"
-          value="5"
+          value={display(stats.pendingPayments)}
           accent="amber"
           icon={
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5">
@@ -68,7 +104,7 @@ export default function DashboardHome() {
         />
         <StatCard
           label="Products in Stock"
-          value="84"
+          value={display(stats.productsInStock)}
           accent="rose"
           icon={
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5">
