@@ -1,6 +1,6 @@
--- Management School database schema
+-- Management School — relational schema (one table per entity)
 
-CREATE OR REPLACE FUNCTION records_set_updated_at()
+CREATE OR REPLACE FUNCTION set_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
   NEW.updated_at = NOW();
@@ -8,75 +8,148 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION records_sync_id_in_data()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.data = jsonb_set(
-    COALESCE(NEW.data, '{}'::jsonb),
-    '{id}',
-    to_jsonb(NEW.id),
-    true
-  );
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TABLE IF NOT EXISTS records (
-  collection TEXT NOT NULL,
-  id TEXT NOT NULL,
-  data JSONB NOT NULL DEFAULT '{}'::jsonb,
+-- Students
+CREATE TABLE IF NOT EXISTS students (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL DEFAULT '',
+  email TEXT DEFAULT '',
+  phone TEXT DEFAULT '',
+  address TEXT DEFAULT '',
+  dob DATE,
+  emergency TEXT DEFAULT '',
+  program TEXT DEFAULT '',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  PRIMARY KEY (collection, id)
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Backfill id inside JSON for any legacy rows before adding the check constraint.
-UPDATE records
-SET data = jsonb_set(COALESCE(data, '{}'::jsonb), '{id}', to_jsonb(id), true)
-WHERE data->>'id' IS DISTINCT FROM id;
+-- Classes
+CREATE TABLE IF NOT EXISTS classes (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL DEFAULT '',
+  instructor TEXT DEFAULT '',
+  schedule TEXT DEFAULT '',
+  capacity TEXT DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
+-- Student deadlines / assignments
+CREATE TABLE IF NOT EXISTS deadlines (
+  id TEXT PRIMARY KEY,
+  student_name TEXT NOT NULL DEFAULT '',
+  task TEXT NOT NULL DEFAULT '',
+  due_date DATE,
+  status TEXT DEFAULT 'Pending',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Payments / invoices
+CREATE TABLE IF NOT EXISTS payments (
+  id TEXT PRIMARY KEY,
+  student_name TEXT NOT NULL DEFAULT '',
+  payment_date DATE,
+  amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  method TEXT DEFAULT 'Cash',
+  status TEXT DEFAULT 'Paid',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Book issues
+CREATE TABLE IF NOT EXISTS book_issues (
+  id TEXT PRIMARY KEY,
+  student_name TEXT NOT NULL DEFAULT '',
+  title TEXT NOT NULL DEFAULT '',
+  isbn TEXT DEFAULT '',
+  issued_date DATE,
+  due_date DATE,
+  status TEXT DEFAULT 'Issued',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Alumni / graduation
+CREATE TABLE IF NOT EXISTS alumni (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL DEFAULT '',
+  program TEXT DEFAULT '',
+  completion_date DATE,
+  grade TEXT DEFAULT '',
+  cert BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Product categories
+CREATE TABLE IF NOT EXISTS categories (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL DEFAULT '',
+  description TEXT DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Products
+CREATE TABLE IF NOT EXISTS products (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL DEFAULT '',
+  description TEXT DEFAULT '',
+  category TEXT DEFAULT '',
+  price NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  cost NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  stock INTEGER NOT NULL DEFAULT 0,
+  sku TEXT DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- POS orders
+CREATE TABLE IF NOT EXISTS orders (
+  id TEXT PRIMARY KEY,
+  customer TEXT DEFAULT 'Walk-in',
+  payment_method TEXT DEFAULT 'Cash',
+  total NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  order_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS order_items (
+  id SERIAL PRIMARY KEY,
+  order_id TEXT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  product_id TEXT DEFAULT '',
+  product_name TEXT DEFAULT '',
+  qty INTEGER NOT NULL DEFAULT 1,
+  price NUMERIC(12, 2) NOT NULL DEFAULT 0
+);
+
+-- Indexes for filtering in DBeaver / reports
+CREATE INDEX IF NOT EXISTS idx_students_name ON students(name);
+CREATE INDEX IF NOT EXISTS idx_students_program ON students(program);
+CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
+CREATE INDEX IF NOT EXISTS idx_payments_date ON payments(payment_date);
+CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
+CREATE INDEX IF NOT EXISTS idx_products_stock ON products(stock);
+CREATE INDEX IF NOT EXISTS idx_deadlines_status ON deadlines(status);
+CREATE INDEX IF NOT EXISTS idx_deadlines_due ON deadlines(due_date);
+CREATE INDEX IF NOT EXISTS idx_book_issues_status ON book_issues(status);
+CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
+
+-- updated_at triggers
 DO $$
+DECLARE
+  t TEXT;
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'records_collection_check'
-  ) THEN
-    ALTER TABLE records ADD CONSTRAINT records_collection_check CHECK (
-      collection IN (
-        'students', 'classes', 'deadlines', 'payments', 'bookIssues',
-        'alumni', 'categories', 'products', 'orders'
-      )
+  FOREACH t IN ARRAY ARRAY[
+    'students', 'classes', 'deadlines', 'payments', 'book_issues',
+    'alumni', 'categories', 'products', 'orders'
+  ]
+  LOOP
+    EXECUTE format('DROP TRIGGER IF EXISTS trg_%s_updated_at ON %I', t, t);
+    EXECUTE format(
+      'CREATE TRIGGER trg_%s_updated_at BEFORE UPDATE ON %I FOR EACH ROW EXECUTE FUNCTION set_updated_at()',
+      t, t
     );
-  END IF;
-
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'records_data_is_object'
-  ) THEN
-    ALTER TABLE records ADD CONSTRAINT records_data_is_object CHECK (
-      jsonb_typeof(data) = 'object'
-    );
-  END IF;
-
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'records_id_matches_data'
-  ) THEN
-    ALTER TABLE records ADD CONSTRAINT records_id_matches_data CHECK (
-      data->>'id' IS NULL OR data->>'id' = id
-    );
-  END IF;
+  END LOOP;
 END $$;
-
-CREATE INDEX IF NOT EXISTS idx_records_collection ON records(collection);
-CREATE INDEX IF NOT EXISTS idx_records_collection_created ON records(collection, created_at);
-CREATE INDEX IF NOT EXISTS idx_records_data_gin ON records USING gin (data);
-
-DROP TRIGGER IF EXISTS trg_records_set_updated_at ON records;
-CREATE TRIGGER trg_records_set_updated_at
-  BEFORE UPDATE ON records
-  FOR EACH ROW
-  EXECUTE FUNCTION records_set_updated_at();
-
-DROP TRIGGER IF EXISTS trg_records_sync_id_in_data ON records;
-CREATE TRIGGER trg_records_sync_id_in_data
-  BEFORE INSERT OR UPDATE ON records
-  FOR EACH ROW
-  EXECUTE FUNCTION records_sync_id_in_data();

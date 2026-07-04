@@ -30,23 +30,186 @@ const collections = [
   'orders',
 ]
 
+/** API collection name → DB table + field mapping */
+const TABLE_CONFIG = {
+  students: {
+    table: 'students',
+    toApi: (r) => ({
+      id: r.id,
+      name: r.name,
+      email: r.email,
+      phone: r.phone,
+      address: r.address,
+      dob: fmtDate(r.dob),
+      emergency: r.emergency,
+      program: r.program,
+    }),
+    toDb: (o) => ({
+      id: o.id,
+      name: o.name ?? '',
+      email: o.email ?? '',
+      phone: o.phone ?? '',
+      address: o.address ?? '',
+      dob: o.dob || null,
+      emergency: o.emergency ?? '',
+      program: o.program ?? '',
+    }),
+    insertCols: ['id', 'name', 'email', 'phone', 'address', 'dob', 'emergency', 'program'],
+    updateCols: ['name', 'email', 'phone', 'address', 'dob', 'emergency', 'program'],
+  },
+  classes: {
+    table: 'classes',
+    toApi: (r) => ({
+      id: r.id,
+      name: r.name,
+      instructor: r.instructor,
+      schedule: r.schedule,
+      capacity: r.capacity,
+    }),
+    toDb: (o) => ({
+      id: o.id,
+      name: o.name ?? '',
+      instructor: o.instructor ?? '',
+      schedule: o.schedule ?? '',
+      capacity: o.capacity ?? '',
+    }),
+    insertCols: ['id', 'name', 'instructor', 'schedule', 'capacity'],
+    updateCols: ['name', 'instructor', 'schedule', 'capacity'],
+  },
+  deadlines: {
+    table: 'deadlines',
+    toApi: (r) => ({
+      id: r.id,
+      name: r.student_name,
+      task: r.task,
+      due: fmtDate(r.due_date),
+      status: r.status,
+    }),
+    toDb: (o) => ({
+      id: o.id,
+      student_name: o.name ?? '',
+      task: o.task ?? '',
+      due_date: o.due || null,
+      status: o.status ?? 'Pending',
+    }),
+    insertCols: ['id', 'student_name', 'task', 'due_date', 'status'],
+    updateCols: ['student_name', 'task', 'due_date', 'status'],
+  },
+  payments: {
+    table: 'payments',
+    toApi: (r) => ({
+      id: r.id,
+      studentName: r.student_name,
+      date: fmtDate(r.payment_date),
+      amount: Number(r.amount),
+      method: r.method,
+      status: r.status,
+    }),
+    toDb: (o) => ({
+      id: o.id,
+      student_name: o.studentName ?? '',
+      payment_date: o.date || null,
+      amount: Number(o.amount) || 0,
+      method: o.method ?? 'Cash',
+      status: o.status ?? 'Paid',
+    }),
+    insertCols: ['id', 'student_name', 'payment_date', 'amount', 'method', 'status'],
+    updateCols: ['student_name', 'payment_date', 'amount', 'method', 'status'],
+  },
+  bookIssues: {
+    table: 'book_issues',
+    toApi: (r) => ({
+      id: r.id,
+      name: r.student_name,
+      title: r.title,
+      isbn: r.isbn,
+      issued: fmtDate(r.issued_date),
+      due: fmtDate(r.due_date),
+      status: r.status,
+    }),
+    toDb: (o) => ({
+      id: o.id,
+      student_name: o.name ?? '',
+      title: o.title ?? '',
+      isbn: o.isbn ?? '',
+      issued_date: o.issued || null,
+      due_date: o.due || null,
+      status: o.status ?? 'Issued',
+    }),
+    insertCols: ['id', 'student_name', 'title', 'isbn', 'issued_date', 'due_date', 'status'],
+    updateCols: ['student_name', 'title', 'isbn', 'issued_date', 'due_date', 'status'],
+  },
+  alumni: {
+    table: 'alumni',
+    toApi: (r) => ({
+      id: r.id,
+      name: r.name,
+      program: r.program,
+      date: fmtDate(r.completion_date),
+      grade: r.grade,
+      cert: !!r.cert,
+    }),
+    toDb: (o) => ({
+      id: o.id,
+      name: o.name ?? '',
+      program: o.program ?? '',
+      completion_date: o.date || null,
+      grade: o.grade ?? '',
+      cert: o.cert === true || o.cert === 'true',
+    }),
+    insertCols: ['id', 'name', 'program', 'completion_date', 'grade', 'cert'],
+    updateCols: ['name', 'program', 'completion_date', 'grade', 'cert'],
+  },
+  categories: {
+    table: 'categories',
+    toApi: (r) => ({
+      id: r.id,
+      name: r.name,
+      description: r.description,
+    }),
+    toDb: (o) => ({
+      id: o.id,
+      name: o.name ?? '',
+      description: o.description ?? '',
+    }),
+    insertCols: ['id', 'name', 'description'],
+    updateCols: ['name', 'description'],
+  },
+  products: {
+    table: 'products',
+    toApi: (r) => ({
+      id: r.id,
+      name: r.name,
+      description: r.description,
+      category: r.category,
+      price: Number(r.price),
+      cost: Number(r.cost),
+      stock: Number(r.stock),
+      sku: r.sku,
+    }),
+    toDb: (o) => ({
+      id: o.id,
+      name: o.name ?? '',
+      description: o.description ?? '',
+      category: o.category ?? '',
+      price: Number(o.price) || 0,
+      cost: Number(o.cost) || 0,
+      stock: Number(o.stock) || 0,
+      sku: o.sku ?? '',
+    }),
+    insertCols: ['id', 'name', 'description', 'category', 'price', 'cost', 'stock', 'sku'],
+    updateCols: ['name', 'description', 'category', 'price', 'cost', 'stock', 'sku'],
+  },
+}
+
+function fmtDate(val) {
+  if (!val) return ''
+  if (val instanceof Date) return val.toISOString().slice(0, 10)
+  return String(val).slice(0, 10)
+}
+
 function makeId() {
   return (Date.now().toString(36) + Math.random().toString(36).slice(2, 8)).toUpperCase()
-}
-
-async function nextStudentId() {
-  const { rows } = await pool.query(`
-    SELECT COALESCE(MAX(CAST(SUBSTRING(id FROM 5) AS INTEGER)), 0) + 1 AS next
-    FROM records
-    WHERE collection = 'students' AND id ~ '^STU-[0-9]+$'
-  `)
-  return `STU-${String(rows[0].next).padStart(4, '0')}`
-}
-
-function buildRecord(name, obj) {
-  const { id: rawId, ...rest } = obj
-  const id = String(rawId || '').trim()
-  return { ...rest, id: id || (name === 'students' ? null : makeId()) }
 }
 
 function splitSqlStatements(sql) {
@@ -88,122 +251,167 @@ function splitSqlStatements(sql) {
 async function initSchema() {
   const schemaPath = path.join(__dirname, 'schema.sql')
   const sql = await fs.readFile(schemaPath, 'utf8')
-
   for (const statement of splitSqlStatements(sql)) {
     await pool.query(statement)
   }
 }
 
-export async function checkConnection() {
-  const { rows } = await pool.query('SELECT NOW() AS now')
-  return rows[0]
-}
-
-async function list(name) {
+async function tableExists(name) {
   const { rows } = await pool.query(
-    'SELECT data FROM records WHERE collection = $1 ORDER BY created_at ASC',
+    `SELECT EXISTS (
+      SELECT FROM information_schema.tables
+      WHERE table_schema = 'public' AND table_name = $1
+    ) AS exists`,
     [name]
   )
-  return rows.map((r) => r.data)
+  return rows[0].exists
 }
 
-async function get(name, itemId) {
-  const { rows } = await pool.query(
-    'SELECT data FROM records WHERE collection = $1 AND id = $2',
-    [name, itemId]
-  )
-  return rows[0]?.data ?? null
-}
+async function migrateFromLegacyRecords() {
+  if (!(await tableExists('records'))) return
 
-async function add(name, obj, { upsert = true } = {}) {
-  let record = buildRecord(name, obj)
-  if (name === 'students' && !record.id) {
-    record.id = await nextStudentId()
-  }
-  if (!record.id) {
-    record.id = makeId()
-  }
-
-  if (!upsert) {
-    const exists = await get(name, record.id)
-    if (exists) {
-      const err = new Error(`Student ID "${record.id}" already exists`)
-      err.code = '23505'
-      throw err
-    }
-    try {
-      await pool.query(
-        `INSERT INTO records (collection, id, data) VALUES ($1, $2, $3::jsonb)`,
-        [name, record.id, JSON.stringify({ ...record, id: record.id })]
-      )
-    } catch (e) {
-      if (e.code === '23505') {
-        throw Object.assign(new Error(`Student ID "${record.id}" already exists`), { code: '23505' })
-      }
-      throw e
-    }
-    return { ...record, id: record.id }
-  }
-
-  const final = { ...record, id: record.id }
-  await pool.query(
-    `INSERT INTO records (collection, id, data)
-     VALUES ($1, $2, $3::jsonb)
-     ON CONFLICT (collection, id) DO UPDATE
-     SET data = EXCLUDED.data, updated_at = NOW()`,
-    [name, final.id, JSON.stringify(final)]
-  )
-  return final
-}
-
-async function update(name, itemId, obj) {
-  const existing = await get(name, itemId)
-  if (!existing) return null
-  const { id: _ignored, ...fields } = obj || {}
-  const updated = { ...existing, ...fields, id: itemId }
-  const { rowCount } = await pool.query(
-    `UPDATE records SET data = $1::jsonb, updated_at = NOW()
-     WHERE collection = $2 AND id = $3`,
-    [JSON.stringify(updated), name, itemId]
-  )
-  return rowCount ? updated : null
-}
-
-async function remove_(name, itemId) {
-  await pool.query('DELETE FROM records WHERE collection = $1 AND id = $2', [name, itemId])
-  return { ok: true }
-}
-
-async function isEmpty() {
   const { rows } = await pool.query('SELECT COUNT(*)::int AS count FROM records')
-  return rows[0].count === 0
-}
+  if (rows[0].count === 0) {
+    await pool.query('DROP TABLE IF EXISTS records CASCADE')
+    return
+  }
 
-async function migrateJsonFiles() {
+  console.log(`Migrating ${rows[0].count} rows from legacy records table…`)
   const client = await pool.connect()
   try {
     await client.query('BEGIN')
-    for (const name of collections) {
-      const file = path.join(dataRoot, `${name}.json`)
-      try {
-        const txt = await fs.readFile(file, 'utf8')
-        const items = JSON.parse(txt)
-        if (!Array.isArray(items)) continue
-        for (const item of items) {
-          if (!item?.id) continue
-          const record = { ...item, id: item.id }
-          await client.query(
-            `INSERT INTO records (collection, id, data)
-             VALUES ($1, $2, $3::jsonb)
-             ON CONFLICT (collection, id) DO NOTHING`,
-            [name, record.id, JSON.stringify(record)]
-          )
-        }
-      } catch (e) {
-        if (e.code !== 'ENOENT') throw e
-      }
-    }
+
+    await client.query(`
+      INSERT INTO students (id, name, email, phone, address, dob, emergency, program, created_at, updated_at)
+      SELECT id,
+        COALESCE(data->>'name', ''),
+        COALESCE(data->>'email', ''),
+        COALESCE(data->>'phone', ''),
+        COALESCE(data->>'address', ''),
+        NULLIF(data->>'dob', '')::date,
+        COALESCE(data->>'emergency', ''),
+        COALESCE(data->>'program', ''),
+        created_at, updated_at
+      FROM records WHERE collection = 'students'
+      ON CONFLICT (id) DO NOTHING
+    `)
+
+    await client.query(`
+      INSERT INTO classes (id, name, instructor, schedule, capacity, created_at, updated_at)
+      SELECT id,
+        COALESCE(data->>'name', ''),
+        COALESCE(data->>'instructor', ''),
+        COALESCE(data->>'schedule', ''),
+        COALESCE(data->>'capacity', ''),
+        created_at, updated_at
+      FROM records WHERE collection = 'classes'
+      ON CONFLICT (id) DO NOTHING
+    `)
+
+    await client.query(`
+      INSERT INTO deadlines (id, student_name, task, due_date, status, created_at, updated_at)
+      SELECT id,
+        COALESCE(data->>'name', ''),
+        COALESCE(data->>'task', ''),
+        NULLIF(data->>'due', '')::date,
+        COALESCE(data->>'status', 'Pending'),
+        created_at, updated_at
+      FROM records WHERE collection = 'deadlines'
+      ON CONFLICT (id) DO NOTHING
+    `)
+
+    await client.query(`
+      INSERT INTO payments (id, student_name, payment_date, amount, method, status, created_at, updated_at)
+      SELECT id,
+        COALESCE(data->>'studentName', ''),
+        NULLIF(data->>'date', '')::date,
+        COALESCE((data->>'amount')::numeric, 0),
+        COALESCE(data->>'method', 'Cash'),
+        COALESCE(data->>'status', 'Paid'),
+        created_at, updated_at
+      FROM records WHERE collection = 'payments'
+      ON CONFLICT (id) DO NOTHING
+    `)
+
+    await client.query(`
+      INSERT INTO book_issues (id, student_name, title, isbn, issued_date, due_date, status, created_at, updated_at)
+      SELECT id,
+        COALESCE(data->>'name', ''),
+        COALESCE(data->>'title', ''),
+        COALESCE(data->>'isbn', ''),
+        NULLIF(data->>'issued', '')::date,
+        NULLIF(data->>'due', '')::date,
+        COALESCE(data->>'status', 'Issued'),
+        created_at, updated_at
+      FROM records WHERE collection = 'bookIssues'
+      ON CONFLICT (id) DO NOTHING
+    `)
+
+    await client.query(`
+      INSERT INTO alumni (id, name, program, completion_date, grade, cert, created_at, updated_at)
+      SELECT id,
+        COALESCE(data->>'name', ''),
+        COALESCE(data->>'program', ''),
+        NULLIF(data->>'date', '')::date,
+        COALESCE(data->>'grade', ''),
+        COALESCE((data->>'cert')::boolean, false),
+        created_at, updated_at
+      FROM records WHERE collection = 'alumni'
+      ON CONFLICT (id) DO NOTHING
+    `)
+
+    await client.query(`
+      INSERT INTO categories (id, name, description, created_at, updated_at)
+      SELECT id,
+        COALESCE(data->>'name', ''),
+        COALESCE(data->>'description', ''),
+        created_at, updated_at
+      FROM records WHERE collection = 'categories'
+      ON CONFLICT (id) DO NOTHING
+    `)
+
+    await client.query(`
+      INSERT INTO products (id, name, description, category, price, cost, stock, sku, created_at, updated_at)
+      SELECT id,
+        COALESCE(data->>'name', ''),
+        COALESCE(data->>'description', ''),
+        COALESCE(data->>'category', ''),
+        COALESCE((data->>'price')::numeric, 0),
+        COALESCE((data->>'cost')::numeric, 0),
+        COALESCE((data->>'stock')::int, 0),
+        COALESCE(data->>'sku', ''),
+        created_at, updated_at
+      FROM records WHERE collection = 'products'
+      ON CONFLICT (id) DO NOTHING
+    `)
+
+    await client.query(`
+      INSERT INTO orders (id, customer, payment_method, total, order_date, created_at, updated_at)
+      SELECT id,
+        COALESCE(data->>'customer', 'Walk-in'),
+        COALESCE(data->>'paymentMethod', 'Cash'),
+        COALESCE((data->>'total')::numeric, 0),
+        COALESCE(NULLIF(data->>'date', '')::timestamptz, created_at),
+        created_at, updated_at
+      FROM records WHERE collection = 'orders'
+      ON CONFLICT (id) DO NOTHING
+    `)
+
+    await client.query(`
+      INSERT INTO order_items (order_id, product_id, product_name, qty, price)
+      SELECT r.id,
+        COALESCE(item->>'id', ''),
+        COALESCE(item->>'name', ''),
+        COALESCE((item->>'qty')::int, 1),
+        COALESCE((item->>'price')::numeric, 0)
+      FROM records r,
+        jsonb_array_elements(COALESCE(r.data->'items', '[]'::jsonb)) AS item
+      WHERE r.collection = 'orders'
+    `)
+
+    await client.query('DROP TABLE records CASCADE')
     await client.query('COMMIT')
+    console.log('Legacy records table migrated and removed.')
   } catch (e) {
     await client.query('ROLLBACK')
     throw e
@@ -212,11 +420,241 @@ async function migrateJsonFiles() {
   }
 }
 
+export async function checkConnection() {
+  const { rows } = await pool.query('SELECT NOW() AS now')
+  return rows[0]
+}
+
+async function nextStudentId() {
+  const { rows } = await pool.query(`
+    SELECT COALESCE(MAX(CAST(SUBSTRING(id FROM 5) AS INTEGER)), 0) + 1 AS next
+    FROM students
+    WHERE id ~ '^STU-[0-9]+$'
+  `)
+  return `STU-${String(rows[0].next).padStart(4, '0')}`
+}
+
+async function fetchOrderItems(orderId) {
+  const { rows } = await pool.query(
+    `SELECT product_id, product_name, qty, price FROM order_items WHERE order_id = $1 ORDER BY id`,
+    [orderId]
+  )
+  return rows.map((r) => ({
+    id: r.product_id,
+    name: r.product_name,
+    qty: r.qty,
+    price: Number(r.price),
+  }))
+}
+
+function orderToApi(row, items) {
+  return {
+    id: row.id,
+    customer: row.customer,
+    paymentMethod: row.payment_method,
+    total: Number(row.total),
+    date: row.order_date instanceof Date ? row.order_date.toISOString() : String(row.order_date),
+    items,
+  }
+}
+
+async function listOrders() {
+  const { rows } = await pool.query('SELECT * FROM orders ORDER BY created_at ASC')
+  const result = []
+  for (const row of rows) {
+    result.push(orderToApi(row, await fetchOrderItems(row.id)))
+  }
+  return result
+}
+
+async function getOrder(id) {
+  const { rows } = await pool.query('SELECT * FROM orders WHERE id = $1', [id])
+  if (!rows[0]) return null
+  return orderToApi(rows[0], await fetchOrderItems(id))
+}
+
+async function addOrder(obj) {
+  const id = obj.id || makeId()
+  const items = obj.items || []
+  const total = obj.total ?? items.reduce((s, i) => s + (Number(i.price) || 0) * (Number(i.qty) || 0), 0)
+  const orderDate = obj.date || new Date().toISOString()
+
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+    await client.query(
+      `INSERT INTO orders (id, customer, payment_method, total, order_date)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (id) DO UPDATE SET
+         customer = EXCLUDED.customer,
+         payment_method = EXCLUDED.payment_method,
+         total = EXCLUDED.total,
+         order_date = EXCLUDED.order_date,
+         updated_at = NOW()`,
+      [id, obj.customer ?? 'Walk-in', obj.paymentMethod ?? 'Cash', total, orderDate]
+    )
+    await client.query('DELETE FROM order_items WHERE order_id = $1', [id])
+    for (const item of items) {
+      await client.query(
+        `INSERT INTO order_items (order_id, product_id, product_name, qty, price)
+         VALUES ($1, $2, $3, $4, $5)`,
+        [id, item.id ?? '', item.name ?? '', Number(item.qty) || 1, Number(item.price) || 0]
+      )
+    }
+    await client.query('COMMIT')
+  } catch (e) {
+    await client.query('ROLLBACK')
+    throw e
+  } finally {
+    client.release()
+  }
+
+  return getOrder(id)
+}
+
+async function list(name) {
+  if (name === 'orders') return listOrders()
+
+  const cfg = TABLE_CONFIG[name]
+  if (!cfg) throw new Error(`Unknown collection: ${name}`)
+
+  const { rows } = await pool.query(
+    `SELECT * FROM ${cfg.table} ORDER BY created_at ASC`
+  )
+  return rows.map(cfg.toApi)
+}
+
+async function get(name, itemId) {
+  if (name === 'orders') return getOrder(itemId)
+
+  const cfg = TABLE_CONFIG[name]
+  const { rows } = await pool.query(
+    `SELECT * FROM ${cfg.table} WHERE id = $1`,
+    [itemId]
+  )
+  return rows[0] ? cfg.toApi(rows[0]) : null
+}
+
+async function add(name, obj, { upsert = true } = {}) {
+  if (name === 'orders') return addOrder(obj)
+
+  const cfg = TABLE_CONFIG[name]
+  let record = { ...obj }
+  if (name === 'students' && !record.id) {
+    record.id = await nextStudentId()
+  }
+  if (!record.id) record.id = makeId()
+
+  const db = cfg.toDb(record)
+  db.id = record.id
+
+  if (!upsert) {
+    const exists = await get(name, db.id)
+    if (exists) {
+      const err = new Error(`Student ID "${db.id}" already exists`)
+      err.code = '23505'
+      throw err
+    }
+    try {
+      const cols = cfg.insertCols
+      const placeholders = cols.map((_, i) => `$${i + 1}`).join(', ')
+      await pool.query(
+        `INSERT INTO ${cfg.table} (${cols.join(', ')}) VALUES (${placeholders})`,
+        cols.map((c) => db[c])
+      )
+    } catch (e) {
+      if (e.code === '23505') {
+        throw Object.assign(new Error(`ID "${db.id}" already exists`), { code: '23505' })
+      }
+      throw e
+    }
+    return get(name, db.id)
+  }
+
+  const cols = cfg.insertCols
+  const updateSet = cfg.updateCols.map((c) => `${c} = EXCLUDED.${c}`).join(', ')
+  await pool.query(
+    `INSERT INTO ${cfg.table} (${cols.join(', ')})
+     VALUES (${cols.map((_, i) => `$${i + 1}`).join(', ')})
+     ON CONFLICT (id) DO UPDATE SET ${updateSet}, updated_at = NOW()`,
+    cols.map((c) => db[c])
+  )
+  return get(name, db.id)
+}
+
+async function update(name, itemId, obj) {
+  if (name === 'orders') {
+    const existing = await getOrder(itemId)
+    if (!existing) return null
+    return addOrder({ ...existing, ...obj, id: itemId })
+  }
+
+  const cfg = TABLE_CONFIG[name]
+  const existing = await get(name, itemId)
+  if (!existing) return null
+
+  const merged = { ...existing, ...obj, id: itemId }
+  const db = cfg.toDb(merged)
+  const setClause = cfg.updateCols.map((c, i) => `${c} = $${i + 2}`).join(', ')
+  const { rowCount } = await pool.query(
+    `UPDATE ${cfg.table} SET ${setClause}, updated_at = NOW() WHERE id = $1`,
+    [itemId, ...cfg.updateCols.map((c) => db[c])]
+  )
+  return rowCount ? get(name, itemId) : null
+}
+
+async function remove_(name, itemId) {
+  if (name === 'orders') {
+    await pool.query('DELETE FROM orders WHERE id = $1', [itemId])
+    return { ok: true }
+  }
+  const cfg = TABLE_CONFIG[name]
+  await pool.query(`DELETE FROM ${cfg.table} WHERE id = $1`, [itemId])
+  return { ok: true }
+}
+
+async function isEmpty() {
+  const { rows } = await pool.query(`
+    SELECT
+      (SELECT COUNT(*)::int FROM students) +
+      (SELECT COUNT(*)::int FROM categories) +
+      (SELECT COUNT(*)::int FROM products) AS count
+  `)
+  return rows[0].count === 0
+}
+
+async function migrateJsonFiles() {
+  for (const name of collections) {
+    if (name === 'orders') continue
+    const file = path.join(dataRoot, `${name}.json`)
+    try {
+      const txt = await fs.readFile(file, 'utf8')
+      const items = JSON.parse(txt)
+      if (!Array.isArray(items)) continue
+      for (const item of items) {
+        if (!item?.id) continue
+        try {
+          await add(name, item, { upsert: false })
+        } catch (e) {
+          if (e.code !== '23505') throw e
+        }
+      }
+    } catch (e) {
+      if (e.code !== 'ENOENT') throw e
+    }
+  }
+}
+
 async function seedIfEmpty() {
   await initSchema()
+  await migrateFromLegacyRecords()
 
   if (await isEmpty()) {
-    await migrateJsonFiles()
+    try {
+      await migrateJsonFiles()
+    } catch {
+      // fall through to default seed
+    }
   }
 
   if (!(await isEmpty())) return
