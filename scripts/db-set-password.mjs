@@ -88,4 +88,13 @@ console.log(`  Password: (value of POSTGRES_PASSWORD in .env)`)
 console.log('')
 console.log('Restart API so it uses the new password:')
 console.log('  docker compose up -d api   (Docker)')
-console.log('  npm run server             (local dev)')
+console.log('  npm run server             (local dev — stop and start again)')
+
+try {
+  execSync('docker compose up -d --force-recreate api', { cwd: root, stdio: 'inherit' })
+  console.log('')
+  console.log('Docker API restarted with new password.')
+} catch {
+  console.log('')
+  console.log('Could not restart Docker API automatically. Run: docker compose up -d api')
+}

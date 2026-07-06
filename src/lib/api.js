@@ -4,17 +4,26 @@ export async function api(method, url, body) {
     headers: { 'Content-Type': 'application/json' },
     body: body ? JSON.stringify(body) : undefined,
   })
-  if (!res.ok) {
-    let detail = ''
+
+  const text = await res.text()
+  let data = null
+  if (text) {
     try {
-      const err = await res.json()
-      detail = err.error || err.message || ''
+      data = JSON.parse(text)
     } catch {
-      detail = await res.text()
+      data = null
     }
-    throw new Error(detail || `API ${method} ${url} failed: ${res.status}`)
   }
-  return res.json()
+
+  if (!res.ok) {
+    const detail =
+      (data && (data.error || data.message)) ||
+      text ||
+      `API ${method} ${url} failed: ${res.status}`
+    throw new Error(detail)
+  }
+
+  return data
 }
 
 export const get = (url) => api('GET', url)
