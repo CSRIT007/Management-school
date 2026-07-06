@@ -1,0 +1,20 @@
+{
+  "folders": {},
+  "connections": {
+    "management-school-pg": {
+      "provider": "postgresql",
+      "driver": "postgres-jdbc",
+      "name": "Management School (localhost:5433)",
+      "configuration": {
+        "host": "localhost",
+        "port": "5433",
+        "database": "management_school",
+        "url": "jdbc:postgresql://localhost:5433/management_school",
+        "configurationType": "MANUAL",
+        "type": "dev",
+        "user": "postgres",
+        "password": "postgres"
+      }
+    }
+  }
+}

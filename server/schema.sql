@@ -49,9 +49,11 @@ CREATE TABLE IF NOT EXISTS payments (
   id TEXT PRIMARY KEY,
   student_name TEXT NOT NULL DEFAULT '',
   payment_date DATE,
+  purpose TEXT NOT NULL DEFAULT '',
   amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
   method TEXT DEFAULT 'Cash',
   status TEXT DEFAULT 'Paid',
+  note TEXT NOT NULL DEFAULT '',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

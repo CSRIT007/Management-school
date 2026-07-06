@@ -101,20 +101,24 @@ const TABLE_CONFIG = {
       id: r.id,
       studentName: r.student_name,
       date: fmtDate(r.payment_date),
+      purpose: r.purpose ?? '',
       amount: Number(r.amount),
       method: r.method,
       status: r.status,
+      note: r.note ?? '',
     }),
     toDb: (o) => ({
       id: o.id,
       student_name: o.studentName ?? '',
       payment_date: o.date || null,
+      purpose: o.purpose ?? '',
       amount: Number(o.amount) || 0,
       method: o.method ?? 'Cash',
       status: o.status ?? 'Paid',
+      note: o.note ?? '',
     }),
-    insertCols: ['id', 'student_name', 'payment_date', 'amount', 'method', 'status'],
-    updateCols: ['student_name', 'payment_date', 'amount', 'method', 'status'],
+    insertCols: ['id', 'student_name', 'payment_date', 'purpose', 'amount', 'method', 'status', 'note'],
+    updateCols: ['student_name', 'payment_date', 'purpose', 'amount', 'method', 'status', 'note'],
   },
   bookIssues: {
     table: 'book_issues',
@@ -251,6 +255,19 @@ function splitSqlStatements(sql) {
 async function initSchema() {
   const schemaPath = path.join(__dirname, 'schema.sql')
   const sql = await fs.readFile(schemaPath, 'utf8')
+  for (const statement of splitSqlStatements(sql)) {
+    await pool.query(statement)
+  }
+}
+
+async function migratePaymentColumns() {
+  await pool.query(`ALTER TABLE payments ADD COLUMN IF NOT EXISTS purpose TEXT NOT NULL DEFAULT ''`)
+  await pool.query(`ALTER TABLE payments ADD COLUMN IF NOT EXISTS note TEXT NOT NULL DEFAULT ''`)
+}
+
+async function initDbeaverViews() {
+  const viewsPath = path.join(__dirname, 'dbeaver-views.sql')
+  const sql = await fs.readFile(viewsPath, 'utf8')
   for (const statement of splitSqlStatements(sql)) {
     await pool.query(statement)
   }
@@ -648,6 +665,8 @@ async function migrateJsonFiles() {
 async function seedIfEmpty() {
   await initSchema()
   await migrateFromLegacyRecords()
+  await migratePaymentColumns()
+  await initDbeaverViews()
 
   if (await isEmpty()) {
     try {

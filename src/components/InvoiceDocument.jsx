@@ -66,6 +66,8 @@ export default function InvoiceDocument({ invoice, compact = false, showActions 
   if (!invoice) return null
 
   const amount = Number(invoice.amount) || 0
+  const purpose = invoice.purpose || 'School fee payment'
+  const userNote = invoice.note?.trim()
 
   return (
     <div
@@ -130,8 +132,8 @@ export default function InvoiceDocument({ invoice, compact = false, showActions 
             <tbody>
               <tr className="border-b border-slate-100">
                 <td className="px-4 py-4">
-                  <p className="font-medium text-slate-900">School tuition / fee payment</p>
-                  <p className="mt-0.5 text-xs text-slate-500">Academic services</p>
+                  <p className="font-medium text-slate-900">{purpose}</p>
+                  <p className="mt-0.5 text-xs text-slate-500">Student payment</p>
                 </td>
                 <td className="px-4 py-4 text-right text-slate-600">1</td>
                 <td className="px-4 py-4 text-right text-slate-600">{formatMoney(amount)}</td>
@@ -161,8 +163,13 @@ export default function InvoiceDocument({ invoice, compact = false, showActions 
 
         {/* Footer note */}
         <div className="rounded-xl bg-slate-50 px-4 py-3 text-xs text-slate-500">
-          Thank you for your payment. Please retain this invoice for your records.
-          For questions, contact the school administration office.
+          {userNote ? (
+            <p><span className="font-medium text-slate-600">Note:</span> {userNote}</p>
+          ) : null}
+          <p className={userNote ? 'mt-2' : ''}>
+            Thank you for your payment. Please retain this invoice for your records.
+            For questions, contact the school administration office.
+          </p>
         </div>
 
         {showActions && (
@@ -192,6 +199,8 @@ export function printInvoice(invoice) {
   if (!win) return
 
   const amount = Number(invoice.amount) || 0
+  const purpose = invoice.purpose || 'School fee payment'
+  const userNote = invoice.note?.trim()
   const fmt = (n) => `$${n.toFixed(2)}`
   const date = formatDate(invoice.date)
 
@@ -275,8 +284,8 @@ export function printInvoice(invoice) {
       <tbody>
         <tr>
           <td>
-            <strong>School tuition / fee payment</strong><br>
-            <span style="font-size: 12px; color: #64748b;">Academic services</span>
+            <strong>${purpose}</strong><br>
+            <span style="font-size: 12px; color: #64748b;">Student payment</span>
           </td>
           <td class="right">1</td>
           <td class="right">${fmt(amount)}</td>
@@ -290,8 +299,11 @@ export function printInvoice(invoice) {
       <div class="total-row"><span>Total Due</span><span>${fmt(amount)}</span></div>
     </div>
     <div class="note">
-      Thank you for your payment. Please retain this invoice for your records.
-      For questions, contact the school administration office.
+      ${userNote ? `<p><strong>Note:</strong> ${userNote.replace(/</g, '&lt;')}</p>` : ''}
+      <p${userNote ? ' style="margin-top: 8px;"' : ''}>
+        Thank you for your payment. Please retain this invoice for your records.
+        For questions, contact the school administration office.
+      </p>
     </div>
   </div>
   </div>

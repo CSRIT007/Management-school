@@ -6,8 +6,10 @@ import DataTable from '../../components/ui/DataTable.jsx'
 import Badge from '../../components/ui/Badge.jsx'
 import FormAlert from '../../components/ui/FormAlert.jsx'
 import InvoiceDocument, { printInvoice } from '../../components/InvoiceDocument.jsx'
+import PaymentPurposeField from './components/PaymentPurposeField.jsx'
+import PaymentNoteField from './components/PaymentNoteField.jsx'
 
-const emptyForm = { id: '', studentName: '', date: '', amount: '', method: 'Cash', status: 'Paid' }
+const emptyForm = { id: '', studentName: '', date: '', purpose: '', amount: '', method: 'Cash', status: 'Paid', note: '' }
 
 function nextInvoiceId(payments) {
   const nums = payments
@@ -69,9 +71,11 @@ export default function StudentPayment() {
       id: row.id,
       studentName: row.studentName || '',
       date: row.date || '',
+      purpose: row.purpose || '',
       amount: String(row.amount ?? ''),
       method: row.method || 'Cash',
       status: row.status || 'Paid',
+      note: row.note || '',
     })
     setMessage('')
     setError(false)
@@ -86,9 +90,11 @@ export default function StudentPayment() {
       const payload = {
         studentName: form.studentName,
         date: form.date || new Date().toISOString().slice(0, 10),
+        purpose: form.purpose,
         amount: Number(form.amount) || 0,
         method: form.method,
         status: form.status,
+        note: form.note.trim(),
       }
       let saved
       if (editingId) {
@@ -131,6 +137,7 @@ export default function StudentPayment() {
     { key: 'id', label: 'Invoice #', className: 'font-semibold text-slate-900 dark:text-slate-100' },
     { key: 'studentName', label: 'Student Name' },
     { key: 'date', label: 'Date' },
+    { key: 'purpose', label: 'Purpose' },
     { key: 'amount', label: 'Amount', render: (r) => `$${Number(r.amount || 0).toFixed(2)}` },
     { key: 'method', label: 'Method' },
     { key: 'status', label: 'Status', render: (r) => <Badge status={r.status} /> },
@@ -163,7 +170,7 @@ export default function StudentPayment() {
         <h3 className="mb-4 text-base font-bold text-slate-900 dark:text-slate-100">
           {editingId ? `Edit Payment — ${editingId}` : 'Record Payment'}
         </h3>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
           <div>
             <label className="label">Invoice #</label>
             <input
@@ -186,6 +193,10 @@ export default function StudentPayment() {
             <label className="label">Date</label>
             <input type="date" className="input" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} required />
           </div>
+          <PaymentPurposeField
+            value={form.purpose}
+            onChange={(purpose) => setForm((f) => ({ ...f, purpose }))}
+          />
           <div>
             <label className="label">Amount ($)</label>
             <input type="number" step="0.01" min="0" className="input" placeholder="0.00" value={form.amount} onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))} required />
@@ -206,6 +217,10 @@ export default function StudentPayment() {
               <option>Failed</option>
             </select>
           </div>
+          <PaymentNoteField
+            value={form.note}
+            onChange={(note) => setForm((f) => ({ ...f, note }))}
+          />
         </div>
         <div className="mt-6 flex flex-wrap justify-end gap-3 border-t border-slate-100 dark:border-slate-800 pt-6">
           <Button type="button" variant="secondary" onClick={reset}>Cancel</Button>
@@ -214,7 +229,7 @@ export default function StudentPayment() {
           </Button>
           <Button
             type="button"
-            disabled={saving || !form.studentName || !form.amount}
+            disabled={saving || !form.studentName || !form.amount || !form.purpose}
             onClick={() => savePayment(true)}
           >
             {saving ? 'Printing…' : 'Print'}
