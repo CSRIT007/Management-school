@@ -13,7 +13,7 @@
         "configurationType": "MANUAL",
         "type": "dev",
         "user": "postgres",
-        "password": "postgres"
+        "save-password": false
       }
     }
   }

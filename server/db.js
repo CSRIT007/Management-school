@@ -13,9 +13,7 @@ const __dirname = path.dirname(__filename)
 const dataRoot = path.join(__dirname, 'data')
 
 export const pool = new Pool({
-  connectionString:
-    process.env.DATABASE_URL ||
-    'postgresql://postgres:postgres@localhost:5433/management_school',
+  connectionString: process.env.DATABASE_URL,
 })
 
 const collections = [

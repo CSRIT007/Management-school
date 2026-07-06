@@ -14,7 +14,8 @@
     "docker:build": "npm run docker:pull && docker compose build",
     "docker:up": "docker compose up -d && node scripts/print-urls.mjs",
     "docker:restart": "npm run docker:build && npm run docker:up",
-    "urls": "node scripts/print-urls.mjs"
+    "urls": "node scripts/print-urls.mjs",
+    "db:password": "node scripts/db-set-password.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.13",
