@@ -5,6 +5,9 @@ DROP VIEW IF EXISTS records;
 COMMENT ON TABLE students IS 'Student — registrations';
 COMMENT ON TABLE classes IS 'Class — courses and schedules';
 COMMENT ON TABLE deadlines IS 'Deadline — student assignments';
+COMMENT ON COLUMN deadlines.id IS 'Deadline ID (e.g. DLN-0001)';
+COMMENT ON COLUMN deadlines.student_id IS 'Student ID (e.g. STU-0001) — same as web page';
+COMMENT ON COLUMN deadlines.student_name IS 'Student full name';
 COMMENT ON TABLE payments IS 'Payment — invoices and fees';
 COMMENT ON TABLE book_issues IS 'Book — library issues';
 COMMENT ON TABLE alumni IS 'Alumni — graduated students';
@@ -27,3 +30,16 @@ UNION ALL SELECT 'products', 'Product', COUNT(*) FROM products
 UNION ALL SELECT 'orders', 'Order', COUNT(*) FROM orders
 UNION ALL SELECT 'order_items', 'Order item', COUNT(*) FROM order_items
 ORDER BY label;
+
+-- DBeaver: deadlines with Student ID first (matches web page table)
+CREATE OR REPLACE VIEW deadlines_list AS
+SELECT
+  student_id,
+  student_name,
+  task,
+  due_date,
+  status,
+  id,
+  created_at,
+  updated_at
+FROM deadlines;

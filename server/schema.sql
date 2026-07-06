@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS classes (
 -- Student deadlines / assignments
 CREATE TABLE IF NOT EXISTS deadlines (
   id TEXT PRIMARY KEY,
+  student_id TEXT NOT NULL DEFAULT '',
   student_name TEXT NOT NULL DEFAULT '',
   task TEXT NOT NULL DEFAULT '',
   due_date DATE,

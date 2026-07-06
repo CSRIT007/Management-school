@@ -6,7 +6,7 @@ import DataTable from '../../components/ui/DataTable.jsx'
 import Badge from '../../components/ui/Badge.jsx'
 import FormAlert from '../../components/ui/FormAlert.jsx'
 
-const emptyForm = { name: '', task: '', due: '', status: 'Pending' }
+const emptyForm = { studentId: '', name: '', task: '', due: '', status: 'Pending' }
 
 export default function StudentDateline() {
   const [rows, setRows] = useState([])
@@ -41,9 +41,20 @@ export default function StudentDateline() {
     setError(false)
   }
 
+  const pickStudent = (studentId) => {
+    const student = students.find((s) => s.id === studentId)
+    setForm((f) => ({
+      ...f,
+      studentId,
+      name: student?.name || '',
+    }))
+  }
+
   const startEdit = (row) => {
     setEditingId(row.id)
+    const studentId = row.studentId || students.find((s) => s.name === row.name)?.id || ''
     setForm({
+      studentId,
       name: row.name || '',
       task: row.task || '',
       due: row.due || '',
@@ -60,7 +71,14 @@ export default function StudentDateline() {
     setMessage('')
     setError(false)
     try {
-      const payload = { ...form }
+      const student = students.find((s) => s.id === form.studentId)
+      const payload = {
+        studentId: form.studentId,
+        name: student?.name || form.name,
+        task: form.task,
+        due: form.due,
+        status: form.status,
+      }
       if (editingId) {
         await put(`/api/deadlines/${editingId}`, payload)
         showMsg('Deadline updated successfully.')
@@ -90,7 +108,13 @@ export default function StudentDateline() {
   }
 
   const columns = [
-    { key: 'name', label: 'Student Name', className: 'font-semibold text-slate-900 dark:text-slate-100' },
+    {
+      key: 'studentId',
+      label: 'Student ID',
+      className: 'font-mono font-semibold text-slate-900 dark:text-slate-100',
+      render: (r) => r.studentId || '—',
+    },
+    { key: 'name', label: 'Student Name' },
     { key: 'task', label: 'Task / Deadline' },
     { key: 'due', label: 'Due Date' },
     { key: 'status', label: 'Status', render: (r) => <Badge status={r.status} /> },
@@ -123,9 +147,16 @@ export default function StudentDateline() {
         <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
           <div>
             <label className="label">Student</label>
-            <select className="input" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required>
+            <select
+              className="input"
+              value={form.studentId}
+              onChange={(e) => pickStudent(e.target.value)}
+              required
+            >
               <option value="">Select student</option>
-              {students.map((s) => <option key={s.id} value={s.name}>{s.name}</option>)}
+              {students.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
             </select>
           </div>
           <div>

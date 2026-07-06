@@ -78,6 +78,7 @@ const TABLE_CONFIG = {
     table: 'deadlines',
     toApi: (r) => ({
       id: r.id,
+      studentId: r.student_id ?? '',
       name: r.student_name,
       task: r.task,
       due: fmtDate(r.due_date),
@@ -85,13 +86,14 @@ const TABLE_CONFIG = {
     }),
     toDb: (o) => ({
       id: o.id,
+      student_id: o.studentId ?? '',
       student_name: o.name ?? '',
       task: o.task ?? '',
       due_date: o.due || null,
       status: o.status ?? 'Pending',
     }),
-    insertCols: ['id', 'student_name', 'task', 'due_date', 'status'],
-    updateCols: ['student_name', 'task', 'due_date', 'status'],
+    insertCols: ['id', 'student_id', 'student_name', 'task', 'due_date', 'status'],
+    updateCols: ['student_id', 'student_name', 'task', 'due_date', 'status'],
   },
   payments: {
     table: 'payments',
@@ -263,6 +265,81 @@ async function migratePaymentColumns() {
   await pool.query(`ALTER TABLE payments ADD COLUMN IF NOT EXISTS note TEXT NOT NULL DEFAULT ''`)
 }
 
+async function migrateDeadlineColumns() {
+  await pool.query(`ALTER TABLE deadlines ADD COLUMN IF NOT EXISTS student_id TEXT NOT NULL DEFAULT ''`)
+  await pool.query(`
+    UPDATE deadlines d
+    SET student_id = s.id
+    FROM students s
+    WHERE d.student_id = '' AND d.student_name = s.name
+  `)
+}
+
+async function migrateDeadlineIds() {
+  const { rows } = await pool.query(`
+    SELECT id FROM deadlines WHERE id !~ '^DLN-[0-9]+$' ORDER BY created_at ASC
+  `)
+  if (rows.length === 0) return
+
+  const { rows: maxRows } = await pool.query(`
+    SELECT COALESCE(MAX(CAST(SUBSTRING(id FROM 5) AS INTEGER)), 0) AS max
+    FROM deadlines WHERE id ~ '^DLN-[0-9]+$'
+  `)
+  let next = Number(maxRows[0].max)
+
+  for (const row of rows) {
+    next += 1
+    const newId = `DLN-${String(next).padStart(4, '0')}`
+    await pool.query('UPDATE deadlines SET id = $1 WHERE id = $2', [newId, row.id])
+  }
+}
+
+async function migrateDeadlineTableLayout() {
+  const { rows } = await pool.query(`
+    SELECT column_name, ordinal_position
+    FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'deadlines'
+    ORDER BY ordinal_position
+  `)
+  if (rows[1]?.column_name === 'student_id') return
+
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+    await client.query(`
+      CREATE TABLE deadlines_ordered (
+        id TEXT PRIMARY KEY,
+        student_id TEXT NOT NULL DEFAULT '',
+        student_name TEXT NOT NULL DEFAULT '',
+        task TEXT NOT NULL DEFAULT '',
+        due_date DATE,
+        status TEXT DEFAULT 'Pending',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      )
+    `)
+    await client.query(`
+      INSERT INTO deadlines_ordered (id, student_id, student_name, task, due_date, status, created_at, updated_at)
+      SELECT id, student_id, student_name, task, due_date, status, created_at, updated_at FROM deadlines
+    `)
+    await client.query('DROP TABLE deadlines CASCADE')
+    await client.query('ALTER TABLE deadlines_ordered RENAME TO deadlines')
+    await client.query('CREATE INDEX IF NOT EXISTS idx_deadlines_status ON deadlines(status)')
+    await client.query('CREATE INDEX IF NOT EXISTS idx_deadlines_due ON deadlines(due_date)')
+    await client.query('DROP TRIGGER IF EXISTS trg_deadlines_updated_at ON deadlines')
+    await client.query(`
+      CREATE TRIGGER trg_deadlines_updated_at
+      BEFORE UPDATE ON deadlines FOR EACH ROW EXECUTE FUNCTION set_updated_at()
+    `)
+    await client.query('COMMIT')
+  } catch (e) {
+    await client.query('ROLLBACK')
+    throw e
+  } finally {
+    client.release()
+  }
+}
+
 async function initDbeaverViews() {
   const viewsPath = path.join(__dirname, 'dbeaver-views.sql')
   const sql = await fs.readFile(viewsPath, 'utf8')
@@ -324,8 +401,9 @@ async function migrateFromLegacyRecords() {
     `)
 
     await client.query(`
-      INSERT INTO deadlines (id, student_name, task, due_date, status, created_at, updated_at)
+      INSERT INTO deadlines (id, student_id, student_name, task, due_date, status, created_at, updated_at)
       SELECT id,
+        COALESCE(data->>'studentId', ''),
         COALESCE(data->>'name', ''),
         COALESCE(data->>'task', ''),
         NULLIF(data->>'due', '')::date,
@@ -458,6 +536,15 @@ async function nextClassId() {
   return `CLS-${String(rows[0].next).padStart(4, '0')}`
 }
 
+async function nextDeadlineId() {
+  const { rows } = await pool.query(`
+    SELECT COALESCE(MAX(CAST(SUBSTRING(id FROM 5) AS INTEGER)), 0) + 1 AS next
+    FROM deadlines
+    WHERE id ~ '^DLN-[0-9]+$'
+  `)
+  return `DLN-${String(rows[0].next).padStart(4, '0')}`
+}
+
 async function fetchOrderItems(orderId) {
   const { rows } = await pool.query(
     `SELECT product_id, product_name, qty, price FROM order_items WHERE order_id = $1 ORDER BY id`,
@@ -570,6 +657,9 @@ async function add(name, obj, { upsert = true } = {}) {
   if (name === 'classes' && !record.id) {
     record.id = await nextClassId()
   }
+  if (name === 'deadlines' && !record.id) {
+    record.id = await nextDeadlineId()
+  }
   if (!record.id) record.id = makeId()
 
   const db = cfg.toDb(record)
@@ -676,6 +766,9 @@ async function seedIfEmpty() {
   await initSchema()
   await migrateFromLegacyRecords()
   await migratePaymentColumns()
+  await migrateDeadlineColumns()
+  await migrateDeadlineIds()
+  await migrateDeadlineTableLayout()
   await initDbeaverViews()
 
   if (await isEmpty()) {

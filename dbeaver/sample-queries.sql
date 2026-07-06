@@ -12,8 +12,10 @@ SELECT id, student_name, payment_date, amount, method, status FROM payments ORDE
 -- Class
 SELECT id, name, instructor, schedule, capacity FROM classes ORDER BY name;
 
--- Deadline
-SELECT id, student_name, task, due_date, status FROM deadlines ORDER BY due_date;
+-- Deadline (Student ID + Deadline ID — matches web page)
+SELECT student_id, student_name, task, due_date, status, id
+FROM deadlines
+ORDER BY due_date;
 
 -- Book
 SELECT id, student_name, title, isbn, issued_date, due_date, status FROM book_issues ORDER BY issued_date DESC;
