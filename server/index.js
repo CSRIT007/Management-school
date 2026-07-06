@@ -93,6 +93,15 @@ app.get('/api/students/next-id', async (req, res) => {
   }
 })
 
+app.get('/api/classes/next-id', async (req, res) => {
+  try {
+    const id = await db.nextClassId()
+    res.json({ id })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
 app.get('/api/:col', async (req, res) => {
   const { col } = req.params
   if (!valid.has(col)) return res.status(404).json({ error: 'Unknown collection' })

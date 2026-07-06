@@ -25,18 +25,32 @@ export default function ClassManagement() {
     }
   }
 
+  const loadNextId = async () => {
+    try {
+      const { id } = await get('/api/classes/next-id')
+      setForm((f) => ({ ...f, id }))
+    } catch {
+      // server auto-generates on save
+    }
+  }
+
   useEffect(() => { load() }, [])
+
+  useEffect(() => {
+    if (!editingId) loadNextId()
+  }, [editingId])
 
   const showMsg = (text, isError = false) => {
     setMessage(text)
     setError(isError)
   }
 
-  const reset = () => {
+  const reset = async () => {
     setForm(emptyForm)
     setEditingId(null)
     setMessage('')
     setError(false)
+    await loadNextId()
   }
 
   const startEdit = (row) => {
@@ -69,11 +83,10 @@ export default function ClassManagement() {
         await put(`/api/classes/${editingId}`, payload)
         showMsg('Class updated successfully.')
       } else {
-        if (form.id.trim()) payload.id = form.id.trim().toUpperCase()
         await post('/api/classes', payload)
         showMsg('Class created successfully.')
       }
-      reset()
+      await reset()
       await load()
     } catch (err) {
       showMsg(err.message, true)
@@ -136,12 +149,11 @@ export default function ClassManagement() {
           <div>
             <label className="label">Class ID</label>
             <input
-              className="input"
+              className="input font-mono"
               value={form.id}
-              onChange={(e) => setForm((f) => ({ ...f, id: e.target.value.toUpperCase() }))}
-              placeholder="Auto-generated if empty"
-              disabled={!!editingId}
-              readOnly={!!editingId}
+              placeholder="Auto-generated"
+              disabled
+              readOnly
             />
           </div>
           <div>

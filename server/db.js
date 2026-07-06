@@ -449,6 +449,15 @@ async function nextStudentId() {
   return `STU-${String(rows[0].next).padStart(4, '0')}`
 }
 
+async function nextClassId() {
+  const { rows } = await pool.query(`
+    SELECT COALESCE(MAX(CAST(SUBSTRING(id FROM 5) AS INTEGER)), 0) + 1 AS next
+    FROM classes
+    WHERE id ~ '^CLS-[0-9]+$'
+  `)
+  return `CLS-${String(rows[0].next).padStart(4, '0')}`
+}
+
 async function fetchOrderItems(orderId) {
   const { rows } = await pool.query(
     `SELECT product_id, product_name, qty, price FROM order_items WHERE order_id = $1 ORDER BY id`,
@@ -557,6 +566,9 @@ async function add(name, obj, { upsert = true } = {}) {
   let record = { ...obj }
   if (name === 'students' && !record.id) {
     record.id = await nextStudentId()
+  }
+  if (name === 'classes' && !record.id) {
+    record.id = await nextClassId()
   }
   if (!record.id) record.id = makeId()
 
@@ -700,4 +712,4 @@ async function seedIfEmpty() {
   await add('alumni', { id: makeId(), name: 'John Smith', program: 'Business Administration', date: '2025-05-20', grade: 'B', cert: false })
 }
 
-export const db = { list, get, add, update, remove: remove_, seedIfEmpty, checkConnection, nextStudentId }
+export const db = { list, get, add, update, remove: remove_, seedIfEmpty, checkConnection, nextStudentId, nextClassId }
