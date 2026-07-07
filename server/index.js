@@ -102,6 +102,38 @@ app.get('/api/classes/next-id', async (req, res) => {
   }
 })
 
+app.get('/api/classes/:id/roster', async (req, res) => {
+  try {
+    const cls = await db.get('classes', req.params.id)
+    if (!cls) return res.status(404).json({ error: 'Class not found' })
+    const students = await db.getClassRoster(req.params.id)
+    const { enrolled, max } = db.parseCapacity(cls.capacity)
+    res.json({ class: cls, students, enrolled, max, capacity: cls.capacity })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.post('/api/classes/:id/students', async (req, res) => {
+  try {
+    const { studentId } = req.body || {}
+    if (!studentId) return res.status(400).json({ error: 'studentId is required' })
+    const result = await db.addClassStudent(req.params.id, studentId)
+    res.status(201).json(result)
+  } catch (e) {
+    res.status(e.status || 500).json({ error: e.message })
+  }
+})
+
+app.delete('/api/classes/:id/students/:studentId', async (req, res) => {
+  try {
+    const result = await db.removeClassStudent(req.params.id, req.params.studentId)
+    res.json(result)
+  } catch (e) {
+    res.status(e.status || 500).json({ error: e.message })
+  }
+})
+
 app.get('/api/:col', async (req, res) => {
   const { col } = req.params
   if (!valid.has(col)) return res.status(404).json({ error: 'Unknown collection' })

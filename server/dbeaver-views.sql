@@ -6,6 +6,7 @@ DROP VIEW IF EXISTS deadlines_list;
 DROP VIEW IF EXISTS students_list;
 DROP VIEW IF EXISTS payments_list;
 DROP VIEW IF EXISTS classes_list;
+DROP VIEW IF EXISTS class_roster;
 DROP VIEW IF EXISTS table_row_counts;
 
 -- Table labels
@@ -71,6 +72,21 @@ SELECT
   updated_at
 FROM classes;
 
+CREATE OR REPLACE VIEW class_roster AS
+SELECT
+  c.id AS class_id,
+  c.name AS class_name,
+  s.id AS student_id,
+  s.name AS student_name,
+  s.email,
+  s.phone,
+  s.program,
+  cs.created_at AS enrolled_at
+FROM class_students cs
+JOIN classes c ON c.id = cs.class_id
+JOIN students s ON s.id = cs.student_id
+ORDER BY c.id, cs.created_at;
+
 -- Deadlines (matches Dateline page — Student ID first)
 CREATE VIEW deadlines_list AS
 SELECT
@@ -88,6 +104,7 @@ FROM deadlines;
 CREATE VIEW payments_list AS
 SELECT
   id AS "Invoice #",
+  student_id AS "Student ID",
   student_name AS "Student Name",
   payment_date AS "Date",
   purpose AS "Purpose",
@@ -95,6 +112,8 @@ SELECT
   method AS "Method",
   status AS "Status",
   note AS "Note",
+  invoiced_by AS "Invoiced By",
+  invoiced_at AS "Invoiced At",
   created_at,
   updated_at
 FROM payments;

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { get, post, put, del } from '../../lib/api.js'
+import { useAuth } from '../../context/AuthContext.jsx'
 import PageHeader from '../../components/ui/PageHeader.jsx'
 import Button from '../../components/ui/Button.jsx'
 import DataTable from '../../components/ui/DataTable.jsx'
@@ -9,7 +10,13 @@ import InvoiceDocument, { printInvoice } from '../../components/InvoiceDocument.
 import PaymentPurposeField from './components/PaymentPurposeField.jsx'
 import PaymentNoteField from './components/PaymentNoteField.jsx'
 
-const emptyForm = { id: '', studentName: '', date: '', purpose: '', amount: '', method: 'Cash', status: 'Paid', note: '' }
+const emptyForm = { id: '', studentId: '', studentName: '', date: '', purpose: '', amount: '', method: 'Cash', status: 'Paid', note: '' }
+const WALK_IN = '__walkin__'
+
+function withStudentId(payment, students) {
+  const studentId = payment.studentId || students.find((s) => s.name === payment.studentName)?.id || ''
+  return { ...payment, studentId }
+}
 
 function nextInvoiceId(payments) {
   const nums = payments
@@ -21,6 +28,7 @@ function nextInvoiceId(payments) {
 }
 
 export default function StudentPayment() {
+  const { user } = useAuth()
   const [payments, setPayments] = useState([])
   const [students, setStudents] = useState([])
   const [form, setForm] = useState(emptyForm)
@@ -33,8 +41,8 @@ export default function StudentPayment() {
   const load = async () => {
     try {
       const [p, s] = await Promise.all([get('/api/payments'), get('/api/students')])
-      setPayments(p)
       setStudents(s)
+      setPayments(p.map((payment) => withStudentId(payment, s)))
       if (!editingId) {
         setForm((f) => ({
           ...f,
@@ -65,11 +73,26 @@ export default function StudentPayment() {
     setError(false)
   }
 
+  const pickStudent = (studentId) => {
+    if (studentId === WALK_IN) {
+      setForm((f) => ({ ...f, studentId: '', studentName: 'Walk-in' }))
+      return
+    }
+    const student = students.find((s) => s.id === studentId)
+    setForm((f) => ({
+      ...f,
+      studentId,
+      studentName: student?.name || '',
+    }))
+  }
+
   const startEdit = (row) => {
+    const enriched = withStudentId(row, students)
     setEditingId(row.id)
     setForm({
       id: row.id,
-      studentName: row.studentName || '',
+      studentId: enriched.studentId,
+      studentName: enriched.studentName || '',
       date: row.date || '',
       purpose: row.purpose || '',
       amount: String(row.amount ?? ''),
@@ -88,6 +111,7 @@ export default function StudentPayment() {
     setError(false)
     try {
       const payload = {
+        studentId: form.studentId,
         studentName: form.studentName,
         date: form.date || new Date().toISOString().slice(0, 10),
         purpose: form.purpose,
@@ -95,6 +119,8 @@ export default function StudentPayment() {
         method: form.method,
         status: form.status,
         note: form.note.trim(),
+        invoicedBy: user?.name || 'Admin',
+        invoicedAt: new Date().toISOString(),
       }
       let saved
       if (editingId) {
@@ -107,7 +133,7 @@ export default function StudentPayment() {
       }
       reset()
       await load()
-      if (andPrint && saved) printInvoice(saved)
+      if (andPrint && saved) printInvoice(withStudentId(saved, students))
     } catch (err) {
       showMsg(err.message, true)
     } finally {
@@ -134,8 +160,23 @@ export default function StudentPayment() {
   }
 
   const columns = [
-    { key: 'id', label: 'Invoice #', className: 'font-semibold text-slate-900 dark:text-slate-100' },
-    { key: 'studentName', label: 'Student Name' },
+    {
+      key: 'invoiceNo',
+      label: 'Invoice #',
+      className: 'font-mono font-semibold text-slate-900 dark:text-slate-100',
+      render: (r) => r.id || '—',
+    },
+    {
+      key: 'studentId',
+      label: 'Student ID',
+      className: 'font-mono text-slate-700 dark:text-slate-300',
+      render: (r) => withStudentId(r, students).studentId || '—',
+    },
+    {
+      key: 'studentName',
+      label: 'Student Name',
+      render: (r) => r.studentName || '—',
+    },
     { key: 'date', label: 'Date' },
     { key: 'purpose', label: 'Purpose' },
     { key: 'amount', label: 'Amount', render: (r) => `$${Number(r.amount || 0).toFixed(2)}` },
@@ -147,7 +188,7 @@ export default function StudentPayment() {
       className: 'text-right',
       render: (row) => (
         <div className="flex justify-end gap-2">
-          <Button size="sm" variant="secondary" onClick={() => setViewInvoice(row)} title="View or print invoice">
+          <Button size="sm" variant="secondary" onClick={() => setViewInvoice(withStudentId(row, students))} title="View or print invoice">
             Print
           </Button>
           <Button size="sm" variant="secondary" onClick={() => startEdit(row)}>Edit</Button>
@@ -183,10 +224,17 @@ export default function StudentPayment() {
           </div>
           <div>
             <label className="label">Student</label>
-            <select className="input" value={form.studentName} onChange={(e) => setForm((f) => ({ ...f, studentName: e.target.value }))} required>
+            <select
+              className="input"
+              value={form.studentName === 'Walk-in' ? WALK_IN : form.studentId}
+              onChange={(e) => pickStudent(e.target.value)}
+              required
+            >
               <option value="">Select student</option>
-              {students.map((s) => <option key={s.id} value={s.name}>{s.name}</option>)}
-              <option value="Walk-in">Walk-in</option>
+              {students.map((s) => (
+                <option key={s.id} value={s.id}>{`${s.id}-${s.name}`}</option>
+              ))}
+              <option value={WALK_IN}>Walk-in</option>
             </select>
           </div>
           <div>
@@ -260,7 +308,7 @@ export default function StudentPayment() {
               invoice={viewInvoice}
               showActions
               onClose={() => setViewInvoice(null)}
-              onPrint={() => printInvoice(viewInvoice)}
+              onPrint={() => printInvoice(withStudentId(viewInvoice, students))}
             />
           </div>
         </div>

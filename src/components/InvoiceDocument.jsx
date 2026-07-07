@@ -1,5 +1,7 @@
 import Badge from './ui/Badge.jsx'
 import Button from './ui/Button.jsx'
+import { formatPaymentPurpose } from '../lib/paymentPurpose.js'
+import { getBillToParts, formatInvoiceDateTime } from '../lib/invoiceFormat.js'
 
 const INVOICE_CONTACT = {
   website: 'www.schoolmanagement.com',
@@ -66,7 +68,10 @@ export default function InvoiceDocument({ invoice, compact = false, showActions 
   if (!invoice) return null
 
   const amount = Number(invoice.amount) || 0
-  const purpose = invoice.purpose || 'School fee payment'
+  const purpose = formatPaymentPurpose(invoice.purpose)
+  const { name: billToName, studentId: billToStudentId } = getBillToParts(invoice)
+  const invoicedBy = invoice.invoicedBy?.trim() || 'Admin'
+  const invoicedAt = formatInvoiceDateTime(invoice.invoicedAt)
   const userNote = invoice.note?.trim()
 
   return (
@@ -103,8 +108,10 @@ export default function InvoiceDocument({ invoice, compact = false, showActions 
         <div className="grid gap-6 sm:grid-cols-2">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Bill To</p>
-            <p className="mt-2 text-base font-semibold text-slate-900">{invoice.studentName || '—'}</p>
-            <p className="mt-1 text-sm text-slate-500">Student account</p>
+            <p className="mt-2 text-base font-semibold text-slate-900">{billToName}</p>
+            {billToStudentId ? (
+              <p className="mt-0.5 font-mono text-sm text-slate-500">({billToStudentId})</p>
+            ) : null}
           </div>
           <div className="sm:text-right">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Payment Details</p>
@@ -114,6 +121,11 @@ export default function InvoiceDocument({ invoice, compact = false, showActions 
                 <span className="text-slate-500">Status:</span>
                 <Badge status={invoice.status}>{invoice.status}</Badge>
               </p>
+              <div className="pt-2 sm:text-right">
+                <p className="text-slate-500">Invoiced by</p>
+                <p className="font-medium text-slate-900">{invoicedBy}</p>
+                <p className="text-xs text-slate-500">{invoicedAt}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -133,7 +145,6 @@ export default function InvoiceDocument({ invoice, compact = false, showActions 
               <tr className="border-b border-slate-100">
                 <td className="px-4 py-4">
                   <p className="font-medium text-slate-900">{purpose}</p>
-                  <p className="mt-0.5 text-xs text-slate-500">Student payment</p>
                 </td>
                 <td className="px-4 py-4 text-right text-slate-600">1</td>
                 <td className="px-4 py-4 text-right text-slate-600">{formatMoney(amount)}</td>
@@ -199,10 +210,16 @@ export function printInvoice(invoice) {
   if (!win) return
 
   const amount = Number(invoice.amount) || 0
-  const purpose = invoice.purpose || 'School fee payment'
+  const purpose = formatPaymentPurpose(invoice.purpose)
+  const { name: billToName, studentId: billToStudentId } = getBillToParts(invoice)
+  const invoicedBy = (invoice.invoicedBy?.trim() || 'Admin').replace(/</g, '&lt;').replace(/&/g, '&amp;')
+  const invoicedAt = formatInvoiceDateTime(invoice.invoicedAt).replace(/</g, '&lt;').replace(/&/g, '&amp;')
   const userNote = invoice.note?.trim()
   const fmt = (n) => `$${n.toFixed(2)}`
   const date = formatDate(invoice.date)
+  const purposeHtml = purpose.replace(/</g, '&lt;').replace(/&/g, '&amp;')
+  const billToNameHtml = billToName.replace(/</g, '&lt;').replace(/&/g, '&amp;')
+  const billToIdHtml = billToStudentId.replace(/</g, '&lt;').replace(/&/g, '&amp;')
 
   win.document.write(`<!DOCTYPE html>
 <html>
@@ -263,13 +280,18 @@ export function printInvoice(invoice) {
     <div class="grid">
       <div>
         <p class="label">Bill To</p>
-        <p style="font-weight: 600; margin-top: 8px; font-size: 16px;">${invoice.studentName || '—'}</p>
-        <p style="font-size: 13px; color: #64748b; margin-top: 4px;">Student account</p>
+        <p style="font-weight: 600; margin-top: 8px; font-size: 16px;">${billToNameHtml}</p>
+        ${billToIdHtml ? `<p style="font-family: ui-monospace, monospace; font-size: 13px; color: #64748b; margin-top: 2px;">(${billToIdHtml})</p>` : ''}
       </div>
       <div style="text-align: right;">
         <p class="label">Payment Details</p>
         <p style="margin-top: 8px;">Method: <strong>${invoice.method || '—'}</strong></p>
         <p style="margin-top: 4px;">Status: <span class="status">${invoice.status || '—'}</span></p>
+        <div style="margin-top: 12px;">
+          <p style="color: #64748b;">Invoiced by</p>
+          <p style="font-weight: 600; margin-top: 2px;">${invoicedBy}</p>
+          <p style="font-size: 12px; color: #64748b; margin-top: 2px;">${invoicedAt}</p>
+        </div>
       </div>
     </div>
     <table>
@@ -283,10 +305,7 @@ export function printInvoice(invoice) {
       </thead>
       <tbody>
         <tr>
-          <td>
-            <strong>${purpose}</strong><br>
-            <span style="font-size: 12px; color: #64748b;">Student payment</span>
-          </td>
+          <td><strong>${purposeHtml}</strong></td>
           <td class="right">1</td>
           <td class="right">${fmt(amount)}</td>
           <td class="right"><strong>${fmt(amount)}</strong></td>

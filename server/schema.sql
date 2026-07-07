@@ -33,6 +33,17 @@ CREATE TABLE IF NOT EXISTS classes (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Class roster (students enrolled per class)
+CREATE TABLE IF NOT EXISTS class_students (
+  class_id TEXT NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+  student_id TEXT NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (class_id, student_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_class_students_class ON class_students(class_id);
+CREATE INDEX IF NOT EXISTS idx_class_students_student ON class_students(student_id);
+
 -- Student deadlines / assignments
 CREATE TABLE IF NOT EXISTS deadlines (
   id TEXT PRIMARY KEY,
@@ -48,6 +59,7 @@ CREATE TABLE IF NOT EXISTS deadlines (
 -- Payments / invoices
 CREATE TABLE IF NOT EXISTS payments (
   id TEXT PRIMARY KEY,
+  student_id TEXT NOT NULL DEFAULT '',
   student_name TEXT NOT NULL DEFAULT '',
   payment_date DATE,
   purpose TEXT NOT NULL DEFAULT '',
@@ -55,6 +67,8 @@ CREATE TABLE IF NOT EXISTS payments (
   method TEXT DEFAULT 'Cash',
   status TEXT DEFAULT 'Paid',
   note TEXT NOT NULL DEFAULT '',
+  invoiced_by TEXT NOT NULL DEFAULT '',
+  invoiced_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

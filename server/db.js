@@ -99,6 +99,7 @@ const TABLE_CONFIG = {
     table: 'payments',
     toApi: (r) => ({
       id: r.id,
+      studentId: r.student_id ?? '',
       studentName: r.student_name,
       date: fmtDate(r.payment_date),
       purpose: r.purpose ?? '',
@@ -106,9 +107,12 @@ const TABLE_CONFIG = {
       method: r.method,
       status: r.status,
       note: r.note ?? '',
+      invoicedBy: r.invoiced_by ?? '',
+      invoicedAt: r.invoiced_at ?? r.created_at ?? null,
     }),
     toDb: (o) => ({
       id: o.id,
+      student_id: o.studentId ?? '',
       student_name: o.studentName ?? '',
       payment_date: o.date || null,
       purpose: o.purpose ?? '',
@@ -116,9 +120,11 @@ const TABLE_CONFIG = {
       method: o.method ?? 'Cash',
       status: o.status ?? 'Paid',
       note: o.note ?? '',
+      invoiced_by: o.invoicedBy ?? '',
+      invoiced_at: o.invoicedAt || null,
     }),
-    insertCols: ['id', 'student_name', 'payment_date', 'purpose', 'amount', 'method', 'status', 'note'],
-    updateCols: ['student_name', 'payment_date', 'purpose', 'amount', 'method', 'status', 'note'],
+    insertCols: ['id', 'student_id', 'student_name', 'payment_date', 'purpose', 'amount', 'method', 'status', 'note', 'invoiced_by', 'invoiced_at'],
+    updateCols: ['student_id', 'student_name', 'payment_date', 'purpose', 'amount', 'method', 'status', 'note', 'invoiced_by', 'invoiced_at'],
   },
   bookIssues: {
     table: 'book_issues',
@@ -265,6 +271,18 @@ async function migratePaymentColumns() {
   await pool.query(`ALTER TABLE payments ADD COLUMN IF NOT EXISTS note TEXT NOT NULL DEFAULT ''`)
 }
 
+async function migratePaymentInvoiceColumns() {
+  await pool.query(`ALTER TABLE payments ADD COLUMN IF NOT EXISTS student_id TEXT NOT NULL DEFAULT ''`)
+  await pool.query(`ALTER TABLE payments ADD COLUMN IF NOT EXISTS invoiced_by TEXT NOT NULL DEFAULT ''`)
+  await pool.query(`ALTER TABLE payments ADD COLUMN IF NOT EXISTS invoiced_at TIMESTAMPTZ`)
+  await pool.query(`
+    UPDATE payments p
+    SET student_id = s.id
+    FROM students s
+    WHERE p.student_id = '' AND p.student_name = s.name
+  `)
+}
+
 async function migrateDeadlineColumns() {
   await pool.query(`ALTER TABLE deadlines ADD COLUMN IF NOT EXISTS student_id TEXT NOT NULL DEFAULT ''`)
   await pool.query(`
@@ -338,6 +356,19 @@ async function migrateDeadlineTableLayout() {
   } finally {
     client.release()
   }
+}
+
+async function migrateClassStudents() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS class_students (
+      class_id TEXT NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+      student_id TEXT NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (class_id, student_id)
+    )
+  `)
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_class_students_class ON class_students(class_id)`)
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_class_students_student ON class_students(student_id)`)
 }
 
 async function initDbeaverViews() {
@@ -545,6 +576,103 @@ async function nextDeadlineId() {
   return `DLN-${String(rows[0].next).padStart(4, '0')}`
 }
 
+export function parseCapacity(capacity) {
+  const s = String(capacity || '0/20').trim()
+  const [a, b] = s.split('/')
+  const enrolled = Math.max(0, parseInt(a, 10) || 0)
+  const max = Math.max(1, parseInt(b, 10) || parseInt(a, 10) || 20)
+  return { enrolled, max }
+}
+
+export function formatCapacity(enrolled, max) {
+  return `${enrolled}/${max}`
+}
+
+async function syncClassCapacity(classId) {
+  const { rows: classRows } = await pool.query('SELECT capacity FROM classes WHERE id = $1', [classId])
+  if (!classRows[0]) return null
+  const { max } = parseCapacity(classRows[0].capacity)
+  const { rows: countRows } = await pool.query(
+    'SELECT COUNT(*)::int AS count FROM class_students WHERE class_id = $1',
+    [classId]
+  )
+  const capacity = formatCapacity(countRows[0].count, max)
+  await pool.query('UPDATE classes SET capacity = $1, updated_at = NOW() WHERE id = $2', [capacity, classId])
+  return capacity
+}
+
+async function getClassRoster(classId) {
+  const { rows } = await pool.query(
+    `SELECT s.id, s.name, s.email, s.phone, s.program, s.dob, cs.created_at AS enrolled_at
+     FROM class_students cs
+     JOIN students s ON s.id = cs.student_id
+     WHERE cs.class_id = $1
+     ORDER BY cs.created_at ASC`,
+    [classId]
+  )
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    email: r.email,
+    phone: r.phone,
+    program: r.program,
+    dob: fmtDate(r.dob),
+    enrolledAt: r.enrolled_at,
+  }))
+}
+
+async function addClassStudent(classId, studentId) {
+  const cls = await get('classes', classId)
+  if (!cls) {
+    const err = new Error('Class not found')
+    err.status = 404
+    throw err
+  }
+  const student = await get('students', studentId)
+  if (!student) {
+    const err = new Error('Student not found')
+    err.status = 404
+    throw err
+  }
+
+  const { rows: dup } = await pool.query(
+    'SELECT 1 FROM class_students WHERE class_id = $1 AND student_id = $2',
+    [classId, studentId]
+  )
+  if (dup.length) {
+    const err = new Error('Student is already in this class')
+    err.status = 409
+    throw err
+  }
+
+  const { enrolled, max } = parseCapacity(cls.capacity)
+  if (enrolled >= max) {
+    const err = new Error(`Class is full (max ${max} students)`)
+    err.status = 409
+    throw err
+  }
+
+  await pool.query('INSERT INTO class_students (class_id, student_id) VALUES ($1, $2)', [classId, studentId])
+  await syncClassCapacity(classId)
+  const updated = await get('classes', classId)
+  return { class: updated, students: await getClassRoster(classId) }
+}
+
+async function removeClassStudent(classId, studentId) {
+  const { rowCount } = await pool.query(
+    'DELETE FROM class_students WHERE class_id = $1 AND student_id = $2',
+    [classId, studentId]
+  )
+  if (!rowCount) {
+    const err = new Error('Student not in this class')
+    err.status = 404
+    throw err
+  }
+  await syncClassCapacity(classId)
+  const updated = await get('classes', classId)
+  return { class: updated, students: await getClassRoster(classId) }
+}
+
 async function fetchOrderItems(orderId) {
   const { rows } = await pool.query(
     `SELECT product_id, product_name, qty, price FROM order_items WHERE order_id = $1 ORDER BY id`,
@@ -711,6 +839,18 @@ async function update(name, itemId, obj) {
   if (!existing) return null
 
   const merged = { ...existing, ...obj, id: itemId }
+  if (name === 'classes' && obj.capacity != null) {
+    const current = parseCapacity(existing.capacity)
+    const next = parseCapacity(obj.capacity)
+    if (next.enrolled > current.enrolled) next.enrolled = current.enrolled
+    if (next.max < next.enrolled) {
+      const err = new Error(`Max students cannot be less than enrolled (${next.enrolled})`)
+      err.status = 400
+      throw err
+    }
+    merged.capacity = formatCapacity(next.enrolled, next.max)
+  }
+
   const db = cfg.toDb(merged)
   const setClause = cfg.updateCols.map((c, i) => `${c} = $${i + 2}`).join(', ')
   const { rowCount } = await pool.query(
@@ -766,9 +906,11 @@ async function seedIfEmpty() {
   await initSchema()
   await migrateFromLegacyRecords()
   await migratePaymentColumns()
+  await migratePaymentInvoiceColumns()
   await migrateDeadlineColumns()
   await migrateDeadlineIds()
   await migrateDeadlineTableLayout()
+  await migrateClassStudents()
   await initDbeaverViews()
 
   if (await isEmpty()) {
@@ -805,4 +947,8 @@ async function seedIfEmpty() {
   await add('alumni', { id: makeId(), name: 'John Smith', program: 'Business Administration', date: '2025-05-20', grade: 'B', cert: false })
 }
 
-export const db = { list, get, add, update, remove: remove_, seedIfEmpty, checkConnection, nextStudentId, nextClassId }
+export const db = {
+  list, get, add, update, remove: remove_, seedIfEmpty, checkConnection,
+  nextStudentId, nextClassId, parseCapacity, formatCapacity,
+  getClassRoster, addClassStudent, removeClassStudent,
+}
