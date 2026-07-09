@@ -14,6 +14,8 @@
     "docker:build": "npm run docker:pull && docker compose build",
     "docker:up": "docker compose up -d && node scripts/print-urls.mjs",
     "docker:restart": "npm run docker:build && npm run docker:up",
+    "deploy": "bash scripts/deploy.sh",
+    "deploy:rds": "COMPOSE_FILE=docker-compose.rds.yml bash scripts/deploy.sh",
     "urls": "node scripts/print-urls.mjs",
     "db:password": "node scripts/db-set-password.mjs"
   },

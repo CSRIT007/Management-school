@@ -1,0 +1,31 @@
+# App only — use with AWS RDS PostgreSQL (no db container).
+# Set DATABASE_URL to your RDS endpoint in .env, then:
+#   docker compose -f docker-compose.rds.yml up -d --build
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    image: management-school-api:prod
+    container_name: management-school-api
+    environment:
+      PORT: 4000
+      HOST: 0.0.0.0
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL to your RDS endpoint in .env}
+      PUBLIC_URL: ${PUBLIC_URL:?Set PUBLIC_URL in .env}
+    expose:
+      - '4000'
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    image: management-school-web:prod
+    container_name: management-school-web
+    ports:
+      - '0.0.0.0:${WEB_PORT:-80}:80'
+    depends_on:
+      - api
+    restart: unless-stopped
