@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { get, post } from '../../lib/api.js'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { orderToInvoice } from '../../lib/posInvoice.js'
-import { formatDascNo } from '../../lib/invoiceId.js'
+import { formatInvNo } from '../../lib/invoiceId.js'
 import PageHeader from '../../components/ui/PageHeader.jsx'
 import Button from '../../components/ui/Button.jsx'
 import InvoiceDocument, { printInvoice } from '../../components/InvoiceDocument.jsx'
@@ -195,7 +195,7 @@ export default function POS() {
               {lastOrder ? (
                 <div className="space-y-2 rounded-xl border border-emerald-200 bg-emerald-50/80 p-3 text-center dark:border-emerald-900/50 dark:bg-emerald-950/30">
                   <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
-                    Sale complete — <span className="font-mono">{formatDascNo(lastOrder.id)}</span>
+                    Sale complete — <span className="font-mono">{formatInvNo(lastOrder.id)}</span>
                   </p>
                   <div className="flex flex-wrap justify-center gap-2">
                     <Button type="button" size="sm" variant="secondary" onClick={() => setViewInvoice(toInvoice(lastOrder))}>

@@ -1,14 +1,13 @@
-export const INVOICE_PREFIX = 'DASC'
+export const INVOICE_PREFIX = 'INV'
 
 export function parseInvoiceNumber(id) {
-  const match = /^(?:DASC|INV)-(\d+)$/i.exec(String(id || '').trim())
+  const match = /^INV-(\d+)$/i.exec(String(id || '').trim())
   return match ? Number(match[1]) : 0
 }
 
-export function formatDascNo(id) {
+export function formatInvNo(id) {
   if (!id) return '—'
-  const num = parseInvoiceNumber(id)
-  return num ? `${INVOICE_PREFIX}-${num}` : '—'
+  return /^INV-\d+$/i.test(id) ? id.toUpperCase() : '—'
 }
 
 export function sortInvoicesNewestFirst(items = []) {

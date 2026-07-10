@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { get, post, put, del } from '../../lib/api.js'
 import { useAuth } from '../../context/AuthContext.jsx'
-import { INVOICE_PREFIX, formatDascNo, sortInvoicesNewestFirst } from '../../lib/invoiceId.js'
+import { INVOICE_PREFIX, formatInvNo, sortInvoicesNewestFirst } from '../../lib/invoiceId.js'
 import PageHeader from '../../components/ui/PageHeader.jsx'
 import Button from '../../components/ui/Button.jsx'
 import DataTable from '../../components/ui/DataTable.jsx'
@@ -173,9 +173,9 @@ export default function StudentPayment() {
   const columns = [
     {
       key: 'invoiceNo',
-      label: 'DASC No',
+      label: 'INV No',
       className: 'font-mono font-semibold text-slate-900 dark:text-slate-100',
-      render: (r) => formatDascNo(r.id),
+      render: (r) => formatInvNo(r.id),
     },
     {
       key: 'studentId',
@@ -224,7 +224,7 @@ export default function StudentPayment() {
         </h3>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
           <div className="sm:col-span-2 md:col-span-1">
-            <label className="label">DASC No</label>
+            <label className="label">INV No</label>
             <div className="relative">
               <input
                 className="input font-mono font-semibold tracking-wide text-indigo-700 dark:text-indigo-300"
@@ -312,7 +312,7 @@ export default function StudentPayment() {
           Payment History ({payments.length})
         </h3>
         <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
-          Newest <strong>{INVOICE_PREFIX} No</strong> shown first. Click <strong>Print</strong> on any row to view or print the invoice later.
+          Newest first (DESC). Click <strong>Print</strong> on any row to view or print the invoice later.
         </p>
         <DataTable columns={columns} rows={sortedPayments} emptyMessage="No payment records found." />
       </div>
