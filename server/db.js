@@ -576,20 +576,67 @@ async function nextDeadlineId() {
   return `DLN-${String(rows[0].next).padStart(4, '0')}`
 }
 
+const INVOICE_PREFIX = 'DASC'
+const INVOICE_NUM_START = 6 // SUBSTRING position after "DASC-"
+
 async function nextInvoiceId() {
   const { rows } = await pool.query(`
     SELECT COALESCE(MAX(num), 1000) AS max_num
     FROM (
+      SELECT CAST(SUBSTRING(id FROM ${INVOICE_NUM_START}) AS INTEGER) AS num
+      FROM payments
+      WHERE id ~ '^DASC-[0-9]+$'
+      UNION ALL
       SELECT CAST(SUBSTRING(id FROM 5) AS INTEGER) AS num
       FROM payments
       WHERE id ~ '^INV-[0-9]+$'
+      UNION ALL
+      SELECT CAST(SUBSTRING(id FROM ${INVOICE_NUM_START}) AS INTEGER) AS num
+      FROM orders
+      WHERE id ~ '^DASC-[0-9]+$'
       UNION ALL
       SELECT CAST(SUBSTRING(id FROM 5) AS INTEGER) AS num
       FROM orders
       WHERE id ~ '^INV-[0-9]+$'
     ) ids
   `)
-  return `INV-${Number(rows[0]?.max_num || 1000) + 1}`
+  return `${INVOICE_PREFIX}-${Number(rows[0]?.max_num || 1000) + 1}`
+}
+
+async function migrateInvPrefixToDasc() {
+  const { rows: payments } = await pool.query(
+    `SELECT id FROM payments WHERE id ~ '^INV-[0-9]+$' ORDER BY id`
+  )
+  for (const row of payments) {
+    const newId = row.id.replace(/^INV-/, `${INVOICE_PREFIX}-`)
+    await pool.query('UPDATE payments SET id = $1 WHERE id = $2', [newId, row.id])
+  }
+
+  const { rows: orders } = await pool.query(
+    `SELECT id FROM orders WHERE id ~ '^INV-[0-9]+$' ORDER BY created_at ASC`
+  )
+  for (const row of orders) {
+    const oldId = row.id
+    const newId = oldId.replace(/^INV-/, `${INVOICE_PREFIX}-`)
+    const client = await pool.connect()
+    try {
+      await client.query('BEGIN')
+      await client.query(
+        `INSERT INTO orders (id, customer, payment_method, total, order_date, created_at, updated_at)
+         SELECT $1, customer, payment_method, total, order_date, created_at, updated_at
+         FROM orders WHERE id = $2`,
+        [newId, oldId]
+      )
+      await client.query('UPDATE order_items SET order_id = $1 WHERE order_id = $2', [newId, oldId])
+      await client.query('DELETE FROM orders WHERE id = $1', [oldId])
+      await client.query('COMMIT')
+    } catch (e) {
+      await client.query('ROLLBACK')
+      throw e
+    } finally {
+      client.release()
+    }
+  }
 }
 
 export function parseCapacity(capacity) {
@@ -923,7 +970,7 @@ async function migrateJsonFiles() {
 async function migrateOrderInvoiceIds() {
   const { rows } = await pool.query(`
     SELECT id FROM orders
-    WHERE id !~ '^INV-[0-9]+$'
+    WHERE id !~ '^DASC-[0-9]+$'
     ORDER BY created_at ASC
   `)
   for (const row of rows) {
@@ -955,6 +1002,7 @@ async function seedIfEmpty() {
   await migrateFromLegacyRecords()
   await migratePaymentColumns()
   await migratePaymentInvoiceColumns()
+  await migrateInvPrefixToDasc()
   await migrateOrderInvoiceIds()
   await migrateDeadlineColumns()
   await migrateDeadlineIds()
@@ -983,8 +1031,8 @@ async function seedIfEmpty() {
   await add('classes', { id: 'C101', name: 'Intro to Programming', instructor: 'Mr. Kim', schedule: 'Mon/Wed 9-10', capacity: '15/20' })
   await add('classes', { id: 'C205', name: 'UI/UX Basics', instructor: 'Ms. Heung', schedule: 'Tue/Thu 14-16', capacity: '20/20' })
 
-  await add('payments', { id: 'INV-1001', studentName: 'Jane Doe', date: '2025-09-10', amount: 120, method: 'Card', status: 'Paid' })
-  await add('payments', { id: 'INV-1002', studentName: 'John Smith', date: '2025-09-11', amount: 200, method: 'Cash', status: 'Pending' })
+  await add('payments', { id: 'DASC-1001', studentName: 'Jane Doe', date: '2025-09-10', amount: 120, method: 'Card', status: 'Paid' })
+  await add('payments', { id: 'DASC-1002', studentName: 'John Smith', date: '2025-09-11', amount: 200, method: 'Cash', status: 'Pending' })
 
   await add('deadlines', { id: makeId(), name: 'Jane Doe', task: 'Exam 1', due: '2025-09-20', status: 'Pending' })
   await add('deadlines', { id: makeId(), name: 'John Smith', task: 'Assignment 2', due: '2025-09-15', status: 'Overdue' })

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { get } from '../../lib/api.js'
+import { formatDascNo } from '../../lib/invoiceId.js'
 import PageHeader from '../../components/ui/PageHeader.jsx'
 import StatCard from '../../components/ui/StatCard.jsx'
 import DataTable from '../../components/ui/DataTable.jsx'
@@ -17,11 +18,6 @@ function formatReportDate(value) {
   if (Number.isNaN(date.getTime())) return raw
   const pad = (n) => String(n).padStart(2, '0')
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
-}
-
-function formatInvNo(id) {
-  if (!id) return '—'
-  return /^INV-\d+$/.test(id) ? id : '—'
 }
 
 function formatItemsLine(items = []) {
@@ -210,7 +206,7 @@ function RecentSalesList({ orders, loading }) {
         <table className="min-w-full text-sm">
           <thead>
             <tr className="border-b border-slate-100 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-800/80">
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">INV No</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">DASC No</th>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Date</th>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Customer</th>
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Payment</th>
@@ -231,7 +227,7 @@ function RecentSalesList({ orders, loading }) {
               orders.map((order) => (
                 <tr key={order.id} className="transition-colors hover:bg-slate-50/60 dark:hover:bg-slate-800/60">
                   <td className="whitespace-nowrap px-4 py-3.5 font-mono text-xs font-medium text-slate-600 dark:text-slate-400">
-                    {formatInvNo(order.id)}
+                    {formatDascNo(order.id)}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3.5 text-slate-700 dark:text-slate-300">
                     {formatReportDate(order.date)}

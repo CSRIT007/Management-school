@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { get, post, put, del } from '../../lib/api.js'
 import { useAuth } from '../../context/AuthContext.jsx'
+import { INVOICE_PREFIX, formatDascNo, sortInvoicesNewestFirst } from '../../lib/invoiceId.js'
 import PageHeader from '../../components/ui/PageHeader.jsx'
 import Button from '../../components/ui/Button.jsx'
 import DataTable from '../../components/ui/DataTable.jsx'
@@ -33,6 +34,11 @@ export default function StudentPayment() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState(false)
   const [viewInvoice, setViewInvoice] = useState(null)
+
+  const sortedPayments = useMemo(
+    () => sortInvoicesNewestFirst(payments),
+    [payments]
+  )
 
   const load = async () => {
     try {
@@ -167,9 +173,9 @@ export default function StudentPayment() {
   const columns = [
     {
       key: 'invoiceNo',
-      label: 'Invoice #',
+      label: 'DASC No',
       className: 'font-mono font-semibold text-slate-900 dark:text-slate-100',
-      render: (r) => r.id || '—',
+      render: (r) => formatDascNo(r.id),
     },
     {
       key: 'studentId',
@@ -217,15 +223,26 @@ export default function StudentPayment() {
           {editingId ? `Edit Payment — ${editingId}` : 'Record Payment'}
         </h3>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
-          <div>
-            <label className="label">Invoice #</label>
-            <input
-              className="input font-mono"
-              value={form.id}
-              onChange={(e) => setForm((f) => ({ ...f, id: e.target.value.toUpperCase() }))}
-              disabled={!!editingId}
-              readOnly={!!editingId}
-            />
+          <div className="sm:col-span-2 md:col-span-1">
+            <label className="label">DASC No</label>
+            <div className="relative">
+              <input
+                className="input font-mono font-semibold tracking-wide text-indigo-700 dark:text-indigo-300"
+                value={form.id}
+                onChange={(e) => setForm((f) => ({ ...f, id: e.target.value.toUpperCase() }))}
+                disabled={!!editingId}
+                readOnly={!!editingId}
+                placeholder={`${INVOICE_PREFIX}-1001`}
+              />
+              {!editingId && form.id ? (
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400">
+                  Next
+                </span>
+              ) : null}
+            </div>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              Shared number with POS sales ({INVOICE_PREFIX}-xxxx)
+            </p>
           </div>
           <div>
             <label className="label">Student</label>
@@ -295,9 +312,9 @@ export default function StudentPayment() {
           Payment History ({payments.length})
         </h3>
         <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
-          Click <strong>Print</strong> on any row to view or print the invoice later.
+          Newest <strong>{INVOICE_PREFIX} No</strong> shown first. Click <strong>Print</strong> on any row to view or print the invoice later.
         </p>
-        <DataTable columns={columns} rows={payments} emptyMessage="No payment records found." />
+        <DataTable columns={columns} rows={sortedPayments} emptyMessage="No payment records found." />
       </div>
 
       {viewInvoice && (
