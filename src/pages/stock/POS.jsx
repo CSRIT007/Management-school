@@ -15,12 +15,23 @@ function ProductThumb({ name }) {
   )
 }
 
+const WALK_IN = '__walkin__'
+
 export default function POS() {
   const [catalog, setCatalog] = useState([])
+  const [students, setStudents] = useState([])
   const [cart, setCart] = useState([])
   const [search, setSearch] = useState('')
+  const [customerId, setCustomerId] = useState(WALK_IN)
+  const [paymentMethod, setPaymentMethod] = useState('Cash')
+  const [checkingOut, setCheckingOut] = useState(false)
 
-  useEffect(() => { get('/api/products').then(setCatalog) }, [])
+  useEffect(() => {
+    Promise.all([get('/api/products'), get('/api/students')]).then(([products, studentList]) => {
+      setCatalog(products)
+      setStudents(studentList)
+    })
+  }, [])
 
   const filtered = catalog.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
 
@@ -46,11 +57,26 @@ export default function POS() {
 
   const total = cart.reduce((s, i) => s + (Number(i.price) || 0) * i.qty, 0)
 
+  const customerName =
+    customerId === WALK_IN
+      ? 'Walk-in'
+      : students.find((s) => s.id === customerId)?.name || 'Walk-in'
+
   const checkout = async () => {
-    if (cart.length === 0) return
-    await post('/api/pos/checkout', { items: cart, customer: 'Walk-in', paymentMethod: 'Cash' })
-    setCart([])
-    setCatalog(await get('/api/products'))
+    if (cart.length === 0 || checkingOut) return
+    setCheckingOut(true)
+    try {
+      await post('/api/pos/checkout', {
+        items: cart,
+        customer: customerName,
+        paymentMethod,
+      })
+      setCart([])
+      setCustomerId(WALK_IN)
+      setCatalog(await get('/api/products'))
+    } finally {
+      setCheckingOut(false)
+    }
   }
 
   return (
@@ -121,17 +147,39 @@ export default function POS() {
           <div className="panel p-5">
             <h3 className="mb-4 font-bold text-slate-900 dark:text-slate-100">Checkout</h3>
             <div className="space-y-3">
-              <select className="input">
-                <option>Walk-in</option>
-                <option>Jane Doe</option>
-                <option>John Smith</option>
-              </select>
-              <select className="input">
-                <option>Cash</option>
-                <option>Card</option>
-                <option>QR</option>
-              </select>
-              <Button onClick={checkout} className="w-full" size="lg">Complete Sale</Button>
+              <div>
+                <label className="label">Customer</label>
+                <select
+                  className="input"
+                  value={customerId}
+                  onChange={(e) => setCustomerId(e.target.value)}
+                >
+                  <option value={WALK_IN}>Walk-in</option>
+                  {students.map((s) => (
+                    <option key={s.id} value={s.id}>{`${s.id}-${s.name}`}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="label">Payment Method</label>
+                <select
+                  className="input"
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                >
+                  <option>Cash</option>
+                  <option>Card</option>
+                  <option>QR</option>
+                </select>
+              </div>
+              <Button
+                onClick={checkout}
+                className="w-full"
+                size="lg"
+                disabled={cart.length === 0 || checkingOut}
+              >
+                {checkingOut ? 'Processing…' : 'Complete Sale'}
+              </Button>
             </div>
           </div>
         </div>
