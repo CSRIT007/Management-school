@@ -576,6 +576,22 @@ async function nextDeadlineId() {
   return `DLN-${String(rows[0].next).padStart(4, '0')}`
 }
 
+async function nextInvoiceId() {
+  const { rows } = await pool.query(`
+    SELECT COALESCE(MAX(num), 1000) AS max_num
+    FROM (
+      SELECT CAST(SUBSTRING(id FROM 5) AS INTEGER) AS num
+      FROM payments
+      WHERE id ~ '^INV-[0-9]+$'
+      UNION ALL
+      SELECT CAST(SUBSTRING(id FROM 5) AS INTEGER) AS num
+      FROM orders
+      WHERE id ~ '^INV-[0-9]+$'
+    ) ids
+  `)
+  return `INV-${Number(rows[0]?.max_num || 1000) + 1}`
+}
+
 export function parseCapacity(capacity) {
   const s = String(capacity || '0/20').trim()
   const [a, b] = s.split('/')
@@ -713,7 +729,7 @@ async function getOrder(id) {
 }
 
 async function addOrder(obj) {
-  const id = obj.id || makeId()
+  const id = obj.id || await nextInvoiceId()
   const items = obj.items || []
   const total = obj.total ?? items.reduce((s, i) => s + (Number(i.price) || 0) * (Number(i.qty) || 0), 0)
   const orderDate = obj.date || new Date().toISOString()
@@ -788,7 +804,9 @@ async function add(name, obj, { upsert = true } = {}) {
   if (name === 'deadlines' && !record.id) {
     record.id = await nextDeadlineId()
   }
-  if (!record.id) record.id = makeId()
+  if (!record.id) {
+    record.id = name === 'payments' ? await nextInvoiceId() : makeId()
+  }
 
   const db = cfg.toDb(record)
   db.id = record.id
@@ -902,11 +920,42 @@ async function migrateJsonFiles() {
   }
 }
 
+async function migrateOrderInvoiceIds() {
+  const { rows } = await pool.query(`
+    SELECT id FROM orders
+    WHERE id !~ '^INV-[0-9]+$'
+    ORDER BY created_at ASC
+  `)
+  for (const row of rows) {
+    const oldId = row.id
+    const newId = await nextInvoiceId()
+    const client = await pool.connect()
+    try {
+      await client.query('BEGIN')
+      await client.query(
+        `INSERT INTO orders (id, customer, payment_method, total, order_date, created_at, updated_at)
+         SELECT $1, customer, payment_method, total, order_date, created_at, updated_at
+         FROM orders WHERE id = $2`,
+        [newId, oldId]
+      )
+      await client.query('UPDATE order_items SET order_id = $1 WHERE order_id = $2', [newId, oldId])
+      await client.query('DELETE FROM orders WHERE id = $1', [oldId])
+      await client.query('COMMIT')
+    } catch (e) {
+      await client.query('ROLLBACK')
+      throw e
+    } finally {
+      client.release()
+    }
+  }
+}
+
 async function seedIfEmpty() {
   await initSchema()
   await migrateFromLegacyRecords()
   await migratePaymentColumns()
   await migratePaymentInvoiceColumns()
+  await migrateOrderInvoiceIds()
   await migrateDeadlineColumns()
   await migrateDeadlineIds()
   await migrateDeadlineTableLayout()
@@ -949,6 +998,6 @@ async function seedIfEmpty() {
 
 export const db = {
   list, get, add, update, remove: remove_, seedIfEmpty, checkConnection,
-  nextStudentId, nextClassId, parseCapacity, formatCapacity,
+  nextStudentId, nextClassId, nextInvoiceId, parseCapacity, formatCapacity,
   getClassRoster, addClassStudent, removeClassStudent,
 }

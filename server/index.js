@@ -20,6 +20,15 @@ app.get('/api/health', async (req, res) => {
   }
 })
 
+app.get('/api/payments/next-inv-id', async (req, res) => {
+  try {
+    const id = await db.nextInvoiceId()
+    res.json({ id })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
 // Reports (must be registered before /api/:col routes)
 app.get('/api/reports/summary', async (req, res) => {
   const products = await db.list('products')

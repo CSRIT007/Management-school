@@ -1,6 +1,6 @@
 import Badge from './ui/Badge.jsx'
 import Button from './ui/Button.jsx'
-import { formatPaymentPurpose } from '../lib/paymentPurpose.js'
+import { getInvoiceLines } from '../lib/paymentPurpose.js'
 import { getBillToParts, formatInvoiceDateTime } from '../lib/invoiceFormat.js'
 
 const INVOICE_CONTACT = {
@@ -68,7 +68,7 @@ export default function InvoiceDocument({ invoice, compact = false, showActions 
   if (!invoice) return null
 
   const amount = Number(invoice.amount) || 0
-  const purpose = formatPaymentPurpose(invoice.purpose)
+  const lineRows = getInvoiceLines(invoice)
   const { name: billToName, studentId: billToStudentId } = getBillToParts(invoice)
   const invoicedBy = invoice.invoicedBy?.trim() || 'Admin'
   const invoicedAt = formatInvoiceDateTime(invoice.invoicedAt)
@@ -142,14 +142,16 @@ export default function InvoiceDocument({ invoice, compact = false, showActions 
               </tr>
             </thead>
             <tbody>
-              <tr className="border-b border-slate-100">
-                <td className="px-4 py-4">
-                  <p className="font-medium text-slate-900">{purpose}</p>
-                </td>
-                <td className="px-4 py-4 text-right text-slate-600">1</td>
-                <td className="px-4 py-4 text-right text-slate-600">{formatMoney(amount)}</td>
-                <td className="px-4 py-4 text-right font-semibold text-slate-900">{formatMoney(amount)}</td>
-              </tr>
+              {lineRows.map((row, i) => (
+                <tr key={i} className="border-b border-slate-100">
+                  <td className="px-4 py-4">
+                    <p className="font-medium text-slate-900">{row.description}</p>
+                  </td>
+                  <td className="px-4 py-4 text-right text-slate-600">{row.qty}</td>
+                  <td className="px-4 py-4 text-right text-slate-600">{formatMoney(row.unitPrice)}</td>
+                  <td className="px-4 py-4 text-right font-semibold text-slate-900">{formatMoney(row.amount)}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -210,16 +212,24 @@ export function printInvoice(invoice) {
   if (!win) return
 
   const amount = Number(invoice.amount) || 0
-  const purpose = formatPaymentPurpose(invoice.purpose)
+  const lineRows = getInvoiceLines(invoice)
   const { name: billToName, studentId: billToStudentId } = getBillToParts(invoice)
   const invoicedBy = (invoice.invoicedBy?.trim() || 'Admin').replace(/</g, '&lt;').replace(/&/g, '&amp;')
   const invoicedAt = formatInvoiceDateTime(invoice.invoicedAt).replace(/</g, '&lt;').replace(/&/g, '&amp;')
   const userNote = invoice.note?.trim()
   const fmt = (n) => `$${n.toFixed(2)}`
   const date = formatDate(invoice.date)
-  const purposeHtml = purpose.replace(/</g, '&lt;').replace(/&/g, '&amp;')
   const billToNameHtml = billToName.replace(/</g, '&lt;').replace(/&/g, '&amp;')
   const billToIdHtml = billToStudentId.replace(/</g, '&lt;').replace(/&/g, '&amp;')
+  const lineRowsHtml = lineRows.map((row) => {
+    const desc = row.description.replace(/</g, '&lt;').replace(/&/g, '&amp;')
+    return `<tr>
+          <td><strong>${desc}</strong></td>
+          <td class="right">${row.qty}</td>
+          <td class="right">${fmt(row.unitPrice)}</td>
+          <td class="right"><strong>${fmt(row.amount)}</strong></td>
+        </tr>`
+  }).join('')
 
   win.document.write(`<!DOCTYPE html>
 <html>
@@ -304,12 +314,7 @@ export function printInvoice(invoice) {
         </tr>
       </thead>
       <tbody>
-        <tr>
-          <td><strong>${purposeHtml}</strong></td>
-          <td class="right">1</td>
-          <td class="right">${fmt(amount)}</td>
-          <td class="right"><strong>${fmt(amount)}</strong></td>
-        </tr>
+        ${lineRowsHtml}
       </tbody>
     </table>
     <div class="totals">

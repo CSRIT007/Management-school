@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
 import { get, post } from '../../lib/api.js'
+import { useAuth } from '../../context/AuthContext.jsx'
+import { orderToInvoice } from '../../lib/posInvoice.js'
 import PageHeader from '../../components/ui/PageHeader.jsx'
 import Button from '../../components/ui/Button.jsx'
+import InvoiceDocument, { printInvoice } from '../../components/InvoiceDocument.jsx'
 
 function ProductThumb({ name }) {
   const initial = (name || '?')[0].toUpperCase()
@@ -18,6 +21,7 @@ function ProductThumb({ name }) {
 const WALK_IN = '__walkin__'
 
 export default function POS() {
+  const { user } = useAuth()
   const [catalog, setCatalog] = useState([])
   const [students, setStudents] = useState([])
   const [cart, setCart] = useState([])
@@ -25,6 +29,8 @@ export default function POS() {
   const [customerId, setCustomerId] = useState(WALK_IN)
   const [paymentMethod, setPaymentMethod] = useState('Cash')
   const [checkingOut, setCheckingOut] = useState(false)
+  const [lastOrder, setLastOrder] = useState(null)
+  const [viewInvoice, setViewInvoice] = useState(null)
 
   useEffect(() => {
     Promise.all([get('/api/products'), get('/api/students')]).then(([products, studentList]) => {
@@ -62,11 +68,15 @@ export default function POS() {
       ? 'Walk-in'
       : students.find((s) => s.id === customerId)?.name || 'Walk-in'
 
+  const toInvoice = (order) => orderToInvoice(order, { students, user })
+
   const checkout = async () => {
     if (cart.length === 0 || checkingOut) return
     setCheckingOut(true)
+    setLastOrder(null)
+    const soldStudentId = customerId === WALK_IN ? '' : customerId
     try {
-      await post('/api/pos/checkout', {
+      const order = await post('/api/pos/checkout', {
         items: cart,
         customer: customerName,
         paymentMethod,
@@ -74,6 +84,7 @@ export default function POS() {
       setCart([])
       setCustomerId(WALK_IN)
       setCatalog(await get('/api/products'))
+      setLastOrder({ ...order, studentId: soldStudentId })
     } finally {
       setCheckingOut(false)
     }
@@ -180,10 +191,44 @@ export default function POS() {
               >
                 {checkingOut ? 'Processing…' : 'Complete Sale'}
               </Button>
+              {lastOrder ? (
+                <div className="space-y-2 rounded-xl border border-emerald-200 bg-emerald-50/80 p-3 text-center dark:border-emerald-900/50 dark:bg-emerald-950/30">
+                  <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                    Sale complete — <span className="font-mono">{lastOrder.id}</span>
+                  </p>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    <Button type="button" size="sm" variant="secondary" onClick={() => setViewInvoice(toInvoice(lastOrder))}>
+                      View Invoice
+                    </Button>
+                    <Button type="button" size="sm" onClick={() => printInvoice(toInvoice(lastOrder))}>
+                      Print Invoice
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
       </div>
+
+      {viewInvoice && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm print:hidden"
+          onClick={() => setViewInvoice(null)}
+        >
+          <div
+            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <InvoiceDocument
+              invoice={viewInvoice}
+              showActions
+              onClose={() => setViewInvoice(null)}
+              onPrint={() => printInvoice(viewInvoice)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

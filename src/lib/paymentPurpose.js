@@ -14,3 +14,25 @@ export function formatPaymentPurpose(purpose) {
   const match = PAYMENT_PURPOSE_OPTIONS.find((o) => o.value === purpose)
   return match?.label || purpose
 }
+
+export function getInvoiceLines(invoice) {
+  if (invoice?.items?.length) {
+    return invoice.items.map((item) => {
+      const qty = Number(item.qty) || 1
+      const unitPrice = Number(item.price) || 0
+      return {
+        description: item.name || 'Product',
+        qty,
+        unitPrice,
+        amount: unitPrice * qty,
+      }
+    })
+  }
+  const amount = Number(invoice?.amount) || 0
+  return [{
+    description: formatPaymentPurpose(invoice?.purpose),
+    qty: 1,
+    unitPrice: amount,
+    amount,
+  }]
+}

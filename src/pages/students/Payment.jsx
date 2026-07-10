@@ -18,13 +18,9 @@ function withStudentId(payment, students) {
   return { ...payment, studentId }
 }
 
-function nextInvoiceId(payments) {
-  const nums = payments
-    .map((p) => /^INV-(\d+)$/.exec(p.id))
-    .filter(Boolean)
-    .map((m) => Number(m[1]))
-  const next = nums.length ? Math.max(...nums) + 1 : 1001
-  return `INV-${next}`
+async function fetchNextInvoiceId() {
+  const { id } = await get('/api/payments/next-inv-id')
+  return id
 }
 
 export default function StudentPayment() {
@@ -44,9 +40,10 @@ export default function StudentPayment() {
       setStudents(s)
       setPayments(p.map((payment) => withStudentId(payment, s)))
       if (!editingId) {
+        const nextId = await fetchNextInvoiceId()
         setForm((f) => ({
           ...f,
-          id: f.id || nextInvoiceId(p),
+          id: f.id || nextId,
           date: f.date || new Date().toISOString().slice(0, 10),
         }))
       }
@@ -62,12 +59,20 @@ export default function StudentPayment() {
     setError(isError)
   }
 
-  const reset = () => {
-    setForm({
-      ...emptyForm,
-      date: new Date().toISOString().slice(0, 10),
-      id: nextInvoiceId(payments),
-    })
+  const reset = async () => {
+    try {
+      const nextId = await fetchNextInvoiceId()
+      setForm({
+        ...emptyForm,
+        date: new Date().toISOString().slice(0, 10),
+        id: nextId,
+      })
+    } catch {
+      setForm({
+        ...emptyForm,
+        date: new Date().toISOString().slice(0, 10),
+      })
+    }
     setEditingId(null)
     setMessage('')
     setError(false)
@@ -127,11 +132,11 @@ export default function StudentPayment() {
         saved = await put(`/api/payments/${editingId}`, payload)
         showMsg(andPrint ? 'Payment updated and sent to printer.' : 'Payment updated. Print anytime from Payment History.')
       } else {
-        payload.id = form.id.trim() || nextInvoiceId(payments)
+        payload.id = form.id.trim() || await fetchNextInvoiceId()
         saved = await post('/api/payments', payload)
         showMsg(andPrint ? 'Payment saved and sent to printer.' : 'Payment saved. Print the invoice anytime from Payment History.')
       }
-      reset()
+      await reset()
       await load()
       if (andPrint && saved) printInvoice(withStudentId(saved, students))
     } catch (err) {
@@ -150,7 +155,7 @@ export default function StudentPayment() {
     if (!confirm(`Delete payment ${id}?`)) return
     try {
       await del(`/api/payments/${id}`)
-      if (editingId === id) reset()
+      if (editingId === id) await reset()
       if (viewInvoice?.id === id) setViewInvoice(null)
       await load()
       showMsg('Payment deleted.')
