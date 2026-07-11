@@ -146,8 +146,13 @@ app.delete('/api/classes/:id/students/:studentId', async (req, res) => {
 app.get('/api/:col', async (req, res) => {
   const { col } = req.params
   if (!valid.has(col)) return res.status(404).json({ error: 'Unknown collection' })
-  const rows = await db.list(col)
-  res.json(rows)
+  try {
+    const rows = await db.list(col)
+    res.json(rows)
+  } catch (e) {
+    console.error(`GET /api/${col}:`, e.message)
+    res.status(500).json({ error: e.message })
+  }
 })
 
 app.post('/api/:col', async (req, res) => {
@@ -196,9 +201,14 @@ app.delete('/api/:col/:id', async (req, res) => {
 app.get('/api/:col/:id', async (req, res) => {
   const { col, id } = req.params
   if (!valid.has(col)) return res.status(404).json({ error: 'Unknown collection' })
-  const row = await db.get(col, id)
-  if (!row) return res.status(404).json({ error: 'Not found' })
-  res.json(row)
+  try {
+    const row = await db.get(col, id)
+    if (!row) return res.status(404).json({ error: 'Not found' })
+    res.json(row)
+  } catch (e) {
+    console.error(`GET /api/${col}/${id}:`, e.message)
+    res.status(500).json({ error: e.message })
+  }
 })
 
 // POS order creation convenience endpoint

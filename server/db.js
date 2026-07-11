@@ -258,6 +258,33 @@ function splitSqlStatements(sql) {
   return statements
 }
 
+async function waitForDb(retries = 30, delayMs = 1000) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      await pool.query('SELECT 1')
+      return
+    } catch (e) {
+      if (i === retries - 1) {
+        throw new Error(
+          'Database not reachable. Start PostgreSQL with: docker compose up -d db  (then check DATABASE_URL in .env)'
+        )
+      }
+      await new Promise((r) => setTimeout(r, delayMs))
+    }
+  }
+}
+
+async function migrateTimestampColumns() {
+  const tables = [
+    'students', 'classes', 'deadlines', 'payments', 'book_issues',
+    'alumni', 'categories', 'products', 'orders',
+  ]
+  for (const table of tables) {
+    await pool.query(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`)
+    await pool.query(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`)
+  }
+}
+
 async function initSchema() {
   const schemaPath = path.join(__dirname, 'schema.sql')
   const sql = await fs.readFile(schemaPath, 'utf8')
@@ -995,7 +1022,9 @@ async function migrateOrderInvoiceIds() {
 }
 
 async function seedIfEmpty() {
+  await waitForDb()
   await initSchema()
+  await migrateTimestampColumns()
   await migrateFromLegacyRecords()
   await migratePaymentColumns()
   await migratePaymentInvoiceColumns()

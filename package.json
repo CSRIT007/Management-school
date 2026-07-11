@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "dev:public": "vite --host 0.0.0.0",
+    "db:up": "docker compose up -d db",
+    "dev:api": "node server/index.js",
     "server": "node server/index.js",
     "build": "vite build",
     "lint": "eslint .",
