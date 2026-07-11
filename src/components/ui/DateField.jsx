@@ -8,7 +8,6 @@ export default function DateField({
   required = false,
   className = '',
   error = '',
-  hint = 'Format: dd-mm-yyyy',
 }) {
   const [text, setText] = useState('')
 
@@ -60,8 +59,6 @@ export default function DateField({
       />
       {error ? (
         <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{error}</p>
-      ) : hint ? (
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{hint}</p>
       ) : null}
     </div>
   )
