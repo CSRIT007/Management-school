@@ -5,6 +5,8 @@ import Button from '../../components/ui/Button.jsx'
 import DataTable from '../../components/ui/DataTable.jsx'
 import Badge from '../../components/ui/Badge.jsx'
 import FormAlert from '../../components/ui/FormAlert.jsx'
+import { formatDisplayDate } from '../../lib/dateFormat.js'
+import DateField from '../../components/ui/DateField.jsx'
 
 const emptyForm = { name: '', program: '', date: '', grade: '', cert: false }
 
@@ -99,7 +101,7 @@ export default function StudentFinish() {
   const columns = [
     { key: 'name', label: 'Student Name', className: 'font-semibold text-slate-900 dark:text-slate-100' },
     { key: 'program', label: 'Program Completed' },
-    { key: 'date', label: 'Completion Date' },
+    { key: 'date', label: 'Completion Date', render: (r) => formatDisplayDate(r.date) },
     { key: 'grade', label: 'Final Grade' },
     {
       key: 'cert',
@@ -144,10 +146,7 @@ export default function StudentFinish() {
             <label className="label">Program Completed</label>
             <input className="input" placeholder="Program completed" value={form.program} onChange={(e) => setForm((f) => ({ ...f, program: e.target.value }))} required />
           </div>
-          <div>
-            <label className="label">Completion Date</label>
-            <input type="date" className="input" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} required />
-          </div>
+          <DateField label="Completion Date" value={form.date} onChange={(date) => setForm((f) => ({ ...f, date }))} required />
           <div>
             <label className="label">Final Grade</label>
             <select className="input" value={form.grade} onChange={(e) => setForm((f) => ({ ...f, grade: e.target.value }))} required>

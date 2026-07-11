@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { formatDisplayDate, isValidIsoDate } from '../../lib/dateFormat.js'
+import DateField from '../../components/ui/DateField.jsx'
 import { get, post, put, del } from '../../lib/api.js'
 import PageHeader from '../../components/ui/PageHeader.jsx'
 import Button from '../../components/ui/Button.jsx'
@@ -16,6 +18,7 @@ function validateForm(form) {
   if (!email) errors.email = 'Email is required.'
   else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = 'Enter a valid email address.'
   if (!dob) errors.dob = 'Date of birth is required.'
+  else if (!isValidIsoDate(dob)) errors.dob = 'Use date format dd-mm-yyyy.'
 
   return errors
 }
@@ -155,7 +158,7 @@ export default function StudentRegister() {
     { key: 'email', label: 'Email' },
     { key: 'phone', label: 'Phone' },
     { key: 'program', label: 'Program' },
-    { key: 'dob', label: 'Date of Birth' },
+    { key: 'dob', label: 'Date of Birth', render: (r) => formatDisplayDate(r.dob) },
     {
       key: 'actions',
       label: '',
@@ -246,22 +249,16 @@ export default function StudentRegister() {
             <label className="label">Address</label>
             <input value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} className="input" placeholder="Street, City" />
           </div>
-          <div>
-            <label className="label">
-              Date of Birth <span className="text-rose-500">*</span>
-            </label>
-            <input
-              type="date"
-              value={form.dob}
-              onChange={(e) => {
-                setForm((f) => ({ ...f, dob: e.target.value }))
-                clearFieldError('dob')
-              }}
-              className={`input ${fieldErrors.dob ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/20' : ''}`}
-              required
-            />
-            {fieldErrors.dob && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{fieldErrors.dob}</p>}
-          </div>
+          <DateField
+            label="Date of Birth *"
+            value={form.dob}
+            onChange={(dob) => {
+              setForm((f) => ({ ...f, dob }))
+              clearFieldError('dob')
+            }}
+            required
+            error={fieldErrors.dob}
+          />
           <div>
             <label className="label">Emergency Contact</label>
             <input value={form.emergency} onChange={(e) => setForm((f) => ({ ...f, emergency: e.target.value }))} className="input" placeholder="Name & Phone" />

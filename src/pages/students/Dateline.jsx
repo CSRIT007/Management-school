@@ -5,6 +5,8 @@ import Button from '../../components/ui/Button.jsx'
 import DataTable from '../../components/ui/DataTable.jsx'
 import Badge from '../../components/ui/Badge.jsx'
 import FormAlert from '../../components/ui/FormAlert.jsx'
+import { formatDisplayDate } from '../../lib/dateFormat.js'
+import DateField from '../../components/ui/DateField.jsx'
 
 const emptyForm = { studentId: '', name: '', task: '', due: '', status: 'Pending' }
 
@@ -116,7 +118,7 @@ export default function StudentDateline() {
     },
     { key: 'name', label: 'Student Name' },
     { key: 'task', label: 'Task / Deadline' },
-    { key: 'due', label: 'Due Date' },
+    { key: 'due', label: 'Due Date', render: (r) => formatDisplayDate(r.due) },
     { key: 'status', label: 'Status', render: (r) => <Badge status={r.status} /> },
     {
       key: 'actions',
@@ -163,10 +165,7 @@ export default function StudentDateline() {
             <label className="label">Task / Assignment</label>
             <input className="input" placeholder="Task / assignment" value={form.task} onChange={(e) => setForm((f) => ({ ...f, task: e.target.value }))} required />
           </div>
-          <div>
-            <label className="label">Due Date</label>
-            <input type="date" className="input" value={form.due} onChange={(e) => setForm((f) => ({ ...f, due: e.target.value }))} required />
-          </div>
+          <DateField label="Due Date" value={form.due} onChange={(due) => setForm((f) => ({ ...f, due }))} required />
           <div>
             <label className="label">Status</label>
             <select className="input" value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}>

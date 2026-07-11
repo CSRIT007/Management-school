@@ -5,6 +5,8 @@ import Button from '../../components/ui/Button.jsx'
 import DataTable from '../../components/ui/DataTable.jsx'
 import Badge from '../../components/ui/Badge.jsx'
 import FormAlert from '../../components/ui/FormAlert.jsx'
+import { formatDisplayDate } from '../../lib/dateFormat.js'
+import DateField from '../../components/ui/DateField.jsx'
 
 const emptyForm = { name: '', title: '', isbn: '', issued: '', due: '', status: 'Issued' }
 
@@ -95,8 +97,8 @@ export default function StudentBook() {
     { key: 'name', label: 'Student Name', className: 'font-semibold text-slate-900 dark:text-slate-100' },
     { key: 'title', label: 'Book Title' },
     { key: 'isbn', label: 'ISBN' },
-    { key: 'issued', label: 'Date Issued' },
-    { key: 'due', label: 'Date Due' },
+    { key: 'issued', label: 'Date Issued', render: (r) => formatDisplayDate(r.issued) },
+    { key: 'due', label: 'Date Due', render: (r) => formatDisplayDate(r.due) },
     { key: 'status', label: 'Status', render: (r) => <Badge status={r.status} /> },
     {
       key: 'actions',
@@ -140,14 +142,8 @@ export default function StudentBook() {
             <label className="label">ISBN</label>
             <input className="input" placeholder="ISBN" value={form.isbn} onChange={(e) => setForm((f) => ({ ...f, isbn: e.target.value }))} />
           </div>
-          <div>
-            <label className="label">Date Issued</label>
-            <input type="date" className="input" value={form.issued} onChange={(e) => setForm((f) => ({ ...f, issued: e.target.value }))} required />
-          </div>
-          <div>
-            <label className="label">Date Due</label>
-            <input type="date" className="input" value={form.due} onChange={(e) => setForm((f) => ({ ...f, due: e.target.value }))} required />
-          </div>
+          <DateField label="Date Issued" value={form.issued} onChange={(issued) => setForm((f) => ({ ...f, issued }))} required />
+          <DateField label="Date Due" value={form.due} onChange={(due) => setForm((f) => ({ ...f, due }))} required />
           <div>
             <label className="label">Status</label>
             <select className="input" value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}>

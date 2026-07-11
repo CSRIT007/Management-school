@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { get } from '../../lib/api.js'
 import { formatInvNo } from '../../lib/invoiceId.js'
+import { formatDisplayDate, todayIso } from '../../lib/dateFormat.js'
 import PageHeader from '../../components/ui/PageHeader.jsx'
 import StatCard from '../../components/ui/StatCard.jsx'
 import DataTable from '../../components/ui/DataTable.jsx'
@@ -10,23 +11,13 @@ function formatMoney(n) {
   return `$${Number(n || 0).toFixed(2)}`
 }
 
-function formatReportDate(value) {
-  if (!value) return '—'
-  const raw = String(value).slice(0, 10)
-  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return raw
-  const pad = (n) => String(n).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
-}
-
 function formatItemsLine(items = []) {
   if (!items.length) return '—'
   return items.map((i) => `${i.name} ×${i.qty}`).join(', ')
 }
 
 function todayKey() {
-  return new Date().toISOString().slice(0, 10)
+  return todayIso()
 }
 
 const paymentVariant = {
@@ -230,7 +221,7 @@ function RecentSalesList({ orders, loading }) {
                     {formatInvNo(order.id)}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3.5 text-slate-700 dark:text-slate-300">
-                    {formatReportDate(order.date)}
+                    {formatDisplayDate(order.date)}
                   </td>
                   <td className="whitespace-nowrap px-4 py-3.5 font-medium text-slate-900 dark:text-slate-100">
                     {order.customer || 'Walk-in'}
@@ -276,7 +267,7 @@ function SalesChart({ data, loading }) {
         <div className="flex h-52 items-end gap-2">
           {data.map((d) => {
             const val = Number(d.total) || 0
-            const label = d.date?.slice(5) || '—'
+            const label = formatDisplayDate(d.date).slice(0, 5)
             const height = `${Math.max((val / maxVal) * 100, 6)}%`
             return (
               <div key={d.date} className="flex min-w-0 flex-1 flex-col items-center gap-2">

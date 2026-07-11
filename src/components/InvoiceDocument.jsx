@@ -1,6 +1,7 @@
 import Badge from './ui/Badge.jsx'
 import Button from './ui/Button.jsx'
 import { getInvoiceLines } from '../lib/paymentPurpose.js'
+import { formatDisplayDate } from '../lib/dateFormat.js'
 import { getBillToParts, formatInvoiceDateTime } from '../lib/invoiceFormat.js'
 
 const INVOICE_CONTACT = {
@@ -52,16 +53,7 @@ function formatMoney(amount) {
 }
 
 function formatDate(date) {
-  if (!date) return '—'
-  try {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    })
-  } catch {
-    return date
-  }
+  return formatDisplayDate(date)
 }
 
 export default function InvoiceDocument({ invoice, compact = false, showActions = false, onPrint, onClose }) {

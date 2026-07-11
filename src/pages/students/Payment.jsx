@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { get, post, put, del } from '../../lib/api.js'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { INVOICE_PREFIX, formatInvNo, sortInvoicesNewestFirst } from '../../lib/invoiceId.js'
+import { todayIso, formatDisplayDate } from '../../lib/dateFormat.js'
+import DateField from '../../components/ui/DateField.jsx'
 import PageHeader from '../../components/ui/PageHeader.jsx'
 import Button from '../../components/ui/Button.jsx'
 import DataTable from '../../components/ui/DataTable.jsx'
@@ -50,7 +52,7 @@ export default function StudentPayment() {
         setForm((f) => ({
           ...f,
           id: f.id || nextId,
-          date: f.date || new Date().toISOString().slice(0, 10),
+          date: f.date || todayIso(),
         }))
       }
     } catch (e) {
@@ -70,13 +72,13 @@ export default function StudentPayment() {
       const nextId = await fetchNextInvoiceId()
       setForm({
         ...emptyForm,
-        date: new Date().toISOString().slice(0, 10),
+        date: todayIso(),
         id: nextId,
       })
     } catch {
       setForm({
         ...emptyForm,
-        date: new Date().toISOString().slice(0, 10),
+        date: todayIso(),
       })
     }
     setEditingId(null)
@@ -124,7 +126,7 @@ export default function StudentPayment() {
       const payload = {
         studentId: form.studentId,
         studentName: form.studentName,
-        date: form.date || new Date().toISOString().slice(0, 10),
+        date: form.date || todayIso(),
         purpose: form.purpose,
         amount: Number(form.amount) || 0,
         method: form.method,
@@ -188,7 +190,7 @@ export default function StudentPayment() {
       label: 'Student Name',
       render: (r) => r.studentName || '—',
     },
-    { key: 'date', label: 'Date' },
+    { key: 'date', label: 'Date', render: (r) => formatDisplayDate(r.date) },
     { key: 'purpose', label: 'Purpose' },
     { key: 'amount', label: 'Amount', render: (r) => `$${Number(r.amount || 0).toFixed(2)}` },
     { key: 'method', label: 'Method' },
@@ -259,10 +261,12 @@ export default function StudentPayment() {
               <option value={WALK_IN}>Walk-in</option>
             </select>
           </div>
-          <div>
-            <label className="label">Date</label>
-            <input type="date" className="input" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} required />
-          </div>
+          <DateField
+            label="Date"
+            value={form.date}
+            onChange={(date) => setForm((f) => ({ ...f, date }))}
+            required
+          />
           <PaymentPurposeField
             value={form.purpose}
             onChange={(purpose) => setForm((f) => ({ ...f, purpose }))}

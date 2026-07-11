@@ -598,6 +598,8 @@ async function migrateDascPrefixToInv() {
   )
   for (const row of payments) {
     const newId = row.id.replace(/^DASC-/, 'INV-')
+    const { rows: exists } = await pool.query('SELECT 1 FROM payments WHERE id = $1', [newId])
+    if (exists.length) continue
     await pool.query('UPDATE payments SET id = $1 WHERE id = $2', [newId, row.id])
   }
 
@@ -607,6 +609,12 @@ async function migrateDascPrefixToInv() {
   for (const row of orders) {
     const oldId = row.id
     const newId = oldId.replace(/^DASC-/, 'INV-')
+    const { rows: exists } = await pool.query('SELECT 1 FROM orders WHERE id = $1', [newId])
+    if (exists.length) {
+      await pool.query('DELETE FROM order_items WHERE order_id = $1', [oldId])
+      await pool.query('DELETE FROM orders WHERE id = $1', [oldId])
+      continue
+    }
     const client = await pool.connect()
     try {
       await client.query('BEGIN')
