@@ -270,6 +270,7 @@ export default function StudentRegister() {
               <option>Computer Science</option>
               <option>Business Administration</option>
               <option>Design</option>
+              <option>Microsoft Office</option>
             </select>
           </div>
         </div>
