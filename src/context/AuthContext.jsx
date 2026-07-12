@@ -1,9 +1,13 @@
-import { createContext, useContext, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 
 const AUTH_KEY = 'management_auth'
+export const LOGOUT_REASON_KEY = 'logout_reason'
+const IDLE_TIMEOUT_MS = 5 * 60 * 1000
 
 const VALID_EMAIL = 'admin@gmail.com'
 const VALID_PASSWORD = '123456'
+
+const ACTIVITY_EVENTS = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click']
 
 const AuthContext = createContext(null)
 
@@ -30,10 +34,37 @@ export function AuthProvider({ children }) {
     return { ok: false, error: 'Invalid email or password' }
   }
 
-  const logout = () => {
+  const logout = useCallback((reason) => {
+    if (reason === 'idle') {
+      sessionStorage.setItem(LOGOUT_REASON_KEY, 'idle')
+    }
     localStorage.removeItem(AUTH_KEY)
     setUser(null)
-  }
+  }, [])
+
+  useEffect(() => {
+    if (!user) return undefined
+
+    let timer
+
+    const resetIdleTimer = () => {
+      clearTimeout(timer)
+      timer = setTimeout(() => logout('idle'), IDLE_TIMEOUT_MS)
+    }
+
+    ACTIVITY_EVENTS.forEach((event) => {
+      window.addEventListener(event, resetIdleTimer, { passive: true })
+    })
+
+    resetIdleTimer()
+
+    return () => {
+      clearTimeout(timer)
+      ACTIVITY_EVENTS.forEach((event) => {
+        window.removeEventListener(event, resetIdleTimer)
+      })
+    }
+  }, [user, logout])
 
   return (
     <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user }}>

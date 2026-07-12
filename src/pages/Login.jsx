@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext.jsx'
+import { LOGOUT_REASON_KEY, useAuth } from '../context/AuthContext.jsx'
 import { useTheme } from '../context/ThemeContext.jsx'
 import Button from '../components/ui/Button.jsx'
 
@@ -13,7 +13,15 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
+  const [idleNotice, setIdleNotice] = useState(false)
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (sessionStorage.getItem(LOGOUT_REASON_KEY) === 'idle') {
+      sessionStorage.removeItem(LOGOUT_REASON_KEY)
+      setIdleNotice(true)
+    }
+  }, [])
 
   if (isAuthenticated) return <Navigate to="/" replace />
 
@@ -67,6 +75,12 @@ export default function Login() {
         </div>
 
         <form onSubmit={submit} className="panel p-8 shadow-xl shadow-slate-200/50 dark:shadow-none">
+          {idleNotice && (
+            <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-300">
+              You were signed out after 5 minutes of inactivity.
+            </div>
+          )}
+
           {error && (
             <div className="mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-400">
               {error}
