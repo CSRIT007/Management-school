@@ -91,7 +91,7 @@ app.get('/api/dashboard/stats', async (req, res) => {
 })
 
 // Generic collections
-const valid = new Set(['students','classes','deadlines','payments','bookIssues','alumni','categories','products','orders'])
+const valid = new Set(['students','classes','deadlines','payments','bookIssues','alumni','categories','programs','products','orders'])
 
 app.get('/api/students/next-id', async (req, res) => {
   try {

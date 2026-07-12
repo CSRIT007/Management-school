@@ -107,6 +107,14 @@ CREATE TABLE IF NOT EXISTS categories (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Programs / courses (student enrollment options)
+CREATE TABLE IF NOT EXISTS programs (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- Products
 CREATE TABLE IF NOT EXISTS products (
   id TEXT PRIMARY KEY,
@@ -160,7 +168,7 @@ DECLARE
 BEGIN
   FOREACH t IN ARRAY ARRAY[
     'students', 'classes', 'deadlines', 'payments', 'book_issues',
-    'alumni', 'categories', 'products', 'orders'
+    'alumni', 'categories', 'programs', 'products', 'orders'
   ]
   LOOP
     EXECUTE format('DROP TRIGGER IF EXISTS trg_%s_updated_at ON %I', t, t);

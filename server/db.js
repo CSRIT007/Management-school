@@ -24,6 +24,7 @@ const collections = [
   'bookIssues',
   'alumni',
   'categories',
+  'programs',
   'products',
   'orders',
 ]
@@ -185,6 +186,19 @@ const TABLE_CONFIG = {
     insertCols: ['id', 'name', 'description'],
     updateCols: ['name', 'description'],
   },
+  programs: {
+    table: 'programs',
+    toApi: (r) => ({
+      id: r.id,
+      name: r.name,
+    }),
+    toDb: (o) => ({
+      id: o.id,
+      name: o.name ?? '',
+    }),
+    insertCols: ['id', 'name'],
+    updateCols: ['name'],
+  },
   products: {
     table: 'products',
     toApi: (r) => ({
@@ -277,7 +291,7 @@ async function waitForDb(retries = 30, delayMs = 1000) {
 async function migrateTimestampColumns() {
   const tables = [
     'students', 'classes', 'deadlines', 'payments', 'book_issues',
-    'alumni', 'categories', 'products', 'orders',
+    'alumni', 'categories', 'programs', 'products', 'orders',
   ]
   for (const table of tables) {
     await pool.query(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`)
@@ -594,6 +608,15 @@ async function nextClassId() {
   return `CLS-${String(rows[0].next).padStart(4, '0')}`
 }
 
+async function nextProgramId() {
+  const { rows } = await pool.query(`
+    SELECT COALESCE(MAX(CAST(SUBSTRING(id FROM 5) AS INTEGER)), 0) + 1 AS next
+    FROM programs
+    WHERE id ~ '^PRG-[0-9]+$'
+  `)
+  return `PRG-${String(rows[0].next).padStart(3, '0')}`
+}
+
 async function nextDeadlineId() {
   const { rows } = await pool.query(`
     SELECT COALESCE(MAX(CAST(SUBSTRING(id FROM 5) AS INTEGER)), 0) + 1 AS next
@@ -872,6 +895,9 @@ async function add(name, obj, { upsert = true } = {}) {
   if (name === 'classes' && !record.id) {
     record.id = await nextClassId()
   }
+  if (name === 'programs' && !record.id) {
+    record.id = await nextProgramId()
+  }
   if (name === 'deadlines' && !record.id) {
     record.id = await nextDeadlineId()
   }
@@ -898,6 +924,9 @@ async function add(name, obj, { upsert = true } = {}) {
       )
     } catch (e) {
       if (e.code === '23505') {
+        if (name === 'programs') {
+          throw Object.assign(new Error(`Program "${db.name}" already exists`), { code: '23505' })
+        }
         throw Object.assign(new Error(`ID "${db.id}" already exists`), { code: '23505' })
       }
       throw e
@@ -907,12 +936,19 @@ async function add(name, obj, { upsert = true } = {}) {
 
   const cols = cfg.insertCols
   const updateSet = cfg.updateCols.map((c) => `${c} = EXCLUDED.${c}`).join(', ')
-  await pool.query(
-    `INSERT INTO ${cfg.table} (${cols.join(', ')})
-     VALUES (${cols.map((_, i) => `$${i + 1}`).join(', ')})
-     ON CONFLICT (id) DO UPDATE SET ${updateSet}, updated_at = NOW()`,
-    cols.map((c) => db[c])
-  )
+  try {
+    await pool.query(
+      `INSERT INTO ${cfg.table} (${cols.join(', ')})
+       VALUES (${cols.map((_, i) => `$${i + 1}`).join(', ')})
+       ON CONFLICT (id) DO UPDATE SET ${updateSet}, updated_at = NOW()`,
+      cols.map((c) => db[c])
+    )
+  } catch (e) {
+    if (e.code === '23505' && name === 'programs') {
+      throw Object.assign(new Error(`Program "${db.name}" already exists`), { code: '23505' })
+    }
+    throw e
+  }
   return get(name, db.id)
 }
 
@@ -1021,6 +1057,21 @@ async function migrateOrderInvoiceIds() {
   }
 }
 
+async function migrateDefaultPrograms() {
+  const { rows } = await pool.query('SELECT COUNT(*)::int AS count FROM programs')
+  if (rows[0].count > 0) return
+
+  const defaults = [
+    'Computer Science',
+    'Business Administration',
+    'Design',
+    'Microsoft Office',
+  ]
+  for (const name of defaults) {
+    await add('programs', { name }, { upsert: false })
+  }
+}
+
 async function seedIfEmpty() {
   await waitForDb()
   await initSchema()
@@ -1034,6 +1085,7 @@ async function seedIfEmpty() {
   await migrateDeadlineIds()
   await migrateDeadlineTableLayout()
   await migrateClassStudents()
+  await migrateDefaultPrograms()
   await initDbeaverViews()
 
   if (await isEmpty()) {
@@ -1049,6 +1101,11 @@ async function seedIfEmpty() {
   await add('categories', { id: 'CAT-BOOKS', name: 'Books', description: 'Textbooks and references' })
   await add('categories', { id: 'CAT-STATIONERY', name: 'Stationery', description: 'Pens, notebooks, etc.' })
   await add('categories', { id: 'CAT-UNIFORMS', name: 'Uniforms', description: 'School uniforms' })
+
+  await add('programs', { id: 'PRG-001', name: 'Computer Science' })
+  await add('programs', { id: 'PRG-002', name: 'Business Administration' })
+  await add('programs', { id: 'PRG-003', name: 'Design' })
+  await add('programs', { id: 'PRG-004', name: 'Microsoft Office' })
 
   await add('products', { id: 'P001', name: 'Intro to JS', category: 'Books', stock: 12, price: 15.0, cost: 8.0, sku: 'BK-JS-001' })
   await add('products', { id: 'P002', name: 'A4 Notebook', category: 'Stationery', stock: 50, price: 2.5, cost: 1.0, sku: 'ST-NB-A4' })

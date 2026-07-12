@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { formatDisplayDate, isValidIsoDate } from '../../lib/dateFormat.js'
 import DateField from '../../components/ui/DateField.jsx'
+import ProgramCourseField from './components/ProgramCourseField.jsx'
 import { get, post, put, del } from '../../lib/api.js'
 import PageHeader from '../../components/ui/PageHeader.jsx'
 import Button from '../../components/ui/Button.jsx'
@@ -31,6 +32,7 @@ export default function StudentRegister() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState(false)
   const [fieldErrors, setFieldErrors] = useState({})
+  const [programs, setPrograms] = useState([])
 
   const load = async () => {
     try {
@@ -49,7 +51,23 @@ export default function StudentRegister() {
     }
   }
 
-  useEffect(() => { load() }, [])
+  const loadPrograms = async () => {
+    try {
+      const rows = await get('/api/programs')
+      const names = [...new Set(rows.map((p) => p.name).filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b))
+      setPrograms(names)
+    } catch {
+      setPrograms([
+        'Computer Science',
+        'Business Administration',
+        'Design',
+        'Microsoft Office',
+      ])
+    }
+  }
+
+  useEffect(() => { load(); loadPrograms() }, [])
 
   useEffect(() => {
     if (!editingId) loadNextId()
@@ -151,6 +169,17 @@ export default function StudentRegister() {
       showMsg(err.message, true)
     }
   }
+
+  const addProgram = async (name) => {
+    await post('/api/programs', { name })
+    await loadPrograms()
+  }
+
+  const programOptions = useMemo(() => {
+    const names = new Set(programs)
+    if (form.program?.trim()) names.add(form.program.trim())
+    return [...names].sort((a, b) => a.localeCompare(b))
+  }, [programs, form.program])
 
   const columns = [
     { key: 'id', label: 'Student ID', className: 'font-semibold text-slate-900 dark:text-slate-100' },
@@ -264,14 +293,12 @@ export default function StudentRegister() {
             <input value={form.emergency} onChange={(e) => setForm((f) => ({ ...f, emergency: e.target.value }))} className="input" placeholder="Name & Phone" />
           </div>
           <div className="md:col-span-2">
-            <label className="label">Program / Course</label>
-            <select value={form.program} onChange={(e) => setForm((f) => ({ ...f, program: e.target.value }))} className="input">
-              <option value="">Choose program</option>
-              <option>Computer Science</option>
-              <option>Business Administration</option>
-              <option>Design</option>
-              <option>Microsoft Office</option>
-            </select>
+            <ProgramCourseField
+              value={form.program}
+              onChange={(program) => setForm((f) => ({ ...f, program }))}
+              programs={programOptions}
+              onAdd={addProgram}
+            />
           </div>
         </div>
 
