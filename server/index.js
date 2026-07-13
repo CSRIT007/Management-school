@@ -2,6 +2,17 @@ import express from 'express'
 import cors from 'cors'
 import { db, checkConnection } from './db.js'
 import { getLanIp, printAppUrls } from './network.js'
+import { signToken, verifyPassword, sanitizeUser } from './auth.js'
+import { requireAuth, requireRole } from './middleware/auth.js'
+import {
+  listUsers,
+  getUserById,
+  getUserByEmail,
+  createUser,
+  updateUser,
+  setUserPassword,
+  touchUserLogin,
+} from './users.js'
 
 const app = express()
 const PORT = process.env.PORT || 4000
@@ -10,6 +21,19 @@ const HOST = process.env.HOST || '0.0.0.0'
 app.use(cors())
 app.use(express.json({ limit: '1mb' }))
 
+function apiPath(req) {
+  return (req.originalUrl || req.url || req.path || '').split('?')[0]
+}
+
+function apiAuth(req, res, next) {
+  const path = apiPath(req)
+  if (path === '/api/health' || path === '/api/auth/login') return next()
+  if (path.startsWith('/api/')) return requireAuth(req, res, next)
+  return next()
+}
+
+app.use(apiAuth)
+
 // Health
 app.get('/api/health', async (req, res) => {
   try {
@@ -17,6 +41,111 @@ app.get('/api/health', async (req, res) => {
     res.json({ ok: true, database: 'connected', time: dbStatus.now })
   } catch (e) {
     res.status(503).json({ ok: false, database: 'disconnected', error: e.message })
+  }
+})
+
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body || {}
+    if (!email?.trim() || !password) {
+      return res.status(400).json({ error: 'Email and password are required' })
+    }
+
+    const row = await getUserByEmail(email)
+    if (!row || row.active === false) {
+      return res.status(401).json({ error: 'Invalid email or password' })
+    }
+
+    if (!row.password_hash) {
+      return res.status(401).json({ error: 'Invalid email or password' })
+    }
+
+    const valid = await verifyPassword(password, row.password_hash)
+    if (!valid) {
+      return res.status(401).json({ error: 'Invalid email or password' })
+    }
+
+    await touchUserLogin(row.id)
+    const user = sanitizeUser(row)
+    const token = signToken(user)
+    res.json({ token, user })
+  } catch (e) {
+    console.error('POST /api/auth/login failed:', e)
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.get('/api/auth/me', async (req, res) => {
+  try {
+    const user = await getUserById(req.user.id)
+    if (!user || user.active === false) {
+      return res.status(401).json({ error: 'Account is inactive or not found' })
+    }
+    res.json({ user })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.get('/api/users', requireAuth, requireRole('admin'), async (req, res) => {
+  try {
+    res.json(await listUsers())
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.post('/api/users', requireAuth, requireRole('admin'), async (req, res) => {
+  try {
+    const { name, email, password, role, active } = req.body || {}
+    if (!name?.trim() || !email?.trim() || !password) {
+      return res.status(400).json({ error: 'Name, email, and password are required' })
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' })
+    }
+    const user = await createUser({ name, email, password, role, active })
+    res.status(201).json(user)
+  } catch (e) {
+    if (e.code === '23505' || e.status === 409) {
+      return res.status(409).json({ error: e.message || 'Email already exists' })
+    }
+    res.status(e.status || 500).json({ error: e.message })
+  }
+})
+
+app.put('/api/users/:id', requireAuth, requireRole('admin'), async (req, res) => {
+  try {
+    const { id } = req.params
+    const { password, ...fields } = req.body || {}
+    if (id === req.user.id && fields.active === false) {
+      return res.status(400).json({ error: 'You cannot deactivate your own account' })
+    }
+    if (password != null && password !== '' && password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' })
+    }
+    const updated = await updateUser(id, fields)
+    if (!updated) return res.status(404).json({ error: 'User not found' })
+    if (password) {
+      await setUserPassword(id, password)
+    }
+    res.json(updated)
+  } catch (e) {
+    res.status(e.status || 500).json({ error: e.message })
+  }
+})
+
+app.put('/api/users/:id/password', requireAuth, requireRole('admin'), async (req, res) => {
+  try {
+    const { password } = req.body || {}
+    if (!password || password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' })
+    }
+    const ok = await setUserPassword(req.params.id, password)
+    if (!ok) return res.status(404).json({ error: 'User not found' })
+    res.json({ ok: true })
+  } catch (e) {
+    res.status(500).json({ error: e.message })
   }
 })
 

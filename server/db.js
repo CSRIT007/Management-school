@@ -288,12 +288,38 @@ async function waitForDb(retries = 30, delayMs = 1000) {
   }
 }
 
+async function migrateUsersTable() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL DEFAULT '',
+      email TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL DEFAULT '',
+      role TEXT NOT NULL DEFAULT 'teacher'
+        CHECK (role IN ('admin', 'school_admin', 'finance', 'teacher')),
+      active BOOLEAN NOT NULL DEFAULT TRUE,
+      last_login_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT NOT NULL DEFAULT ''`)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NOT NULL DEFAULT 'teacher'`)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS active BOOLEAN NOT NULL DEFAULT TRUE`)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ`)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`)
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`)
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)`)
+}
+
 async function migrateTimestampColumns() {
   const tables = [
     'students', 'classes', 'deadlines', 'payments', 'book_issues',
-    'alumni', 'categories', 'programs', 'products', 'orders',
+    'alumni', 'categories', 'programs', 'products', 'orders', 'users',
   ]
   for (const table of tables) {
+    if (!(await tableExists(table))) continue
     await pool.query(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`)
     await pool.query(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`)
   }
@@ -1072,9 +1098,17 @@ async function migrateDefaultPrograms() {
   }
 }
 
+async function migrateDefaultUsers() {
+  const { seedDefaultUsers } = await import('./users.js')
+  await seedDefaultUsers()
+  const { rows } = await pool.query('SELECT COUNT(*)::int AS count FROM users')
+  console.log(`Users ready: ${rows[0].count} account(s)`)
+}
+
 async function seedIfEmpty() {
   await waitForDb()
   await initSchema()
+  await migrateUsersTable()
   await migrateTimestampColumns()
   await migrateFromLegacyRecords()
   await migratePaymentColumns()
@@ -1086,6 +1120,7 @@ async function seedIfEmpty() {
   await migrateDeadlineTableLayout()
   await migrateClassStudents()
   await migrateDefaultPrograms()
+  await migrateDefaultUsers()
   await initDbeaverViews()
 
   if (await isEmpty()) {

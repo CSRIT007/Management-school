@@ -1,5 +1,6 @@
 import { useTheme } from '../context/ThemeContext.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
+import { ROLE_LABELS } from '../lib/roles.js'
 import { useNavigate } from 'react-router-dom'
 import GlobalSearch from './GlobalSearch.jsx'
 
@@ -68,8 +69,10 @@ export default function Header({ onToggleSidebar, collapsed }) {
             </div>
             {!collapsed && (
               <div className="hidden lg:block">
-                <div className="text-xs font-semibold text-slate-800 dark:text-slate-100">{user?.name || 'Admin'}</div>
-                <div className="text-[10px] text-slate-400">{user?.email || 'admin@gmail.com'}</div>
+                <div className="text-xs font-semibold text-slate-800 dark:text-slate-100">{user?.name || 'User'}</div>
+                <div className="text-[10px] text-slate-400">
+                  {ROLE_LABELS[user?.role] || user?.role || 'Staff'} · {user?.email || ''}
+                </div>
               </div>
             )}
           </div>

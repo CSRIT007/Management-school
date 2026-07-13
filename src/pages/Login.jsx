@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { LOGOUT_REASON_KEY, useAuth } from '../context/AuthContext.jsx'
 import { useTheme } from '../context/ThemeContext.jsx'
+import { getDefaultRouteForRole } from '../lib/roles.js'
 import Button from '../components/ui/Button.jsx'
 
 export default function Login() {
-  const { login, isAuthenticated } = useAuth()
+  const { login, isAuthenticated, loading: authLoading, role } = useAuth()
   const { isDark, toggleTheme } = useTheme()
   const navigate = useNavigate()
 
@@ -23,22 +24,28 @@ export default function Login() {
     }
   }, [])
 
-  if (isAuthenticated) return <Navigate to="/" replace />
+  if (authLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-100 text-sm text-slate-500 dark:bg-slate-950">
+        Loading…
+      </div>
+    )
+  }
+
+  if (isAuthenticated) return <Navigate to={getDefaultRouteForRole(role)} replace />
 
   const submit = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
 
-    await new Promise((r) => setTimeout(r, 400))
-
-    const result = login(email, password)
-    setLoading(false)
-
-    if (result.ok) {
-      navigate('/', { replace: true })
-    } else {
-      setError(result.error)
+    try {
+      const user = await login(email, password)
+      navigate(getDefaultRouteForRole(user.role), { replace: true })
+    } catch (err) {
+      setError(err.message || 'Invalid email or password')
+    } finally {
+      setLoading(false)
     }
   }
 

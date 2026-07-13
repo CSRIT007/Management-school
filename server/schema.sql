@@ -161,6 +161,23 @@ CREATE INDEX IF NOT EXISTS idx_deadlines_due ON deadlines(due_date);
 CREATE INDEX IF NOT EXISTS idx_book_issues_status ON book_issues(status);
 CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
 
+-- Application users (login accounts)
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL DEFAULT '',
+  email TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL DEFAULT '',
+  role TEXT NOT NULL DEFAULT 'teacher'
+    CHECK (role IN ('admin', 'school_admin', 'finance', 'teacher')),
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  last_login_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
+
 -- updated_at triggers
 DO $$
 DECLARE
@@ -168,7 +185,7 @@ DECLARE
 BEGIN
   FOREACH t IN ARRAY ARRAY[
     'students', 'classes', 'deadlines', 'payments', 'book_issues',
-    'alumni', 'categories', 'programs', 'products', 'orders'
+    'alumni', 'categories', 'programs', 'products', 'orders', 'users'
   ]
   LOOP
     EXECUTE format('DROP TRIGGER IF EXISTS trg_%s_updated_at ON %I', t, t);

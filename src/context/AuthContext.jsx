@@ -1,11 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { get, post, getToken, setToken } from '../lib/api.js'
 
 const AUTH_KEY = 'management_auth'
 export const LOGOUT_REASON_KEY = 'logout_reason'
 const IDLE_TIMEOUT_MS = 5 * 60 * 1000
-
-const VALID_EMAIL = 'admin@gmail.com'
-const VALID_PASSWORD = '123456'
 
 const ACTIVITY_EVENTS = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click']
 
@@ -20,25 +18,60 @@ function readSession() {
   }
 }
 
+function saveSession(user) {
+  if (user) localStorage.setItem(AUTH_KEY, JSON.stringify(user))
+  else localStorage.removeItem(AUTH_KEY)
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => readSession())
+  const [loading, setLoading] = useState(true)
 
-  const login = (email, password) => {
-    const normalized = email.trim().toLowerCase()
-    if (normalized === VALID_EMAIL && password === VALID_PASSWORD) {
-      const session = { email: VALID_EMAIL, name: 'Admin' }
-      localStorage.setItem(AUTH_KEY, JSON.stringify(session))
-      setUser(session)
-      return { ok: true }
-    }
-    return { ok: false, error: 'Invalid email or password' }
+  useEffect(() => {
+    let active = true
+
+    ;(async () => {
+      const token = getToken()
+      if (!token) {
+        if (active) {
+          setUser(null)
+          setLoading(false)
+        }
+        return
+      }
+
+      try {
+        const { user: me } = await get('/api/auth/me')
+        if (active) {
+          setUser(me)
+          saveSession(me)
+        }
+      } catch {
+        setToken('')
+        saveSession(null)
+        if (active) setUser(null)
+      } finally {
+        if (active) setLoading(false)
+      }
+    })()
+
+    return () => { active = false }
+  }, [])
+
+  const login = async (email, password) => {
+    const result = await post('/api/auth/login', { email, password })
+    setToken(result.token)
+    setUser(result.user)
+    saveSession(result.user)
+    return result.user
   }
 
   const logout = useCallback((reason) => {
     if (reason === 'idle') {
       sessionStorage.setItem(LOGOUT_REASON_KEY, 'idle')
     }
-    localStorage.removeItem(AUTH_KEY)
+    setToken('')
+    saveSession(null)
     setUser(null)
   }, [])
 
@@ -67,7 +100,16 @@ export function AuthProvider({ children }) {
   }, [user, logout])
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        login,
+        logout,
+        loading,
+        isAuthenticated: !!user,
+        role: user?.role || null,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )

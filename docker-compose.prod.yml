@@ -32,6 +32,7 @@ services:
       HOST: 0.0.0.0
       DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-management_school}}
       PUBLIC_URL: ${PUBLIC_URL:?Set PUBLIC_URL in .env (e.g. http://YOUR_EC2_IP)}
+      JWT_SECRET: ${JWT_SECRET:-dev-only-change-me-in-production}
     expose:
       - '4000'
     depends_on:
