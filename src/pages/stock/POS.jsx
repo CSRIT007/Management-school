@@ -32,6 +32,63 @@ export default function POS() {
   const [checkingOut, setCheckingOut] = useState(false)
   const [lastOrder, setLastOrder] = useState(null)
   const [viewInvoice, setViewInvoice] = useState(null)
+  const [cartNotice, setCartNotice] = useState('')
+
+  const showCartNotice = (message) => {
+    setCartNotice(message)
+    window.clearTimeout(showCartNotice._timer)
+    showCartNotice._timer = window.setTimeout(() => setCartNotice(''), 3000)
+  }
+
+  const getAvailableStock = (productId) => {
+    const product = catalog.find((p) => p.id === productId)
+    return Number(product?.stock) || 0
+  }
+
+  const addToCart = (p) => {
+    const stock = Number(p.stock) || 0
+    if (stock <= 0) {
+      showCartNotice(`${p.name} is out of stock.`)
+      return
+    }
+
+    setCart((prev) => {
+      const idx = prev.findIndex((i) => i.id === p.id)
+      if (idx >= 0) {
+        if (prev[idx].qty >= stock) {
+          showCartNotice(`Only ${stock} in stock for ${p.name}.`)
+          return prev
+        }
+        const next = [...prev]
+        next[idx] = { ...next[idx], qty: next[idx].qty + 1 }
+        return next
+      }
+      return [...prev, { ...p, qty: 1 }]
+    })
+  }
+
+  const removeFromCart = (id) => {
+    setCart((prev) => prev.filter((i) => i.id !== id))
+  }
+
+  const changeQty = (id, delta) => {
+    setCart((prev) =>
+      prev.flatMap((i) => {
+        if (i.id !== id) return [i]
+
+        const nextQty = i.qty + delta
+        if (nextQty <= 0) return []
+
+        const stock = getAvailableStock(id)
+        if (stock > 0 && nextQty > stock) {
+          showCartNotice(`Only ${stock} in stock for ${i.name}.`)
+          return [i]
+        }
+
+        return [{ ...i, qty: nextQty }]
+      })
+    )
+  }
 
   useEffect(() => {
     Promise.all([get('/api/products'), get('/api/students')]).then(([products, studentList]) => {
@@ -41,26 +98,6 @@ export default function POS() {
   }, [])
 
   const filtered = catalog.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
-
-  const addToCart = (p) => {
-    setCart((prev) => {
-      const idx = prev.findIndex((i) => i.id === p.id)
-      if (idx >= 0) {
-        const next = [...prev]
-        next[idx] = { ...next[idx], qty: next[idx].qty + 1 }
-        return next
-      }
-      return [...prev, { ...p, qty: 1 }]
-    })
-  }
-
-  const changeQty = (id, delta) => {
-    setCart((prev) =>
-      prev
-        .map((i) => (i.id === id ? { ...i, qty: Math.max(1, i.qty + delta) } : i))
-        .filter((i) => i.qty > 0)
-    )
-  }
 
   const total = cart.reduce((s, i) => s + (Number(i.price) || 0) * i.qty, 0)
 
@@ -134,6 +171,11 @@ export default function POS() {
               <h3 className="font-bold text-slate-900 dark:text-slate-100">Shopping Cart</h3>
               <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400">{cart.length} items</span>
             </div>
+            {cartNotice ? (
+              <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-300">
+                {cartNotice}
+              </div>
+            ) : null}
             <div className="space-y-3">
               {cart.length === 0 && (
                 <div className="py-8 text-center text-sm text-slate-400">No items in cart</div>
@@ -142,9 +184,30 @@ export default function POS() {
                 <div key={i.id} className="flex items-center justify-between rounded-xl bg-slate-50 dark:bg-slate-800 px-3 py-2.5 text-sm">
                   <div className="min-w-0 flex-1 font-medium text-slate-800 dark:text-slate-200 truncate">{i.name}</div>
                   <div className="flex items-center gap-2 ml-2">
-                    <button className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600" onClick={() => changeQty(i.id, -1)}>−</button>
+                    <button
+                      type="button"
+                      title={i.qty === 1 ? 'Remove from cart' : 'Decrease quantity'}
+                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
+                      onClick={() => changeQty(i.id, -1)}
+                    >
+                      −
+                    </button>
                     <span className="w-5 text-center font-semibold">{i.qty}</span>
-                    <button className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600" onClick={() => changeQty(i.id, +1)}>+</button>
+                    <button
+                      type="button"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
+                      onClick={() => changeQty(i.id, +1)}
+                    >
+                      +
+                    </button>
+                    <button
+                      type="button"
+                      title="Remove from cart"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg border border-rose-200 bg-white text-rose-500 hover:bg-rose-50 dark:border-rose-900 dark:bg-slate-700 dark:text-rose-400 dark:hover:bg-rose-950/40"
+                      onClick={() => removeFromCart(i.id)}
+                    >
+                      ×
+                    </button>
                     <span className="w-16 text-right font-semibold text-slate-900 dark:text-slate-100">${(i.price * i.qty).toFixed(2)}</span>
                   </div>
                 </div>
