@@ -9,9 +9,19 @@ import Button from '../../components/ui/Button.jsx'
 import DataTable from '../../components/ui/DataTable.jsx'
 import Badge from '../../components/ui/Badge.jsx'
 import FormAlert from '../../components/ui/FormAlert.jsx'
+import ExportReportButton from '../../components/ui/ExportReportButton.jsx'
+import TableExportHeader from '../../components/ui/TableExportHeader.jsx'
 import InvoiceDocument, { printInvoice } from '../../components/InvoiceDocument.jsx'
 import PaymentPurposeField from './components/PaymentPurposeField.jsx'
 import PaymentNoteField from './components/PaymentNoteField.jsx'
+import { PAYMENT_PURPOSE_OPTIONS } from '../../lib/paymentPurpose.js'
+import {
+  PAYMENT_EXPORT_COLUMNS,
+  PAYMENT_FILTER_INITIAL,
+  PAYMENT_REPORT_TITLE,
+  filterPayments,
+  downloadPaymentCsv,
+} from '../../lib/exports/paymentExport.js'
 
 const emptyForm = { id: '', studentId: '', studentName: '', date: '', purpose: '', amount: '', method: 'Cash', status: 'Paid', note: '' }
 const WALK_IN = '__walkin__'
@@ -172,6 +182,12 @@ export default function StudentPayment() {
     }
   }
 
+  const purposeFilterOptions = useMemo(() => {
+    const fromData = [...new Set(payments.map((p) => p.purpose).filter(Boolean))]
+    const defaults = PAYMENT_PURPOSE_OPTIONS.map((o) => o.value).filter(Boolean)
+    return [...new Set([...fromData, ...defaults])].sort((a, b) => a.localeCompare(b))
+  }, [payments])
+
   const columns = [
     {
       key: 'invoiceNo',
@@ -312,12 +328,99 @@ export default function StudentPayment() {
       </form>
 
       <div>
-        <h3 className="mb-1 text-lg font-bold text-slate-900 dark:text-slate-100">
-          Payment History ({payments.length})
-        </h3>
-        <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
-          Newest first (DESC). Click <strong>Print</strong> on any row to view or print the invoice later.
-        </p>
+        <TableExportHeader
+          title={PAYMENT_REPORT_TITLE}
+          count={payments.length}
+          subtitle="Newest first (DESC). Click Print on any row to view or print the invoice later."
+        >
+          <ExportReportButton
+            reportTitle={PAYMENT_REPORT_TITLE}
+            modalTitle="Export Payment History"
+            description="Filter payments and choose which columns to include in the CSV."
+            columnDefs={PAYMENT_EXPORT_COLUMNS}
+            filters={{
+              initialState: PAYMENT_FILTER_INITIAL,
+              render: (state, setState) => (
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="label">Status</label>
+                    <select
+                      className="input"
+                      value={state.status}
+                      onChange={(e) => setState((s) => ({ ...s, status: e.target.value }))}
+                    >
+                      <option value="all">All statuses</option>
+                      <option>Paid</option>
+                      <option>Pending</option>
+                      <option>Failed</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="label">Payment Method</label>
+                    <select
+                      className="input"
+                      value={state.method}
+                      onChange={(e) => setState((s) => ({ ...s, method: e.target.value }))}
+                    >
+                      <option value="all">All methods</option>
+                      <option>Cash</option>
+                      <option>Card</option>
+                      <option>QR</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="label">Student</label>
+                    <select
+                      className="input"
+                      value={state.studentId}
+                      onChange={(e) => setState((s) => ({ ...s, studentId: e.target.value }))}
+                    >
+                      <option value="all">All students</option>
+                      {students.map((s) => (
+                        <option key={s.id} value={s.id}>{`${s.id} — ${s.name}`}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="label">Payment Purpose</label>
+                    <select
+                      className="input"
+                      value={state.purpose}
+                      onChange={(e) => setState((s) => ({ ...s, purpose: e.target.value }))}
+                    >
+                      <option value="all">All purposes</option>
+                      {purposeFilterOptions.map((purpose) => (
+                        <option key={purpose} value={purpose}>{purpose}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="label">Date from</label>
+                    <input
+                      type="date"
+                      className="input"
+                      value={state.dateFrom}
+                      onChange={(e) => setState((s) => ({ ...s, dateFrom: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="label">Date to</label>
+                    <input
+                      type="date"
+                      className="input"
+                      value={state.dateTo}
+                      onChange={(e) => setState((s) => ({ ...s, dateTo: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              ),
+            }}
+            getRows={(filterState) => filterPayments(sortedPayments, filterState)}
+            onDownload={downloadPaymentCsv}
+            disabled={payments.length === 0}
+            size="sm"
+          />
+        </TableExportHeader>
         <DataTable columns={columns} rows={sortedPayments} emptyMessage="No payment records found." />
       </div>
 

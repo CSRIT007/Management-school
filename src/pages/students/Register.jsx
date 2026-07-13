@@ -6,6 +6,15 @@ import { get, post, put, del } from '../../lib/api.js'
 import PageHeader from '../../components/ui/PageHeader.jsx'
 import Button from '../../components/ui/Button.jsx'
 import DataTable from '../../components/ui/DataTable.jsx'
+import ExportReportButton from '../../components/ui/ExportReportButton.jsx'
+import TableExportHeader from '../../components/ui/TableExportHeader.jsx'
+import {
+  STUDENT_EXPORT_COLUMNS,
+  STUDENT_FILTER_INITIAL,
+  STUDENT_REPORT_TITLE,
+  filterStudents,
+  downloadStudentRegisterCsv,
+} from '../../lib/exports/studentRegisterExport.js'
 
 const emptyForm = { id: '', name: '', email: '', phone: '', address: '', dob: '', emergency: '', program: '' }
 
@@ -181,6 +190,13 @@ export default function StudentRegister() {
     return [...names].sort((a, b) => a.localeCompare(b))
   }, [programs, form.program])
 
+  const programFilterOptions = useMemo(() => {
+    const names = [...new Set(students.map((s) => s.program).filter(Boolean))].sort((a, b) =>
+      a.localeCompare(b)
+    )
+    return names
+  }, [students])
+
   const columns = [
     { key: 'id', label: 'Student ID', className: 'font-semibold text-slate-900 dark:text-slate-100' },
     { key: 'name', label: 'Full Name' },
@@ -311,7 +327,36 @@ export default function StudentRegister() {
       </form>
 
       <div>
-        <h3 className="mb-4 text-lg font-bold text-slate-900 dark:text-slate-100">Registered Students ({students.length})</h3>
+        <TableExportHeader title={STUDENT_REPORT_TITLE} count={students.length}>
+          <ExportReportButton
+            reportTitle={STUDENT_REPORT_TITLE}
+            modalTitle="Export Register Students"
+            description="Choose columns and filter by program before downloading."
+            columnDefs={STUDENT_EXPORT_COLUMNS}
+            filters={{
+              initialState: STUDENT_FILTER_INITIAL,
+              render: (state, setState) => (
+                <div>
+                  <label className="label">Program / Course</label>
+                  <select
+                    className="input"
+                    value={state.program}
+                    onChange={(e) => setState((s) => ({ ...s, program: e.target.value }))}
+                  >
+                    <option value="all">All programs</option>
+                    {programFilterOptions.map((name) => (
+                      <option key={name} value={name}>{name}</option>
+                    ))}
+                  </select>
+                </div>
+              ),
+            }}
+            getRows={(filterState) => filterStudents(students, filterState)}
+            onDownload={downloadStudentRegisterCsv}
+            disabled={students.length === 0}
+            size="sm"
+          />
+        </TableExportHeader>
         <DataTable columns={columns} rows={students} emptyMessage="No students registered yet." />
       </div>
     </div>

@@ -6,6 +6,15 @@ import PageHeader from '../../components/ui/PageHeader.jsx'
 import StatCard from '../../components/ui/StatCard.jsx'
 import DataTable from '../../components/ui/DataTable.jsx'
 import Badge from '../../components/ui/Badge.jsx'
+import ExportReportButton from '../../components/ui/ExportReportButton.jsx'
+import TableExportHeader from '../../components/ui/TableExportHeader.jsx'
+import {
+  STOCK_REPORT_SECTIONS,
+  STOCK_FILTER_INITIAL,
+  STOCK_REPORT_TITLE,
+  countStockExportRows,
+  downloadStockReportCsv,
+} from '../../lib/exports/stockReportExport.js'
 
 function formatMoney(n) {
   return `$${Number(n || 0).toFixed(2)}`
@@ -90,6 +99,20 @@ export default function StockReport() {
     [sales]
   )
 
+  const stockExportData = useMemo(
+    () => ({
+      summary,
+      orders,
+      low,
+      sales,
+      top,
+      products,
+      unitsInStock,
+      ordersToday,
+    }),
+    [summary, orders, low, sales, top, products, unitsInStock, ordersToday]
+  )
+
   const lowStockColumns = [
     { key: 'name', label: 'Product', className: 'font-semibold text-slate-900 dark:text-slate-100' },
     { key: 'category', label: 'Category' },
@@ -148,6 +171,74 @@ export default function StockReport() {
         <SalesChart data={salesChart} loading={loading} />
         <TopProductsCard data={top} loading={loading} />
       </div>
+
+      <TableExportHeader
+        title={STOCK_REPORT_TITLE}
+        subtitle="Download POS sales, inventory, and summary data below."
+      >
+        <ExportReportButton
+          label="Download CSV"
+          reportTitle={STOCK_REPORT_TITLE}
+          modalTitle="Export Stock Report"
+          description="Choose report sections and filters, then download as one CSV file."
+          columnDefs={STOCK_REPORT_SECTIONS}
+          columnsLabel="Sections to include"
+          filters={{
+            initialState: STOCK_FILTER_INITIAL,
+            render: (state, setState) => (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="label">POS sales — date from</label>
+                  <input
+                    type="date"
+                    className="input"
+                    value={state.dateFrom}
+                    onChange={(e) => setState((s) => ({ ...s, dateFrom: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="label">POS sales — date to</label>
+                  <input
+                    type="date"
+                    className="input"
+                    value={state.dateTo}
+                    onChange={(e) => setState((s) => ({ ...s, dateTo: e.target.value }))}
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="label">POS sales — payment method</label>
+                  <select
+                    className="input"
+                    value={state.paymentMethod}
+                    onChange={(e) => setState((s) => ({ ...s, paymentMethod: e.target.value }))}
+                  >
+                    <option value="all">All methods</option>
+                    <option>Cash</option>
+                    <option>Card</option>
+                    <option>QR</option>
+                  </select>
+                </div>
+                <p className="sm:col-span-2 text-xs text-slate-500 dark:text-slate-400">
+                  Date and payment filters apply to the <strong>POS sales</strong> section only.
+                </p>
+              </div>
+            ),
+          }}
+          getPreviewCount={(selectedKeys, filterState) =>
+            countStockExportRows(selectedKeys, filterState, stockExportData)
+          }
+          onDownload={({ selectedKeys, filterState, reportTitle }) =>
+            downloadStockReportCsv({
+              selectedKeys,
+              filters: filterState,
+              reportTitle,
+              ...stockExportData,
+            })
+          }
+          disabled={loading}
+          size="sm"
+        />
+      </TableExportHeader>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <section>
