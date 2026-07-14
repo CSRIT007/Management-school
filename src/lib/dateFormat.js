@@ -1,14 +1,54 @@
 const DISPLAY_RE = /^(\d{1,2})-(\d{1,2})-(\d{4})$/
 const ISO_RE = /^(\d{4})-(\d{2})-(\d{2})$/
+/** ISO date, or datetime like 2026-07-01T10:00:00.000Z / 2026-07-01 10:00:00 */
+const ISO_PREFIX_RE = /^(\d{4})-(\d{2})-(\d{2})(?:[T\s].*)?$/
 
 function pad2(n) {
   return String(n).padStart(2, '0')
 }
 
+function isValidParts(day, month, year) {
+  if (month < 1 || month > 12 || day < 1 || day > 31 || year < 1000 || year > 9999) return false
+  const d = new Date(year, month - 1, day)
+  return d.getFullYear() === year && d.getMonth() === month - 1 && d.getDate() === day
+}
+
+function fromLocalDate(d) {
+  if (!(d instanceof Date) || Number.isNaN(d.getTime())) return ''
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
+}
+
+/**
+ * Convert UI / API date values to ISO `yyyy-mm-dd`.
+ * Accepts:
+ * - Date objects
+ * - ISO `yyyy-mm-dd`
+ * - ISO datetime (`yyyy-mm-ddTHH:mm:ss…`) — used by POS orders
+ * - Display `dd-mm-yyyy` (full date only)
+ *
+ * Partial typing like "01" or "01-07" must NOT invent a date.
+ */
 export function toIsoDate(value) {
-  if (!value) return ''
+  if (value == null || value === '') return ''
+
+  if (value instanceof Date) return fromLocalDate(value)
+
   const s = String(value).trim()
-  if (ISO_RE.test(s)) return s
+  if (!s) return ''
+
+  if (ISO_RE.test(s)) {
+    const [y, m, d] = s.split('-').map(Number)
+    return isValidParts(d, m, y) ? s : ''
+  }
+
+  const isoPrefix = ISO_PREFIX_RE.exec(s)
+  if (isoPrefix) {
+    const year = Number(isoPrefix[1])
+    const month = Number(isoPrefix[2])
+    const day = Number(isoPrefix[3])
+    if (!isValidParts(day, month, year)) return ''
+    return `${isoPrefix[1]}-${isoPrefix[2]}-${isoPrefix[3]}`
+  }
 
   const display = DISPLAY_RE.exec(s)
   if (display) {
@@ -19,15 +59,7 @@ export function toIsoDate(value) {
     return `${year}-${pad2(month)}-${pad2(day)}`
   }
 
-  const d = new Date(s)
-  if (Number.isNaN(d.getTime())) return ''
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
-}
-
-function isValidParts(day, month, year) {
-  if (month < 1 || month > 12 || day < 1 || year < 1000) return false
-  const d = new Date(year, month - 1, day)
-  return d.getFullYear() === year && d.getMonth() === month - 1 && d.getDate() === day
+  return ''
 }
 
 export function isValidIsoDate(value) {
@@ -35,14 +67,45 @@ export function isValidIsoDate(value) {
 }
 
 export function formatDisplayDate(value) {
-  if (!value) return '—'
+  if (value == null || value === '') return '—'
   const iso = toIsoDate(value)
-  if (!iso) return String(value)
+  if (!iso) return '—'
   const [y, m, d] = iso.split('-')
   return `${d}-${m}-${y}`
 }
 
 export function todayIso() {
-  const d = new Date()
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
+  return fromLocalDate(new Date())
+}
+
+/**
+ * Auto-format typing as dd-mm-yyyy.
+ * After 2 day digits → `dd-`
+ * After 2 month digits → `dd-mm-`
+ * Deleting through a dash is allowed (dash is not forced back on).
+ */
+export function maskDisplayDateInput(raw, previous = '') {
+  const cleaned = String(raw ?? '').replace(/[^\d-]/g, '')
+  const digits = cleaned.replace(/\D/g, '').slice(0, 8)
+  const prevDigits = String(previous ?? '').replace(/\D/g, '')
+  const isDeleting = digits.length < prevDigits.length
+  const removedTrailingDash =
+    String(previous).endsWith('-') &&
+    !cleaned.endsWith('-') &&
+    digits.length === prevDigits.length
+
+  const skipAutoDash = isDeleting || removedTrailingDash
+
+  if (digits.length === 0) return ''
+
+  if (digits.length <= 2) {
+    return digits.length === 2 && !skipAutoDash ? `${digits}-` : digits
+  }
+
+  if (digits.length <= 4) {
+    const base = `${digits.slice(0, 2)}-${digits.slice(2)}`
+    return digits.length === 4 && !skipAutoDash ? `${base}-` : base
+  }
+
+  return `${digits.slice(0, 2)}-${digits.slice(2, 4)}-${digits.slice(4)}`
 }

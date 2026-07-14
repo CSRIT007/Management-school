@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { formatDisplayDate, toIsoDate } from '../../lib/dateFormat.js'
+import { formatDisplayDate, maskDisplayDateInput, toIsoDate } from '../../lib/dateFormat.js'
 
 export default function DateField({
   label,
@@ -10,14 +10,23 @@ export default function DateField({
   error = '',
 }) {
   const [text, setText] = useState('')
+  const [focused, setFocused] = useState(false)
 
   useEffect(() => {
+    // Do not rewrite the field while the user is still typing.
+    if (focused) return
     const display = formatDisplayDate(value)
     setText(display === '—' ? '' : display)
-  }, [value])
+  }, [value, focused])
 
   const commit = (raw) => {
-    const iso = toIsoDate(raw)
+    const cleaned = String(raw || '').trim()
+    if (!cleaned) {
+      setText('')
+      onChange('')
+      return true
+    }
+    const iso = toIsoDate(cleaned)
     if (iso) {
       setText(formatDisplayDate(iso))
       onChange(iso)
@@ -34,25 +43,31 @@ export default function DateField({
         inputMode="numeric"
         autoComplete="off"
         placeholder="dd-mm-yyyy"
+        maxLength={10}
         className={[
           'input',
           error ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/20' : '',
           className,
         ].join(' ')}
         value={text}
+        onFocus={() => setFocused(true)}
         onChange={(e) => {
-          const raw = e.target.value
-          setText(raw)
-          const iso = toIsoDate(raw)
+          const masked = maskDisplayDateInput(e.target.value, text)
+          setText(masked)
+          // Only commit when dd-mm-yyyy is complete and valid.
+          const iso = toIsoDate(masked)
           if (iso) onChange(iso)
         }}
         onBlur={() => {
+          setFocused(false)
           if (!text.trim()) {
+            setText('')
             onChange('')
             return
           }
           if (!commit(text)) {
-            setText(formatDisplayDate(value) === '—' ? '' : formatDisplayDate(value))
+            const display = formatDisplayDate(value)
+            setText(display === '—' ? '' : display)
           }
         }}
         required={required}
