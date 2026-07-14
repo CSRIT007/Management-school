@@ -15,6 +15,15 @@ import ProductManagement from './pages/stock/Product.jsx'
 import POS from './pages/stock/POS.jsx'
 import StockReport from './pages/stock/Report.jsx'
 import UserManagement from './pages/admin/UserManagement.jsx'
+import FinanceOverview from './pages/finance/FinanceOverview.jsx'
+import TuitionReport from './pages/finance/TuitionReport.jsx'
+import PosRevenue from './pages/finance/PosRevenue.jsx'
+import PendingPayments from './pages/finance/PendingPayments.jsx'
+import CashFlowReport from './pages/finance/CashFlowReport.jsx'
+import PaymentMethodReport from './pages/finance/PaymentMethodReport.jsx'
+import FeePurposeReport from './pages/finance/FeePurposeReport.jsx'
+import MonthlySummary from './pages/finance/MonthlySummary.jsx'
+import StudentLedger from './pages/finance/StudentLedger.jsx'
 
 export default function App() {
   return (
@@ -36,6 +45,15 @@ export default function App() {
               <Route path="/stock/product" element={<ProductManagement />} />
               <Route path="/stock/pos" element={<POS />} />
               <Route path="/stock/report" element={<StockReport />} />
+              <Route path="/finance/overview" element={<FinanceOverview />} />
+              <Route path="/finance/tuition" element={<TuitionReport />} />
+              <Route path="/finance/pos-revenue" element={<PosRevenue />} />
+              <Route path="/finance/pending" element={<PendingPayments />} />
+              <Route path="/finance/cash-flow" element={<CashFlowReport />} />
+              <Route path="/finance/methods" element={<PaymentMethodReport />} />
+              <Route path="/finance/purpose" element={<FeePurposeReport />} />
+              <Route path="/finance/monthly" element={<MonthlySummary />} />
+              <Route path="/finance/student-ledger" element={<StudentLedger />} />
               <Route path="/admin/users" element={<UserManagement />} />
               <Route path="*" element={<Navigate to="/" />} />
             </Route>

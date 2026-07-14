@@ -24,6 +24,15 @@ const ROUTE_ACCESS = {
   '/stock/product': [ROLES.ADMIN, ROLES.SCHOOL_ADMIN, ROLES.FINANCE],
   '/stock/pos': [ROLES.ADMIN, ROLES.SCHOOL_ADMIN, ROLES.FINANCE],
   '/stock/report': [ROLES.ADMIN, ROLES.SCHOOL_ADMIN, ROLES.FINANCE],
+  '/finance/overview': [ROLES.ADMIN, ROLES.SCHOOL_ADMIN, ROLES.FINANCE],
+  '/finance/tuition': [ROLES.ADMIN, ROLES.SCHOOL_ADMIN, ROLES.FINANCE],
+  '/finance/pos-revenue': [ROLES.ADMIN, ROLES.SCHOOL_ADMIN, ROLES.FINANCE],
+  '/finance/pending': [ROLES.ADMIN, ROLES.SCHOOL_ADMIN, ROLES.FINANCE],
+  '/finance/cash-flow': [ROLES.ADMIN, ROLES.SCHOOL_ADMIN, ROLES.FINANCE],
+  '/finance/methods': [ROLES.ADMIN, ROLES.SCHOOL_ADMIN, ROLES.FINANCE],
+  '/finance/purpose': [ROLES.ADMIN, ROLES.SCHOOL_ADMIN, ROLES.FINANCE],
+  '/finance/monthly': [ROLES.ADMIN, ROLES.SCHOOL_ADMIN, ROLES.FINANCE],
+  '/finance/student-ledger': [ROLES.ADMIN, ROLES.SCHOOL_ADMIN, ROLES.FINANCE],
   '/admin/users': [ROLES.ADMIN],
 }
 
@@ -53,6 +62,20 @@ export const NAV_ITEMS = [
     ],
   },
   {
+    section: 'Finance',
+    items: [
+      { to: '/finance/overview', label: 'Financial Overview', icon: 'finance' },
+      { to: '/finance/tuition', label: 'Tuition & Fees', icon: 'payment' },
+      { to: '/finance/pos-revenue', label: 'POS Revenue', icon: 'cart' },
+      { to: '/finance/pending', label: 'Pending Payments', icon: 'pending' },
+      { to: '/finance/cash-flow', label: 'Daily Cash Flow', icon: 'cashflow' },
+      { to: '/finance/methods', label: 'Payment Methods', icon: 'methods' },
+      { to: '/finance/purpose', label: 'Fee Purpose Report', icon: 'purpose' },
+      { to: '/finance/monthly', label: 'Monthly Summary', icon: 'monthly' },
+      { to: '/finance/student-ledger', label: 'Student Ledger', icon: 'ledger' },
+    ],
+  },
+  {
     section: 'Administration',
     items: [
       { to: '/admin/users', label: 'User Management', icon: 'users' },
@@ -66,6 +89,16 @@ export function canAccessRoute(role, path) {
   return allowed.includes(role)
 }
 
+/** Roles that can create/edit tuition payments */
+export function canEditPayments(role) {
+  return role === ROLES.ADMIN || role === ROLES.FINANCE
+}
+
+/** Roles that can export finance reports */
+export function canExportFinance(role) {
+  return role === ROLES.ADMIN || role === ROLES.FINANCE || role === ROLES.SCHOOL_ADMIN
+}
+
 export function getNavItemsForRole(role) {
   return NAV_ITEMS.map((group) => ({
     ...group,
@@ -74,6 +107,9 @@ export function getNavItemsForRole(role) {
 }
 
 export function getDefaultRouteForRole(role) {
+  if (role === ROLES.FINANCE && canAccessRoute(role, '/finance/overview')) {
+    return '/finance/overview'
+  }
   if (canAccessRoute(role, '/')) return '/'
   const first = getNavItemsForRole(role)[0]?.items[0]?.to
   return first || '/login'

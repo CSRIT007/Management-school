@@ -13,10 +13,26 @@ import {
   setUserPassword,
   touchUserLogin,
 } from './users.js'
+import { getFinanceOverview } from './finance.js'
 
 const app = express()
 const PORT = process.env.PORT || 4000
 const HOST = process.env.HOST || '0.0.0.0'
+
+const ROLE = {
+  ADMIN: 'admin',
+  SCHOOL_ADMIN: 'school_admin',
+  FINANCE: 'finance',
+  TEACHER: 'teacher',
+}
+
+const FINANCE_VIEW = [ROLE.ADMIN, ROLE.SCHOOL_ADMIN, ROLE.FINANCE]
+const FINANCE_EDIT = [ROLE.ADMIN, ROLE.FINANCE]
+const STOCK_OPS = [ROLE.ADMIN, ROLE.SCHOOL_ADMIN, ROLE.FINANCE]
+const STOCK_MANAGE = [ROLE.ADMIN, ROLE.SCHOOL_ADMIN]
+const STUDENT_MANAGE = [ROLE.ADMIN, ROLE.SCHOOL_ADMIN]
+const STUDENT_VIEW = [ROLE.ADMIN, ROLE.SCHOOL_ADMIN, ROLE.FINANCE, ROLE.TEACHER]
+const CLASS_OPS = [ROLE.ADMIN, ROLE.SCHOOL_ADMIN, ROLE.TEACHER]
 
 app.use(cors())
 app.use(express.json({ limit: '1mb' }))
@@ -149,7 +165,7 @@ app.put('/api/users/:id/password', requireAuth, requireRole('admin'), async (req
   }
 })
 
-app.get('/api/payments/next-inv-id', async (req, res) => {
+app.get('/api/payments/next-inv-id', requireRole(...FINANCE_VIEW), async (req, res) => {
   try {
     const id = await db.nextInvoiceId()
     res.json({ id })
@@ -158,8 +174,18 @@ app.get('/api/payments/next-inv-id', async (req, res) => {
   }
 })
 
+// Finance reporting
+app.get('/api/finance/overview', requireRole(...FINANCE_VIEW), async (req, res) => {
+  try {
+    const { dateFrom = '', dateTo = '' } = req.query || {}
+    res.json(await getFinanceOverview({ dateFrom, dateTo }))
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
 // Reports (must be registered before /api/:col routes)
-app.get('/api/reports/summary', async (req, res) => {
+app.get('/api/reports/summary', requireRole(...STOCK_OPS), async (req, res) => {
   const products = await db.list('products')
   const lowStock = products.filter(p => (p.stock ?? 0) <= 3).length
   const today = new Date().toISOString().slice(0,10)
@@ -170,7 +196,7 @@ app.get('/api/reports/summary', async (req, res) => {
   res.json({ totalProducts: products.length, lowStockItems: lowStock, totalSalesToday: todaySales })
 })
 
-app.get('/api/reports/sales-over-time', async (req, res) => {
+app.get('/api/reports/sales-over-time', requireRole(...STOCK_OPS), async (req, res) => {
   const orders = await db.list('orders')
   const map = new Map()
   for (const o of orders) {
@@ -180,7 +206,7 @@ app.get('/api/reports/sales-over-time', async (req, res) => {
   res.json(Array.from(map, ([date, total]) => ({ date, total })))
 })
 
-app.get('/api/reports/top-products', async (req, res) => {
+app.get('/api/reports/top-products', requireRole(...STOCK_OPS), async (req, res) => {
   const orders = await db.list('orders')
   const counts = new Map()
   for (const o of orders) {
@@ -194,7 +220,7 @@ app.get('/api/reports/top-products', async (req, res) => {
   res.json(top)
 })
 
-app.get('/api/reports/low-stock', async (req, res) => {
+app.get('/api/reports/low-stock', requireRole(...STOCK_OPS), async (req, res) => {
   const products = await db.list('products')
   const low = products.filter(p => (p.stock ?? 0) <= 3)
   res.json(low)
@@ -222,7 +248,33 @@ app.get('/api/dashboard/stats', async (req, res) => {
 // Generic collections
 const valid = new Set(['students','classes','deadlines','payments','bookIssues','alumni','categories','programs','products','orders'])
 
-app.get('/api/students/next-id', async (req, res) => {
+const COLLECTION_ACCESS = {
+  students: { read: STUDENT_VIEW, write: STUDENT_MANAGE },
+  classes: { read: CLASS_OPS, write: STUDENT_MANAGE },
+  deadlines: { read: CLASS_OPS, write: CLASS_OPS },
+  payments: { read: FINANCE_VIEW, write: FINANCE_EDIT },
+  bookIssues: { read: CLASS_OPS, write: CLASS_OPS },
+  alumni: { read: CLASS_OPS, write: STUDENT_MANAGE },
+  categories: { read: STOCK_MANAGE, write: STOCK_MANAGE },
+  programs: { read: STUDENT_VIEW, write: STUDENT_MANAGE },
+  products: { read: STOCK_OPS, write: STOCK_MANAGE },
+  orders: { read: STOCK_OPS, write: STOCK_OPS },
+}
+
+function requireCollectionAccess(action) {
+  return (req, res, next) => {
+    const col = req.params.col
+    const access = COLLECTION_ACCESS[col]
+    if (!access) return res.status(404).json({ error: 'Unknown collection' })
+    const allowed = access[action] || []
+    if (!req.user || !allowed.includes(req.user.role)) {
+      return res.status(403).json({ error: 'You do not have permission for this action' })
+    }
+    return next()
+  }
+}
+
+app.get('/api/students/next-id', requireRole(...STUDENT_MANAGE), async (req, res) => {
   try {
     const id = await db.nextStudentId()
     res.json({ id })
@@ -231,7 +283,7 @@ app.get('/api/students/next-id', async (req, res) => {
   }
 })
 
-app.get('/api/classes/next-id', async (req, res) => {
+app.get('/api/classes/next-id', requireRole(...STUDENT_MANAGE), async (req, res) => {
   try {
     const id = await db.nextClassId()
     res.json({ id })
@@ -240,7 +292,7 @@ app.get('/api/classes/next-id', async (req, res) => {
   }
 })
 
-app.get('/api/classes/:id/roster', async (req, res) => {
+app.get('/api/classes/:id/roster', requireRole(...CLASS_OPS), async (req, res) => {
   try {
     const cls = await db.get('classes', req.params.id)
     if (!cls) return res.status(404).json({ error: 'Class not found' })
@@ -252,7 +304,7 @@ app.get('/api/classes/:id/roster', async (req, res) => {
   }
 })
 
-app.post('/api/classes/:id/students', async (req, res) => {
+app.post('/api/classes/:id/students', requireRole(...STUDENT_MANAGE), async (req, res) => {
   try {
     const { studentId } = req.body || {}
     if (!studentId) return res.status(400).json({ error: 'studentId is required' })
@@ -263,7 +315,7 @@ app.post('/api/classes/:id/students', async (req, res) => {
   }
 })
 
-app.delete('/api/classes/:id/students/:studentId', async (req, res) => {
+app.delete('/api/classes/:id/students/:studentId', requireRole(...STUDENT_MANAGE), async (req, res) => {
   try {
     const result = await db.removeClassStudent(req.params.id, req.params.studentId)
     res.json(result)
@@ -272,9 +324,8 @@ app.delete('/api/classes/:id/students/:studentId', async (req, res) => {
   }
 })
 
-app.get('/api/:col', async (req, res) => {
+app.get('/api/:col', requireCollectionAccess('read'), async (req, res) => {
   const { col } = req.params
-  if (!valid.has(col)) return res.status(404).json({ error: 'Unknown collection' })
   try {
     const rows = await db.list(col)
     res.json(rows)
@@ -284,9 +335,8 @@ app.get('/api/:col', async (req, res) => {
   }
 })
 
-app.post('/api/:col', async (req, res) => {
+app.post('/api/:col', requireCollectionAccess('write'), async (req, res) => {
   const { col } = req.params
-  if (!valid.has(col)) return res.status(404).json({ error: 'Unknown collection' })
   try {
     const strict = col === 'students'
     const created = await db.add(col, req.body || {}, { upsert: !strict })
@@ -300,9 +350,8 @@ app.post('/api/:col', async (req, res) => {
   }
 })
 
-app.put('/api/:col/:id', async (req, res) => {
+app.put('/api/:col/:id', requireCollectionAccess('write'), async (req, res) => {
   const { col, id } = req.params
-  if (!valid.has(col)) return res.status(404).json({ error: 'Unknown collection' })
   try {
     const updated = await db.update(col, id, req.body || {})
     if (!updated) return res.status(404).json({ error: 'Not found' })
@@ -313,9 +362,8 @@ app.put('/api/:col/:id', async (req, res) => {
   }
 })
 
-app.delete('/api/:col/:id', async (req, res) => {
+app.delete('/api/:col/:id', requireCollectionAccess('write'), async (req, res) => {
   const { col, id } = req.params
-  if (!valid.has(col)) return res.status(404).json({ error: 'Unknown collection' })
   try {
     const existing = await db.get(col, id)
     if (!existing) return res.status(404).json({ error: 'Not found' })
@@ -327,9 +375,8 @@ app.delete('/api/:col/:id', async (req, res) => {
   }
 })
 
-app.get('/api/:col/:id', async (req, res) => {
+app.get('/api/:col/:id', requireCollectionAccess('read'), async (req, res) => {
   const { col, id } = req.params
-  if (!valid.has(col)) return res.status(404).json({ error: 'Unknown collection' })
   try {
     const row = await db.get(col, id)
     if (!row) return res.status(404).json({ error: 'Not found' })
@@ -341,7 +388,7 @@ app.get('/api/:col/:id', async (req, res) => {
 })
 
 // POS order creation convenience endpoint
-app.post('/api/pos/checkout', async (req, res) => {
+app.post('/api/pos/checkout', requireRole(...STOCK_OPS), async (req, res) => {
   const { customer = 'Walk-in', paymentMethod = 'Cash', items = [] } = req.body || {}
   const total = items.reduce((s, i) => s + (i.price || 0) * (i.qty || 0), 0)
   const order = await db.add('orders', {

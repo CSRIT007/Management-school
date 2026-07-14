@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { get, post, put, del } from '../../lib/api.js'
 import { useAuth } from '../../context/AuthContext.jsx'
+import { canEditPayments } from '../../lib/roles.js'
 import { INVOICE_PREFIX, formatInvNo, sortInvoicesNewestFirst } from '../../lib/invoiceId.js'
 import { todayIso, formatDisplayDate } from '../../lib/dateFormat.js'
 import DateField from '../../components/ui/DateField.jsx'
@@ -37,7 +38,8 @@ async function fetchNextInvoiceId() {
 }
 
 export default function StudentPayment() {
-  const { user } = useAuth()
+  const { user, role } = useAuth()
+  const canEdit = canEditPayments(role)
   const [payments, setPayments] = useState([])
   const [students, setStudents] = useState([])
   const [form, setForm] = useState(emptyForm)
@@ -57,7 +59,7 @@ export default function StudentPayment() {
       const [p, s] = await Promise.all([get('/api/payments'), get('/api/students')])
       setStudents(s)
       setPayments(p.map((payment) => withStudentId(payment, s)))
-      if (!editingId) {
+      if (canEdit && !editingId) {
         const nextId = await fetchNextInvoiceId()
         setForm((f) => ({
           ...f,
@@ -220,8 +222,12 @@ export default function StudentPayment() {
           <Button size="sm" variant="secondary" onClick={() => setViewInvoice(withStudentId(row, students))} title="View or print invoice">
             Print
           </Button>
-          <Button size="sm" variant="secondary" onClick={() => startEdit(row)}>Edit</Button>
-          <Button size="sm" variant="danger" onClick={() => remove(row.id)}>Delete</Button>
+          {canEdit && (
+            <>
+              <Button size="sm" variant="secondary" onClick={() => startEdit(row)}>Edit</Button>
+              <Button size="sm" variant="danger" onClick={() => remove(row.id)}>Delete</Button>
+            </>
+          )}
         </div>
       ),
     },
@@ -231,11 +237,12 @@ export default function StudentPayment() {
     <div className="space-y-6">
       <PageHeader
         title="Student & Payment"
-        subtitle="Record payments and print invoices when needed"
+        subtitle={canEdit ? 'Record payments and print invoices when needed' : 'View payment history and print invoices'}
       />
 
       <FormAlert message={message} error={error} />
 
+      {canEdit && (
       <form onSubmit={submit} className="panel p-6">
         <h3 className="mb-4 text-base font-bold text-slate-900 dark:text-slate-100">
           {editingId ? `Edit Payment — ${editingId}` : 'Record Payment'}
@@ -326,6 +333,7 @@ export default function StudentPayment() {
           </Button>
         </div>
       </form>
+      )}
 
       <div>
         <TableExportHeader
