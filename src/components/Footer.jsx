@@ -1,3 +1,10 @@
+import {
+  SCHOOL_NAME,
+  SCHOOL_WEBSITE,
+  SCHOOL_EMAIL,
+  SCHOOL_LOCATION_LINE,
+} from '../lib/schoolBrand.js'
+
 export default function Footer() {
   const year = new Date().getFullYear()
 
@@ -9,21 +16,21 @@ export default function Footer() {
             MS
           </div>
           <span>
-            <span className="font-semibold text-slate-700 dark:text-slate-300">Management School System</span>
+            <span className="font-semibold text-slate-700 dark:text-slate-300">{SCHOOL_NAME}</span>
             {' · '}
             © {year}
           </span>
         </div>
 
         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-          <span className="hidden sm:inline">www.school.csrsms.com</span>
+          <span className="hidden sm:inline">{SCHOOL_WEBSITE}</span>
           <span className="hidden h-3 w-px bg-slate-200 dark:bg-slate-700 sm:inline" />
-          <span>school.csrsms@gmail.com</span>
+          <span>{SCHOOL_EMAIL}</span>
         </div>
 
         <div className="flex items-center gap-1.5">
           <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-          <span>Phnom Penh, Cambodia, Phone: +855 12 345 6789</span>
+          <span>{SCHOOL_LOCATION_LINE}</span>
         </div>
       </div>
     </footer>

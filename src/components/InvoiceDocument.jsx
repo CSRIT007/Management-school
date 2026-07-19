@@ -3,12 +3,19 @@ import Button from './ui/Button.jsx'
 import { getInvoiceLines } from '../lib/paymentPurpose.js'
 import { formatDisplayDate } from '../lib/dateFormat.js'
 import { getBillToParts, formatInvoiceDateTime } from '../lib/invoiceFormat.js'
+import {
+  SCHOOL_NAME,
+  SCHOOL_WEBSITE,
+  SCHOOL_EMAIL,
+  SCHOOL_LOCATION,
+  SCHOOL_PHONE,
+} from '../lib/schoolBrand.js'
 
 const INVOICE_CONTACT = {
-  website: 'www.schoolmanagement.com',
-  email: 'email@schoolmanagement.com',
-  location: 'Phnom Penh, Cambodia',
-  phone: 'Phone: +855 12 345 6789',
+  website: SCHOOL_WEBSITE,
+  email: SCHOOL_EMAIL,
+  location: SCHOOL_LOCATION,
+  phone: SCHOOL_PHONE,
 }
 
 function InvoiceContactFooter({ className = '' }) {
@@ -82,7 +89,7 @@ export default function InvoiceDocument({ invoice, compact = false, showActions 
                 MS
               </div>
               <div>
-                <h2 className="text-lg font-bold tracking-tight">Management School</h2>
+                <h2 className="text-lg font-bold tracking-tight">{SCHOOL_NAME}</h2>
                 <p className="text-xs text-indigo-100">School Admin Portal</p>
               </div>
             </div>
@@ -268,7 +275,7 @@ export function printInvoice(invoice) {
     <div class="brand">
       <div class="logo">MS</div>
       <div>
-        <h1 style="font-size: 18px;">Management School</h1>
+        <h1 style="font-size: 18px;">${SCHOOL_NAME}</h1>
         <p style="font-size: 12px; opacity: 0.85;">School Admin Portal</p>
       </div>
     </div>
