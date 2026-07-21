@@ -15,6 +15,8 @@ import ProductManagement from './pages/stock/Product.jsx'
 import POS from './pages/stock/POS.jsx'
 import StockReport from './pages/stock/Report.jsx'
 import UserManagement from './pages/admin/UserManagement.jsx'
+import TeacherInfo from './pages/admin/TeacherInfo.jsx'
+import StaffInfo from './pages/admin/StaffInfo.jsx'
 import FinanceOverview from './pages/finance/FinanceOverview.jsx'
 import TuitionReport from './pages/finance/TuitionReport.jsx'
 import PosRevenue from './pages/finance/PosRevenue.jsx'
@@ -54,6 +56,8 @@ export default function App() {
               <Route path="/finance/purpose" element={<FeePurposeReport />} />
               <Route path="/finance/monthly" element={<MonthlySummary />} />
               <Route path="/finance/student-ledger" element={<StudentLedger />} />
+              <Route path="/admin/teachers" element={<TeacherInfo />} />
+              <Route path="/admin/staff" element={<StaffInfo />} />
               <Route path="/admin/users" element={<UserManagement />} />
               <Route path="*" element={<Navigate to="/" />} />
             </Route>

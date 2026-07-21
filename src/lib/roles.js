@@ -34,6 +34,8 @@ const ROUTE_ACCESS = {
   '/finance/monthly': [ROLES.ADMIN, ROLES.SCHOOL_ADMIN, ROLES.FINANCE],
   '/finance/student-ledger': [ROLES.ADMIN, ROLES.SCHOOL_ADMIN, ROLES.FINANCE],
   '/admin/users': [ROLES.ADMIN],
+  '/admin/teachers': [ROLES.ADMIN, ROLES.SCHOOL_ADMIN],
+  '/admin/staff': [ROLES.ADMIN, ROLES.SCHOOL_ADMIN],
 }
 
 export const NAV_ITEMS = [
@@ -78,6 +80,8 @@ export const NAV_ITEMS = [
   {
     section: 'Administration',
     items: [
+      { to: '/admin/teachers', label: 'Teacher Info', icon: 'teacher' },
+      { to: '/admin/staff', label: 'Staff Info', icon: 'staff' },
       { to: '/admin/users', label: 'User Management', icon: 'users' },
     ],
   },
@@ -92,6 +96,11 @@ export function canAccessRoute(role, path) {
 /** Roles that can create/edit tuition payments */
 export function canEditPayments(role) {
   return role === ROLES.ADMIN || role === ROLES.FINANCE
+}
+
+/** Roles that can create/edit classes and assign teachers */
+export function canManageClasses(role) {
+  return role === ROLES.ADMIN || role === ROLES.SCHOOL_ADMIN
 }
 
 /** Roles that can export finance reports */

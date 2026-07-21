@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { get } from '../lib/api.js'
+import { useAuth } from '../context/AuthContext.jsx'
+import { canAccessRoute } from '../lib/roles.js'
 import StatCard from '../components/ui/StatCard.jsx'
 
 const quickLinks = [
@@ -10,6 +12,9 @@ const quickLinks = [
   { title: 'Student & Payment', desc: 'Invoices & payments', to: '/students/payment', icon: 'payment', color: 'from-emerald-500 to-teal-600' },
   { title: 'Category Management', desc: 'Organize stock categories', to: '/stock/category', icon: 'tag', color: 'from-rose-500 to-pink-600' },
   { title: 'Point of Sale', desc: 'Process sales quickly', to: '/stock/pos', icon: 'cart', color: 'from-violet-500 to-purple-600' },
+  { title: 'Financial Overview', desc: 'Tuition, POS & pending at a glance', to: '/finance/overview', icon: 'finance', color: 'from-cyan-500 to-sky-600' },
+  { title: 'Daily Cash Flow', desc: 'Tuition + POS revenue by day', to: '/finance/cash-flow', icon: 'cashflow', color: 'from-teal-500 to-emerald-600' },
+  { title: 'Monthly Summary', desc: 'Revenue totals by month', to: '/finance/monthly', icon: 'monthly', color: 'from-blue-500 to-indigo-600' },
 ]
 
 const icons = {
@@ -19,6 +24,9 @@ const icons = {
   payment: <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />,
   tag: <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />,
   cart: <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />,
+  finance: <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />,
+  cashflow: <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z" />,
+  monthly: <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />,
 }
 
 const defaultStats = {
@@ -29,9 +37,15 @@ const defaultStats = {
 }
 
 export default function DashboardHome() {
+  const { role } = useAuth()
   const [stats, setStats] = useState(defaultStats)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+
+  const visibleLinks = useMemo(
+    () => quickLinks.filter((item) => canAccessRoute(role, item.to)),
+    [role]
+  )
 
   useEffect(() => {
     let active = true
@@ -118,7 +132,7 @@ export default function DashboardHome() {
       <div>
         <h2 className="mb-4 text-lg font-bold text-slate-900 dark:text-slate-100">Quick Access</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {quickLinks.map((item) => (
+          {visibleLinks.map((item) => (
             <Link
               key={item.to}
               to={item.to}

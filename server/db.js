@@ -309,6 +309,12 @@ async function migrateUsersTable() {
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ`)
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`)
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT NOT NULL DEFAULT ''`)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS address TEXT NOT NULL DEFAULT ''`)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS position TEXT NOT NULL DEFAULT ''`)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS department TEXT NOT NULL DEFAULT ''`)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS hire_date DATE`)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS note TEXT NOT NULL DEFAULT ''`)
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`)
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)`)
 }
@@ -1105,6 +1111,12 @@ async function migrateDefaultUsers() {
   console.log(`Users ready: ${rows[0].count} account(s)`)
 }
 
+async function migrateUserClasses() {
+  const { ensureUserClassesTable, seedDemoTeacherClasses } = await import('./userClasses.js')
+  await ensureUserClassesTable()
+  await seedDemoTeacherClasses()
+}
+
 async function seedIfEmpty() {
   await waitForDb()
   await initSchema()
@@ -1131,7 +1143,10 @@ async function seedIfEmpty() {
     }
   }
 
-  if (!(await isEmpty())) return
+  if (!(await isEmpty())) {
+    await migrateUserClasses()
+    return
+  }
 
   await add('categories', { id: 'CAT-BOOKS', name: 'Books', description: 'Textbooks and references' })
   await add('categories', { id: 'CAT-STATIONERY', name: 'Stationery', description: 'Pens, notebooks, etc.' })
@@ -1160,6 +1175,8 @@ async function seedIfEmpty() {
 
   await add('alumni', { id: makeId(), name: 'Jane Doe', program: 'Computer Science', date: '2025-06-30', grade: 'A', cert: true })
   await add('alumni', { id: makeId(), name: 'John Smith', program: 'Business Administration', date: '2025-05-20', grade: 'B', cert: false })
+
+  await migrateUserClasses()
 }
 
 export const db = {

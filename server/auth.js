@@ -38,8 +38,29 @@ export function sanitizeUser(row) {
     email: row.email,
     role: row.role,
     active: row.active,
+    phone: row.phone || '',
+    address: row.address || '',
+    position: row.position || '',
+    department: row.department || '',
+    hireDate: formatHireDate(row.hire_date),
+    note: row.note || '',
     lastLoginAt: row.last_login_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
+}
+
+function formatHireDate(value) {
+  if (!value) return ''
+  if (typeof value === 'string') {
+    const m = value.match(/^(\d{4}-\d{2}-\d{2})/)
+    return m ? m[1] : ''
+  }
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    const y = value.getFullYear()
+    const m = String(value.getMonth() + 1).padStart(2, '0')
+    const d = String(value.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+  }
+  return ''
 }

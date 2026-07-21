@@ -6,14 +6,28 @@ import { signToken, verifyPassword, sanitizeUser } from './auth.js'
 import { requireAuth, requireRole } from './middleware/auth.js'
 import {
   listUsers,
+  listTeachers,
+  listStaff,
   getUserById,
   getUserByEmail,
   createUser,
   updateUser,
   setUserPassword,
   touchUserLogin,
+  STAFF_ROLES,
+  TEACHER_ROLE,
 } from './users.js'
 import { getFinanceOverview } from './finance.js'
+import {
+  getClassIdsForUser,
+  getTeachersByClassIds,
+  getTeachersForClass,
+  setClassTeachers,
+  userHasClass,
+  getStudentIdsForTeacher,
+  listActiveTeachers,
+  assertNoTeacherScheduleConflicts,
+} from './userClasses.js'
 
 const app = express()
 const PORT = process.env.PORT || 4000
@@ -33,6 +47,66 @@ const STOCK_MANAGE = [ROLE.ADMIN, ROLE.SCHOOL_ADMIN]
 const STUDENT_MANAGE = [ROLE.ADMIN, ROLE.SCHOOL_ADMIN]
 const STUDENT_VIEW = [ROLE.ADMIN, ROLE.SCHOOL_ADMIN, ROLE.FINANCE, ROLE.TEACHER]
 const CLASS_OPS = [ROLE.ADMIN, ROLE.SCHOOL_ADMIN, ROLE.TEACHER]
+const CLASS_MANAGE = [ROLE.ADMIN, ROLE.SCHOOL_ADMIN]
+
+async function attachTeachers(classes) {
+  const map = await getTeachersByClassIds(classes.map((c) => c.id))
+  return classes.map((cls) => {
+    const teachers = map.get(cls.id) || []
+    return {
+      ...cls,
+      teachers,
+      teacherIds: teachers.map((t) => t.id),
+    }
+  })
+}
+
+async function assertTeacherClassAccess(req, classId) {
+  if (req.user.role !== ROLE.TEACHER) return true
+  const ok = await userHasClass(req.user.id, classId)
+  if (!ok) {
+    const err = new Error('You are not assigned to this class')
+    err.status = 403
+    throw err
+  }
+  return true
+}
+
+async function filterRowsForTeacher(req, col, rows) {
+  if (req.user.role !== ROLE.TEACHER) return rows
+
+  if (col === 'classes') {
+    const ids = new Set(await getClassIdsForUser(req.user.id))
+    return rows.filter((r) => ids.has(r.id))
+  }
+
+  if (col === 'students') {
+    const studentIds = new Set(await getStudentIdsForTeacher(req.user.id))
+    return rows.filter((r) => studentIds.has(r.id))
+  }
+
+  if (col === 'deadlines') {
+    const studentIds = new Set(await getStudentIdsForTeacher(req.user.id))
+    const students = await db.list('students')
+    const names = new Set(
+      students.filter((s) => studentIds.has(s.id)).map((s) => s.name)
+    )
+    return rows.filter((r) =>
+      (r.studentId && studentIds.has(r.studentId)) || names.has(r.name)
+    )
+  }
+
+  if (col === 'bookIssues') {
+    const studentIds = new Set(await getStudentIdsForTeacher(req.user.id))
+    const students = await db.list('students')
+    const names = new Set(
+      students.filter((s) => studentIds.has(s.id)).map((s) => s.name)
+    )
+    return rows.filter((r) => names.has(r.name))
+  }
+
+  return rows
+}
 
 app.use(cors())
 app.use(express.json({ limit: '1mb' }))
@@ -113,14 +187,16 @@ app.get('/api/users', requireAuth, requireRole('admin'), async (req, res) => {
 
 app.post('/api/users', requireAuth, requireRole('admin'), async (req, res) => {
   try {
-    const { name, email, password, role, active } = req.body || {}
+    const { name, email, password, role, active, phone, address, position, department, hireDate, note } = req.body || {}
     if (!name?.trim() || !email?.trim() || !password) {
       return res.status(400).json({ error: 'Name, email, and password are required' })
     }
     if (password.length < 6) {
       return res.status(400).json({ error: 'Password must be at least 6 characters' })
     }
-    const user = await createUser({ name, email, password, role, active })
+    const user = await createUser({
+      name, email, password, role, active, phone, address, position, department, hireDate, note,
+    })
     res.status(201).json(user)
   } catch (e) {
     if (e.code === '23505' || e.status === 409) {
@@ -162,6 +238,124 @@ app.put('/api/users/:id/password', requireAuth, requireRole('admin'), async (req
     res.json({ ok: true })
   } catch (e) {
     res.status(500).json({ error: e.message })
+  }
+})
+
+const PEOPLE_MANAGE = [ROLE.ADMIN, ROLE.SCHOOL_ADMIN]
+
+function assertPeopleWriteAccess(actor, targetRole, nextRole) {
+  if (actor.role === ROLE.ADMIN) return
+  // School admin cannot create/edit Admin accounts
+  if (targetRole === ROLE.ADMIN || nextRole === ROLE.ADMIN) {
+    const err = new Error('Only Admin can manage Admin accounts')
+    err.status = 403
+    throw err
+  }
+}
+
+app.get('/api/people/teachers', requireAuth, requireRole(...PEOPLE_MANAGE), async (req, res) => {
+  try {
+    res.json(await listTeachers())
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.post('/api/people/teachers', requireAuth, requireRole(...PEOPLE_MANAGE), async (req, res) => {
+  try {
+    const body = req.body || {}
+    if (!body.name?.trim() || !body.email?.trim() || !body.password) {
+      return res.status(400).json({ error: 'Name, email, and password are required' })
+    }
+    if (body.password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' })
+    }
+    const user = await createUser({ ...body, role: TEACHER_ROLE })
+    res.status(201).json(user)
+  } catch (e) {
+    if (e.code === '23505' || e.status === 409) {
+      return res.status(409).json({ error: e.message || 'Email already exists' })
+    }
+    res.status(e.status || 500).json({ error: e.message })
+  }
+})
+
+app.put('/api/people/teachers/:id', requireAuth, requireRole(...PEOPLE_MANAGE), async (req, res) => {
+  try {
+    const existing = await getUserById(req.params.id)
+    if (!existing || existing.role !== TEACHER_ROLE) {
+      return res.status(404).json({ error: 'Teacher not found' })
+    }
+    const { password, role: _ignoreRole, ...fields } = req.body || {}
+    if (req.params.id === req.user.id && fields.active === false) {
+      return res.status(400).json({ error: 'You cannot deactivate your own account' })
+    }
+    if (password != null && password !== '' && password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' })
+    }
+    const updated = await updateUser(req.params.id, { ...fields, role: TEACHER_ROLE })
+    if (password) await setUserPassword(req.params.id, password)
+    res.json(updated)
+  } catch (e) {
+    res.status(e.status || 500).json({ error: e.message })
+  }
+})
+
+app.get('/api/people/staff', requireAuth, requireRole(...PEOPLE_MANAGE), async (req, res) => {
+  try {
+    res.json(await listStaff())
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.post('/api/people/staff', requireAuth, requireRole(...PEOPLE_MANAGE), async (req, res) => {
+  try {
+    const body = req.body || {}
+    const role = body.role || ROLE.SCHOOL_ADMIN
+    if (!STAFF_ROLES.includes(role)) {
+      return res.status(400).json({ error: 'Staff role must be admin, school_admin, or finance' })
+    }
+    assertPeopleWriteAccess(req.user, null, role)
+    if (!body.name?.trim() || !body.email?.trim() || !body.password) {
+      return res.status(400).json({ error: 'Name, email, and password are required' })
+    }
+    if (body.password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' })
+    }
+    const user = await createUser({ ...body, role })
+    res.status(201).json(user)
+  } catch (e) {
+    if (e.code === '23505' || e.status === 409) {
+      return res.status(409).json({ error: e.message || 'Email already exists' })
+    }
+    res.status(e.status || 500).json({ error: e.message })
+  }
+})
+
+app.put('/api/people/staff/:id', requireAuth, requireRole(...PEOPLE_MANAGE), async (req, res) => {
+  try {
+    const existing = await getUserById(req.params.id)
+    if (!existing || !STAFF_ROLES.includes(existing.role)) {
+      return res.status(404).json({ error: 'Staff member not found' })
+    }
+    const { password, ...fields } = req.body || {}
+    const nextRole = fields.role || existing.role
+    if (!STAFF_ROLES.includes(nextRole)) {
+      return res.status(400).json({ error: 'Staff role must be admin, school_admin, or finance' })
+    }
+    assertPeopleWriteAccess(req.user, existing.role, nextRole)
+    if (req.params.id === req.user.id && fields.active === false) {
+      return res.status(400).json({ error: 'You cannot deactivate your own account' })
+    }
+    if (password != null && password !== '' && password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters' })
+    }
+    const updated = await updateUser(req.params.id, { ...fields, role: nextRole })
+    if (password) await setUserPassword(req.params.id, password)
+    res.json(updated)
+  } catch (e) {
+    res.status(e.status || 500).json({ error: e.message })
   }
 })
 
@@ -274,6 +468,14 @@ function requireCollectionAccess(action) {
   }
 }
 
+app.get('/api/teachers', requireRole(...CLASS_MANAGE), async (req, res) => {
+  try {
+    res.json(await listActiveTeachers())
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
 app.get('/api/students/next-id', requireRole(...STUDENT_MANAGE), async (req, res) => {
   try {
     const id = await db.nextStudentId()
@@ -294,13 +496,43 @@ app.get('/api/classes/next-id', requireRole(...STUDENT_MANAGE), async (req, res)
 
 app.get('/api/classes/:id/roster', requireRole(...CLASS_OPS), async (req, res) => {
   try {
+    await assertTeacherClassAccess(req, req.params.id)
     const cls = await db.get('classes', req.params.id)
     if (!cls) return res.status(404).json({ error: 'Class not found' })
+    const [withTeachers] = await attachTeachers([cls])
     const students = await db.getClassRoster(req.params.id)
     const { enrolled, max } = db.parseCapacity(cls.capacity)
-    res.json({ class: cls, students, enrolled, max, capacity: cls.capacity })
+    res.json({ class: withTeachers, students, enrolled, max, capacity: cls.capacity })
   } catch (e) {
-    res.status(500).json({ error: e.message })
+    res.status(e.status || 500).json({ error: e.message })
+  }
+})
+
+app.put('/api/classes/:id/teachers', requireRole(...CLASS_MANAGE), async (req, res) => {
+  try {
+    const cls = await db.get('classes', req.params.id)
+    if (!cls) return res.status(404).json({ error: 'Class not found' })
+    const teacherIds = Array.isArray(req.body?.teacherIds) ? req.body.teacherIds : []
+    const teachers = await setClassTeachers(req.params.id, teacherIds)
+    const updated = await db.get('classes', req.params.id)
+    res.json({
+      ...updated,
+      teachers,
+      teacherIds: teachers.map((t) => t.id),
+    })
+  } catch (e) {
+    res.status(e.status || 500).json({ error: e.message, conflicts: e.conflicts })
+  }
+})
+
+app.get('/api/classes/:id/teachers', requireRole(...CLASS_OPS), async (req, res) => {
+  try {
+    await assertTeacherClassAccess(req, req.params.id)
+    const cls = await db.get('classes', req.params.id)
+    if (!cls) return res.status(404).json({ error: 'Class not found' })
+    res.json(await getTeachersForClass(req.params.id))
+  } catch (e) {
+    res.status(e.status || 500).json({ error: e.message })
   }
 })
 
@@ -309,7 +541,8 @@ app.post('/api/classes/:id/students', requireRole(...STUDENT_MANAGE), async (req
     const { studentId } = req.body || {}
     if (!studentId) return res.status(400).json({ error: 'studentId is required' })
     const result = await db.addClassStudent(req.params.id, studentId)
-    res.status(201).json(result)
+    const [withTeachers] = await attachTeachers([result.class])
+    res.status(201).json({ ...result, class: withTeachers })
   } catch (e) {
     res.status(e.status || 500).json({ error: e.message })
   }
@@ -318,7 +551,8 @@ app.post('/api/classes/:id/students', requireRole(...STUDENT_MANAGE), async (req
 app.delete('/api/classes/:id/students/:studentId', requireRole(...STUDENT_MANAGE), async (req, res) => {
   try {
     const result = await db.removeClassStudent(req.params.id, req.params.studentId)
-    res.json(result)
+    const [withTeachers] = await attachTeachers([result.class])
+    res.json({ ...result, class: withTeachers })
   } catch (e) {
     res.status(e.status || 500).json({ error: e.message })
   }
@@ -327,7 +561,9 @@ app.delete('/api/classes/:id/students/:studentId', requireRole(...STUDENT_MANAGE
 app.get('/api/:col', requireCollectionAccess('read'), async (req, res) => {
   const { col } = req.params
   try {
-    const rows = await db.list(col)
+    let rows = await db.list(col)
+    rows = await filterRowsForTeacher(req, col, rows)
+    if (col === 'classes') rows = await attachTeachers(rows)
     res.json(rows)
   } catch (e) {
     console.error(`GET /api/${col}:`, e.message)
@@ -353,10 +589,24 @@ app.post('/api/:col', requireCollectionAccess('write'), async (req, res) => {
 app.put('/api/:col/:id', requireCollectionAccess('write'), async (req, res) => {
   const { col, id } = req.params
   try {
+    if (col === 'classes' && req.body?.schedule != null) {
+      let teacherIds
+      if (Array.isArray(req.body.teacherIds)) {
+        teacherIds = req.body.teacherIds
+      } else {
+        teacherIds = (await getTeachersForClass(id)).map((t) => t.id)
+      }
+      if (teacherIds.length) {
+        await assertNoTeacherScheduleConflicts(id, teacherIds, req.body.schedule)
+      }
+    }
     const updated = await db.update(col, id, req.body || {})
     if (!updated) return res.status(404).json({ error: 'Not found' })
     res.json(updated)
   } catch (e) {
+    if (e.status) {
+      return res.status(e.status).json({ error: e.message, conflicts: e.conflicts })
+    }
     console.error(e)
     res.status(500).json({ error: e.message })
   }
@@ -378,12 +628,24 @@ app.delete('/api/:col/:id', requireCollectionAccess('write'), async (req, res) =
 app.get('/api/:col/:id', requireCollectionAccess('read'), async (req, res) => {
   const { col, id } = req.params
   try {
-    const row = await db.get(col, id)
+    if (col === 'classes' && req.user.role === ROLE.TEACHER) {
+      await assertTeacherClassAccess(req, id)
+    }
+    let row = await db.get(col, id)
     if (!row) return res.status(404).json({ error: 'Not found' })
+    if (col === 'classes') {
+      ;[row] = await attachTeachers([row])
+    }
+    if (col === 'students' && req.user.role === ROLE.TEACHER) {
+      const allowed = new Set(await getStudentIdsForTeacher(req.user.id))
+      if (!allowed.has(id)) {
+        return res.status(403).json({ error: 'You are not assigned to this student' })
+      }
+    }
     res.json(row)
   } catch (e) {
     console.error(`GET /api/${col}/${id}:`, e.message)
-    res.status(500).json({ error: e.message })
+    res.status(e.status || 500).json({ error: e.message })
   }
 })
 

@@ -170,6 +170,12 @@ CREATE TABLE IF NOT EXISTS users (
   role TEXT NOT NULL DEFAULT 'teacher'
     CHECK (role IN ('admin', 'school_admin', 'finance', 'teacher')),
   active BOOLEAN NOT NULL DEFAULT TRUE,
+  phone TEXT NOT NULL DEFAULT '',
+  address TEXT NOT NULL DEFAULT '',
+  position TEXT NOT NULL DEFAULT '',
+  department TEXT NOT NULL DEFAULT '',
+  hire_date DATE,
+  note TEXT NOT NULL DEFAULT '',
   last_login_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -177,6 +183,17 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
+
+-- Teacher (user) ↔ class assignments
+CREATE TABLE IF NOT EXISTS user_classes (
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  class_id TEXT NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (user_id, class_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_classes_user ON user_classes(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_classes_class ON user_classes(class_id);
 
 -- updated_at triggers
 DO $$
