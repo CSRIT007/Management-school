@@ -2,7 +2,7 @@ import { pool } from './db.js'
 import {
   findTeacherScheduleConflicts,
   formatConflictMessage,
-} from '../shared/scheduleConflict.js'
+} from './scheduleConflict.js'
 
 async function loadClassesWithTeachers(excludeClassId = null) {
   const { rows: classes } = await pool.query(
