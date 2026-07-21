@@ -65,6 +65,38 @@ function ScheduleConflictModal({ conflicts, onClose }) {
   )
 }
 
+function DuplicateStudentModal({ info, onClose }) {
+  if (!info) return null
+  return (
+    <div
+      className="fixed inset-0 z-[60] grid place-items-center bg-slate-900/50 p-4 backdrop-blur-sm dark:bg-black/60"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="duplicate-student-title"
+    >
+      <div className="panel w-full max-w-md p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <h3 id="duplicate-student-title" className="text-lg font-bold text-rose-700 dark:text-rose-400">
+          Student already in class
+        </h3>
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+          The same student cannot be added to this class twice.
+        </p>
+        <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">
+          <p className="font-semibold">{info.name}</p>
+          <p className="mt-0.5 font-mono text-xs">{info.id}</p>
+          {info.classId && (
+            <p className="mt-2 text-xs">Class: <span className="font-mono">{info.classId}</span></p>
+          )}
+        </div>
+        <div className="mt-5 flex justify-end">
+          <Button type="button" onClick={onClose}>OK</Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function ClassDetailModal({ detail, students, isFull, busy, onClose }) {
   if (!detail) return null
 
@@ -157,6 +189,7 @@ export default function ClassManagement() {
   const [detailStudents, setDetailStudents] = useState([])
   const [showDetail, setShowDetail] = useState(false)
   const [scheduleConflicts, setScheduleConflicts] = useState(null)
+  const [duplicateStudent, setDuplicateStudent] = useState(null)
 
   const load = async () => {
     try {
@@ -362,7 +395,16 @@ export default function ClassManagement() {
   }
 
   const addStudentToClass = async (classId, studentId, clearPick) => {
-    if (!classId || !studentId || !canManage) return
+    if (!classId || !studentId || !canManage || rosterBusy) return
+
+    const already = enrolledStudents.find((s) => s.id === studentId)
+    if (already) {
+      setDuplicateStudent({ id: already.id, name: already.name, classId })
+      showMsg(`Student "${already.name}" is already in this class.`, true)
+      clearPick('')
+      return
+    }
+
     setRosterBusy(true)
     try {
       const result = await post(`/api/classes/${classId}/students`, { studentId })
@@ -370,7 +412,17 @@ export default function ClassManagement() {
       clearPick('')
       showMsg('Student added to class.')
     } catch (e) {
-      showMsg(e.message, true)
+      const text = e.message || 'Could not add student'
+      if (/already in this class/i.test(text)) {
+        const student = students.find((s) => s.id === studentId)
+        setDuplicateStudent({
+          id: studentId,
+          name: student?.name || studentId,
+          classId,
+        })
+      }
+      showMsg(text, true)
+      clearPick('')
     } finally {
       setRosterBusy(false)
     }
@@ -628,6 +680,10 @@ export default function ClassManagement() {
       <ScheduleConflictModal
         conflicts={scheduleConflicts}
         onClose={() => setScheduleConflicts(null)}
+      />
+      <DuplicateStudentModal
+        info={duplicateStudent}
+        onClose={() => setDuplicateStudent(null)}
       />
     </div>
   )

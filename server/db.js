@@ -782,7 +782,9 @@ async function addClassStudent(classId, studentId) {
     [classId, studentId]
   )
   if (dup.length) {
-    const err = new Error('Student is already in this class')
+    const err = new Error(
+      `Student "${student.name}" (${studentId}) is already in this class`
+    )
     err.status = 409
     throw err
   }
@@ -794,7 +796,21 @@ async function addClassStudent(classId, studentId) {
     throw err
   }
 
-  await pool.query('INSERT INTO class_students (class_id, student_id) VALUES ($1, $2)', [classId, studentId])
+  try {
+    await pool.query(
+      'INSERT INTO class_students (class_id, student_id) VALUES ($1, $2)',
+      [classId, studentId]
+    )
+  } catch (e) {
+    if (e.code === '23505') {
+      const err = new Error(
+        `Student "${student.name}" (${studentId}) is already in this class`
+      )
+      err.status = 409
+      throw err
+    }
+    throw e
+  }
   await syncClassCapacity(classId)
   const updated = await get('classes', classId)
   return { class: updated, students: await getClassRoster(classId) }
