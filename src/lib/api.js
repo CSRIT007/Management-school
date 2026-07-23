@@ -46,7 +46,10 @@ export async function api(method, url, body) {
       (data && (data.error || data.message)) ||
       text ||
       `API ${method} ${url} failed: ${res.status}`
-    throw new Error(detail)
+    const err = new Error(detail)
+    err.status = res.status
+    if (data?.conflicts) err.conflicts = data.conflicts
+    throw err
   }
 
   return data

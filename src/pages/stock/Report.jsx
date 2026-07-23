@@ -1,13 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import { get } from '../../lib/api.js'
+import { useAuth } from '../../context/AuthContext.jsx'
+import { orderToInvoice } from '../../lib/posInvoice.js'
 import { formatInvNo } from '../../lib/invoiceId.js'
 import { formatDisplayDate, todayIso } from '../../lib/dateFormat.js'
 import PageHeader from '../../components/ui/PageHeader.jsx'
 import StatCard from '../../components/ui/StatCard.jsx'
 import DataTable from '../../components/ui/DataTable.jsx'
 import Badge from '../../components/ui/Badge.jsx'
+import Button from '../../components/ui/Button.jsx'
 import ExportReportButton from '../../components/ui/ExportReportButton.jsx'
 import TableExportHeader from '../../components/ui/TableExportHeader.jsx'
+import InvoiceDocument, { printInvoice } from '../../components/InvoiceDocument.jsx'
 import {
   STOCK_REPORT_SECTIONS,
   STOCK_FILTER_INITIAL,
@@ -36,24 +40,29 @@ const paymentVariant = {
 }
 
 export default function StockReport() {
+  const { user } = useAuth()
   const [summary, setSummary] = useState({ totalProducts: 0, lowStockItems: 0, totalSalesToday: 0 })
   const [products, setProducts] = useState([])
   const [orders, setOrders] = useState([])
+  const [students, setStudents] = useState([])
   const [low, setLow] = useState([])
   const [sales, setSales] = useState([])
   const [top, setTop] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [salesRowLimit, setSalesRowLimit] = useState(10)
+  const [viewInvoice, setViewInvoice] = useState(null)
 
   useEffect(() => {
     const load = async () => {
       setLoading(true)
       setError('')
       try {
-        const [s, productList, orderList, l, so, tp] = await Promise.all([
+        const [s, productList, orderList, studentList, l, so, tp] = await Promise.all([
           get('/api/reports/summary'),
           get('/api/products'),
           get('/api/orders'),
+          get('/api/students').catch(() => []),
           get('/api/reports/low-stock'),
           get('/api/reports/sales-over-time'),
           get('/api/reports/top-products'),
@@ -61,6 +70,7 @@ export default function StockReport() {
         setSummary(s)
         setProducts(productList)
         setOrders(orderList)
+        setStudents(Array.isArray(studentList) ? studentList : [])
         setLow(l)
         setSales(so)
         setTop(tp)
@@ -73,6 +83,8 @@ export default function StockReport() {
     load()
   }, [])
 
+  const toInvoice = (order) => orderToInvoice(order, { students, user })
+
   const unitsInStock = useMemo(
     () => products.reduce((sum, p) => sum + (Number(p.stock) || 0), 0),
     [products]
@@ -83,13 +95,27 @@ export default function StockReport() {
     [orders]
   )
 
-  const recentOrders = useMemo(
+  const sortedOrders = useMemo(
     () =>
-      [...orders]
-        .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
-        .slice(0, 10),
+      [...orders].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)),
     [orders]
   )
+
+  const recentOrders = useMemo(() => {
+    if (salesRowLimit === 'all') return sortedOrders
+    return sortedOrders.slice(0, Number(salesRowLimit) || 10)
+  }, [sortedOrders, salesRowLimit])
+
+  const totalSalesCount = sortedOrders.length
+  const showSalesRowPicker = !loading && totalSalesCount > 10
+  const salesLimitOptions = useMemo(() => {
+    const total = totalSalesCount
+    const options = [{ value: 10, label: '10 rows' }]
+    if (total > 10) options.push({ value: 25, label: '25 rows' })
+    if (total > 25) options.push({ value: 50, label: '50 rows' })
+    if (total > 10) options.push({ value: 'all', label: `All (${total})` })
+    return options
+  }, [totalSalesCount])
 
   const salesChart = useMemo(
     () =>
@@ -242,18 +268,45 @@ export default function StockReport() {
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         <section>
-          <div className="mb-4 flex items-center justify-between gap-3">
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
             <div>
               <h3 className="font-bold text-slate-900 dark:text-slate-100">Recent POS Sales</h3>
               <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-                Latest checkout records from Point of Sale
+                Latest checkout records. Use View or Print anytime if the invoice was missed at sale.
               </p>
             </div>
-            <span className="shrink-0 rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400">
-              {recentOrders.length} shown
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="shrink-0 rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400">
+                {loading
+                  ? '…'
+                  : `Showing ${recentOrders.length} of ${totalSalesCount}`}
+              </span>
+              {showSalesRowPicker && (
+                <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
+                  <span className="whitespace-nowrap font-medium">Rows</span>
+                  <select
+                    className="input py-1.5 text-xs"
+                    value={salesRowLimit}
+                    onChange={(e) => {
+                      const v = e.target.value
+                      setSalesRowLimit(v === 'all' ? 'all' : Number(v))
+                    }}
+                    aria-label="How many invoice rows to show"
+                  >
+                    {salesLimitOptions.map((o) => (
+                      <option key={String(o.value)} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
+            </div>
           </div>
-          <RecentSalesList orders={recentOrders} loading={loading} />
+          <RecentSalesList
+            orders={recentOrders}
+            loading={loading}
+            onView={(order) => setViewInvoice(toInvoice(order))}
+            onPrint={(order) => printInvoice(toInvoice(order))}
+          />
         </section>
 
         <section>
@@ -275,11 +328,30 @@ export default function StockReport() {
           />
         </section>
       </div>
+
+      {viewInvoice && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm print:hidden"
+          onClick={() => setViewInvoice(null)}
+        >
+          <div
+            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <InvoiceDocument
+              invoice={viewInvoice}
+              showActions
+              onClose={() => setViewInvoice(null)}
+              onPrint={() => printInvoice(viewInvoice)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
-function RecentSalesList({ orders, loading }) {
+function RecentSalesList({ orders, loading, onView, onPrint }) {
   const emptyMessage = 'No POS sales yet. Complete a sale from Point of Sale.'
 
   return (
@@ -294,16 +366,17 @@ function RecentSalesList({ orders, loading }) {
               <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Payment</th>
               <th className="min-w-[10rem] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Items</th>
               <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Invoice</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {loading ? (
               <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-slate-400">Loading…</td>
+                <td colSpan={7} className="px-4 py-12 text-center text-slate-400">Loading…</td>
               </tr>
             ) : orders.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-slate-400">{emptyMessage}</td>
+                <td colSpan={7} className="px-4 py-12 text-center text-slate-400">{emptyMessage}</td>
               </tr>
             ) : (
               orders.map((order) => (
@@ -330,6 +403,27 @@ function RecentSalesList({ orders, loading }) {
                   </td>
                   <td className="whitespace-nowrap px-4 py-3.5 text-right font-semibold text-slate-900 dark:text-slate-100">
                     {formatMoney(order.total)}
+                  </td>
+                  <td className="whitespace-nowrap px-4 py-3.5 text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => onView?.(order)}
+                        title="View invoice"
+                      >
+                        View
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => onPrint?.(order)}
+                        title="Print invoice"
+                      >
+                        Print
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))

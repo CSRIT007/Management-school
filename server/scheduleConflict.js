@@ -115,3 +115,40 @@ export function formatConflictMessage(conflicts) {
     'Change the schedule or assign a different teacher.',
   ].join('\n')
 }
+
+/**
+ * Find if a student is already in another class at overlapping time.
+ * @param {{ classId: string, schedule: string, student: {id,name}, otherClasses: {id,name,schedule}[] }}
+ */
+export function findStudentScheduleConflicts({ classId, schedule, student, otherClasses }) {
+  if (!student || !parseSchedule(schedule).length) return []
+
+  const conflicts = []
+  for (const other of otherClasses || []) {
+    if (!other || other.id === classId) continue
+    if (!schedulesOverlap(schedule, other.schedule)) continue
+    conflicts.push({
+      studentId: student.id,
+      studentName: student.name || student.id,
+      otherClassId: other.id,
+      otherClassName: other.name || other.id,
+      otherSchedule: other.schedule || '',
+      thisSchedule: schedule || '',
+    })
+  }
+  return conflicts
+}
+
+export function formatStudentConflictMessage(conflicts) {
+  if (!conflicts?.length) return ''
+  const lines = conflicts.map(
+    (c) =>
+      `• Already in ${c.otherClassId} (${c.otherClassName}) at ${c.otherSchedule || 'overlapping time'}`
+  )
+  return [
+    `Student schedule conflict — "${conflicts[0].studentName}" cannot take two classes at the same time.`,
+    `This class schedule: ${conflicts[0].thisSchedule || '—'}`,
+    ...lines,
+    'Choose a different class time or another student.',
+  ].join('\n')
+}

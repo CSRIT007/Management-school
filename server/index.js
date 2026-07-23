@@ -1,6 +1,6 @@
 import express from 'express'
 import cors from 'cors'
-import { db, checkConnection } from './db.js'
+import { db, checkConnection, pool } from './db.js'
 import { getLanIp, printAppUrls } from './network.js'
 import { signToken, verifyPassword, sanitizeUser } from './auth.js'
 import { requireAuth, requireRole } from './middleware/auth.js'
@@ -18,6 +18,7 @@ import {
   TEACHER_ROLE,
 } from './users.js'
 import { getFinanceOverview } from './finance.js'
+import { writeAuditLog, listAuditLogs } from './auditLog.js'
 import {
   getClassIdsForUser,
   getTeachersByClassIds,
@@ -158,6 +159,15 @@ app.post('/api/auth/login', async (req, res) => {
     await touchUserLogin(row.id)
     const user = sanitizeUser(row)
     const token = signToken(user)
+    await writeAuditLog(
+      { user: { id: user.id, email: user.email, name: user.name, role: user.role } },
+      {
+        action: 'login',
+        resourceType: 'auth',
+        resourceId: user.id,
+        summary: `Signed in as ${user.email}`,
+      }
+    )
     res.json({ token, user })
   } catch (e) {
     console.error('POST /api/auth/login failed:', e)
@@ -176,6 +186,37 @@ app.get('/api/auth/me', async (req, res) => {
     res.status(500).json({ error: e.message })
   }
 })
+
+async function handleListAuditLogs(req, res) {
+  try {
+    const {
+      limit = '50',
+      offset = '0',
+      resourceType = '',
+      action = '',
+      actorId = '',
+      q = '',
+      from = '',
+      to = '',
+    } = req.query || {}
+    res.json(await listAuditLogs({
+      limit,
+      offset,
+      resourceType,
+      action,
+      actorId,
+      q,
+      from,
+      to,
+    }))
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+}
+
+// Must stay before /api/:col — otherwise "audit-logs" is treated as a collection name.
+app.get('/api/admin/audit-logs', requireAuth, requireRole(ROLE.ADMIN), handleListAuditLogs)
+app.get('/api/audit-logs', requireAuth, requireRole(ROLE.ADMIN), handleListAuditLogs)
 
 app.get('/api/users', requireAuth, requireRole('admin'), async (req, res) => {
   try {
@@ -196,6 +237,13 @@ app.post('/api/users', requireAuth, requireRole('admin'), async (req, res) => {
     }
     const user = await createUser({
       name, email, password, role, active, phone, address, position, department, hireDate, note,
+    })
+    await writeAuditLog(req, {
+      action: 'create',
+      resourceType: 'users',
+      resourceId: user.id,
+      summary: `Created user ${user.email} (${user.role})`,
+      meta: { role: user.role, name: user.name },
     })
     res.status(201).json(user)
   } catch (e) {
@@ -221,6 +269,15 @@ app.put('/api/users/:id', requireAuth, requireRole('admin'), async (req, res) =>
     if (password) {
       await setUserPassword(id, password)
     }
+    await writeAuditLog(req, {
+      action: password ? 'update_password' : 'update',
+      resourceType: 'users',
+      resourceId: id,
+      summary: password
+        ? `Updated user ${updated.email} and reset password`
+        : `Updated user ${updated.email}`,
+      meta: { role: updated.role, active: updated.active },
+    })
     res.json(updated)
   } catch (e) {
     res.status(e.status || 500).json({ error: e.message })
@@ -235,6 +292,12 @@ app.put('/api/users/:id/password', requireAuth, requireRole('admin'), async (req
     }
     const ok = await setUserPassword(req.params.id, password)
     if (!ok) return res.status(404).json({ error: 'User not found' })
+    await writeAuditLog(req, {
+      action: 'password_reset',
+      resourceType: 'users',
+      resourceId: req.params.id,
+      summary: `Reset password for user ${req.params.id}`,
+    })
     res.json({ ok: true })
   } catch (e) {
     res.status(500).json({ error: e.message })
@@ -271,6 +334,12 @@ app.post('/api/people/teachers', requireAuth, requireRole(...PEOPLE_MANAGE), asy
       return res.status(400).json({ error: 'Password must be at least 6 characters' })
     }
     const user = await createUser({ ...body, role: TEACHER_ROLE })
+    await writeAuditLog(req, {
+      action: 'create',
+      resourceType: 'teachers',
+      resourceId: user.id,
+      summary: `Created teacher ${user.name} (${user.email})`,
+    })
     res.status(201).json(user)
   } catch (e) {
     if (e.code === '23505' || e.status === 409) {
@@ -295,6 +364,12 @@ app.put('/api/people/teachers/:id', requireAuth, requireRole(...PEOPLE_MANAGE), 
     }
     const updated = await updateUser(req.params.id, { ...fields, role: TEACHER_ROLE })
     if (password) await setUserPassword(req.params.id, password)
+    await writeAuditLog(req, {
+      action: password ? 'update_password' : 'update',
+      resourceType: 'teachers',
+      resourceId: req.params.id,
+      summary: `Updated teacher ${updated?.name || req.params.id}`,
+    })
     res.json(updated)
   } catch (e) {
     res.status(e.status || 500).json({ error: e.message })
@@ -324,6 +399,13 @@ app.post('/api/people/staff', requireAuth, requireRole(...PEOPLE_MANAGE), async 
       return res.status(400).json({ error: 'Password must be at least 6 characters' })
     }
     const user = await createUser({ ...body, role })
+    await writeAuditLog(req, {
+      action: 'create',
+      resourceType: 'staff',
+      resourceId: user.id,
+      summary: `Created staff ${user.name} (${user.role})`,
+      meta: { role: user.role },
+    })
     res.status(201).json(user)
   } catch (e) {
     if (e.code === '23505' || e.status === 409) {
@@ -353,6 +435,13 @@ app.put('/api/people/staff/:id', requireAuth, requireRole(...PEOPLE_MANAGE), asy
     }
     const updated = await updateUser(req.params.id, { ...fields, role: nextRole })
     if (password) await setUserPassword(req.params.id, password)
+    await writeAuditLog(req, {
+      action: password ? 'update_password' : 'update',
+      resourceType: 'staff',
+      resourceId: req.params.id,
+      summary: `Updated staff ${updated?.name || req.params.id}`,
+      meta: { role: updated?.role },
+    })
     res.json(updated)
   } catch (e) {
     res.status(e.status || 500).json({ error: e.message })
@@ -515,6 +604,13 @@ app.put('/api/classes/:id/teachers', requireRole(...CLASS_MANAGE), async (req, r
     const teacherIds = Array.isArray(req.body?.teacherIds) ? req.body.teacherIds : []
     const teachers = await setClassTeachers(req.params.id, teacherIds)
     const updated = await db.get('classes', req.params.id)
+    await writeAuditLog(req, {
+      action: 'assign_teachers',
+      resourceType: 'classes',
+      resourceId: req.params.id,
+      summary: `Assigned ${teachers.length} teacher(s) to class ${req.params.id}`,
+      meta: { teacherIds: teachers.map((t) => t.id) },
+    })
     res.json({
       ...updated,
       teachers,
@@ -536,15 +632,41 @@ app.get('/api/classes/:id/teachers', requireRole(...CLASS_OPS), async (req, res)
   }
 })
 
+app.get('/api/enrollments', requireRole(...STUDENT_MANAGE), async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT cs.student_id, c.id AS class_id, c.name AS class_name, c.schedule
+       FROM class_students cs
+       JOIN classes c ON c.id = cs.class_id
+       ORDER BY cs.student_id, c.id`
+    )
+    res.json(rows.map((r) => ({
+      studentId: r.student_id,
+      classId: r.class_id,
+      className: r.class_name,
+      schedule: r.schedule || '',
+    })))
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
 app.post('/api/classes/:id/students', requireRole(...STUDENT_MANAGE), async (req, res) => {
   try {
     const { studentId } = req.body || {}
     if (!studentId) return res.status(400).json({ error: 'studentId is required' })
     const result = await db.addClassStudent(req.params.id, studentId)
     const [withTeachers] = await attachTeachers([result.class])
+    await writeAuditLog(req, {
+      action: 'enroll',
+      resourceType: 'classes',
+      resourceId: req.params.id,
+      summary: `Enrolled student ${studentId} in class ${req.params.id}`,
+      meta: { studentId },
+    })
     res.status(201).json({ ...result, class: withTeachers })
   } catch (e) {
-    res.status(e.status || 500).json({ error: e.message })
+    res.status(e.status || 500).json({ error: e.message, conflicts: e.conflicts })
   }
 })
 
@@ -552,6 +674,13 @@ app.delete('/api/classes/:id/students/:studentId', requireRole(...STUDENT_MANAGE
   try {
     const result = await db.removeClassStudent(req.params.id, req.params.studentId)
     const [withTeachers] = await attachTeachers([result.class])
+    await writeAuditLog(req, {
+      action: 'unenroll',
+      resourceType: 'classes',
+      resourceId: req.params.id,
+      summary: `Removed student ${req.params.studentId} from class ${req.params.id}`,
+      meta: { studentId: req.params.studentId },
+    })
     res.json({ ...result, class: withTeachers })
   } catch (e) {
     res.status(e.status || 500).json({ error: e.message })
@@ -571,11 +700,79 @@ app.get('/api/:col', requireCollectionAccess('read'), async (req, res) => {
   }
 })
 
+function describePaymentAudit(action, id, before, after) {
+  if (action === 'create') {
+    return {
+      summary: `Created payment ${id} · ${after?.studentName || '—'} · purpose "${after?.purpose || '—'}" · $${Number(after?.amount || 0).toFixed(2)} (${after?.method || 'Cash'})`,
+      meta: {
+        purpose: after?.purpose || '',
+        amount: after?.amount,
+        method: after?.method,
+        status: after?.status,
+        studentName: after?.studentName,
+      },
+    }
+  }
+
+  const fields = ['purpose', 'amount', 'status', 'method', 'studentName', 'note']
+  const changes = []
+  for (const key of fields) {
+    let prev = before?.[key] ?? ''
+    let next = after?.[key] ?? ''
+    if (key === 'amount') {
+      prev = Number(prev) || 0
+      next = Number(next) || 0
+      if (prev === next) continue
+      changes.push(`${key}: $${prev} → $${next}`)
+      continue
+    }
+    prev = String(prev)
+    next = String(next)
+    if (prev !== next) {
+      changes.push(`${key}: "${prev}" → "${next}"`)
+    }
+  }
+
+  const purposeLine = changes.find((c) => c.startsWith('purpose:'))
+  return {
+    summary: purposeLine
+      ? `Finance changed payment ${id} ${purposeLine}${changes.length > 1 ? ` · also ${changes.filter((c) => !c.startsWith('purpose:')).join('; ')}` : ''}`
+      : changes.length
+        ? `Updated payment ${id} · ${changes.join('; ')}`
+        : `Updated payment ${id}`,
+    meta: {
+      purpose: after?.purpose || '',
+      amount: after?.amount,
+      method: after?.method,
+      status: after?.status,
+      changes,
+    },
+  }
+}
+
 app.post('/api/:col', requireCollectionAccess('write'), async (req, res) => {
   const { col } = req.params
   try {
     const strict = col === 'students'
     const created = await db.add(col, req.body || {}, { upsert: !strict })
+    if (col === 'payments') {
+      const detail = describePaymentAudit('create', created?.id || '', null, created)
+      await writeAuditLog(req, {
+        action: 'create',
+        resourceType: 'payments',
+        resourceId: created?.id || '',
+        summary: detail.summary,
+        meta: detail.meta,
+      })
+    } else {
+      await writeAuditLog(req, {
+        action: 'create',
+        resourceType: col,
+        resourceId: created?.id || '',
+        summary: `Created ${col.slice(0, -1) || col} ${created?.id || ''}`.trim(),
+        meta: { name: created?.name || created?.studentName || created?.customer || undefined },
+      })
+    }
     res.status(201).json(created)
   } catch (e) {
     if (e.code === '23505') {
@@ -600,8 +797,26 @@ app.put('/api/:col/:id', requireCollectionAccess('write'), async (req, res) => {
         await assertNoTeacherScheduleConflicts(id, teacherIds, req.body.schedule)
       }
     }
+    const before = col === 'payments' ? await db.get(col, id) : null
     const updated = await db.update(col, id, req.body || {})
     if (!updated) return res.status(404).json({ error: 'Not found' })
+    if (col === 'payments') {
+      const detail = describePaymentAudit('update', id, before, updated)
+      await writeAuditLog(req, {
+        action: 'update',
+        resourceType: 'payments',
+        resourceId: id,
+        summary: detail.summary,
+        meta: detail.meta,
+      })
+    } else {
+      await writeAuditLog(req, {
+        action: 'update',
+        resourceType: col,
+        resourceId: id,
+        summary: `Updated ${col.slice(0, -1) || col} ${id}`,
+      })
+    }
     res.json(updated)
   } catch (e) {
     if (e.status) {
@@ -618,6 +833,12 @@ app.delete('/api/:col/:id', requireCollectionAccess('write'), async (req, res) =
     const existing = await db.get(col, id)
     if (!existing) return res.status(404).json({ error: 'Not found' })
     await db.remove(col, id)
+    await writeAuditLog(req, {
+      action: 'delete',
+      resourceType: col,
+      resourceId: id,
+      summary: `Deleted ${col.slice(0, -1) || col} ${id}`,
+    })
     res.json({ ok: true })
   } catch (e) {
     console.error(e)
@@ -666,6 +887,13 @@ app.post('/api/pos/checkout', requireRole(...STOCK_OPS), async (req, res) => {
     const p = products.find(p => p.id === i.id)
     if (p) await db.update('products', p.id, { stock: Math.max(0, (p.stock||0) - (i.qty||0)) })
   }
+  await writeAuditLog(req, {
+    action: 'checkout',
+    resourceType: 'orders',
+    resourceId: order.id,
+    summary: `POS checkout ${order.id} · ${customer} · $${Number(total).toFixed(2)} (${paymentMethod})`,
+    meta: { total, paymentMethod, itemCount: items.length },
+  })
   res.status(201).json(order)
 })
 

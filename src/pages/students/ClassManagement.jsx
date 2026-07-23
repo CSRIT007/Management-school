@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { get, post, put, del } from '../../lib/api.js'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { canManageClasses } from '../../lib/roles.js'
-import { findTeacherScheduleConflicts } from '../../lib/scheduleConflict.js'
+import { findTeacherScheduleConflicts, findStudentScheduleConflicts } from '../../lib/scheduleConflict.js'
 import PageHeader from '../../components/ui/PageHeader.jsx'
 import Button from '../../components/ui/Button.jsx'
 import DataTable from '../../components/ui/DataTable.jsx'
@@ -89,6 +89,46 @@ function DuplicateStudentModal({ info, onClose }) {
             <p className="mt-2 text-xs">Class: <span className="font-mono">{info.classId}</span></p>
           )}
         </div>
+        <div className="mt-5 flex justify-end">
+          <Button type="button" onClick={onClose}>OK</Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function StudentScheduleConflictModal({ conflicts, onClose }) {
+  if (!conflicts?.length) return null
+  return (
+    <div
+      className="fixed inset-0 z-[60] grid place-items-center bg-slate-900/50 p-4 backdrop-blur-sm dark:bg-black/60"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="student-schedule-conflict-title"
+    >
+      <div className="panel w-full max-w-lg p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <h3 id="student-schedule-conflict-title" className="text-lg font-bold text-rose-700 dark:text-rose-400">
+          Student double time
+        </h3>
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+          This student already has another class at the same time and cannot be enrolled here.
+        </p>
+        <p className="mt-3 text-sm font-medium text-slate-800 dark:text-slate-200">
+          Student: <span className="font-normal">{conflicts[0].studentName}</span>
+        </p>
+        <p className="mt-1 text-sm font-medium text-slate-800 dark:text-slate-200">
+          This class: <span className="font-normal">{conflicts[0].thisSchedule || '—'}</span>
+        </p>
+        <ul className="mt-3 space-y-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm dark:border-rose-900 dark:bg-rose-950/40">
+          {conflicts.map((c) => (
+            <li key={`${c.studentId}-${c.otherClassId}`} className="text-rose-800 dark:text-rose-300">
+              Already in{' '}
+              <span className="font-mono font-semibold">{c.otherClassId}</span>
+              {' '}({c.otherClassName}) at {c.otherSchedule || 'overlapping time'}
+            </li>
+          ))}
+        </ul>
         <div className="mt-5 flex justify-end">
           <Button type="button" onClick={onClose}>OK</Button>
         </div>
@@ -190,15 +230,21 @@ export default function ClassManagement() {
   const [showDetail, setShowDetail] = useState(false)
   const [scheduleConflicts, setScheduleConflicts] = useState(null)
   const [duplicateStudent, setDuplicateStudent] = useState(null)
+  const [studentScheduleConflicts, setStudentScheduleConflicts] = useState(null)
+  const [enrollments, setEnrollments] = useState([])
 
   const load = async () => {
     try {
       const requests = [get('/api/classes'), get('/api/students')]
-      if (canManage) requests.push(get('/api/teachers'))
-      const [classes, allStudents, teacherList] = await Promise.all(requests)
+      if (canManage) {
+        requests.push(get('/api/teachers'))
+        requests.push(get('/api/enrollments'))
+      }
+      const [classes, allStudents, teacherList, enrollmentList] = await Promise.all(requests)
       setRows(classes)
       setStudents(allStudents)
       if (teacherList) setTeachers(teacherList)
+      if (enrollmentList) setEnrollments(enrollmentList)
     } catch (e) {
       showMsg(e.message, true)
     }
@@ -405,16 +451,45 @@ export default function ClassManagement() {
       return
     }
 
+    const cls = rows.find((r) => r.id === classId) || { id: classId, schedule: form.schedule }
+    const student = students.find((s) => s.id === studentId)
+    const otherClasses = enrollments
+      .filter((e) => e.studentId === studentId && e.classId !== classId)
+      .map((e) => ({ id: e.classId, name: e.className, schedule: e.schedule }))
+    const timeConflicts = findStudentScheduleConflicts({
+      classId,
+      schedule: form.schedule || cls.schedule || '',
+      student: { id: studentId, name: student?.name || studentId },
+      otherClasses,
+    })
+    if (timeConflicts.length) {
+      setStudentScheduleConflicts(timeConflicts)
+      showMsg('Student schedule conflict — already enrolled at this time.', true)
+      clearPick('')
+      return
+    }
+
     setRosterBusy(true)
     try {
       const result = await post(`/api/classes/${classId}/students`, { studentId })
       syncRoster(classId, result)
       clearPick('')
       showMsg('Student added to class.')
+      await load()
     } catch (e) {
       const text = e.message || 'Could not add student'
-      if (/already in this class/i.test(text)) {
-        const student = students.find((s) => s.id === studentId)
+      if (e.conflicts?.length && e.conflicts[0]?.otherClassId) {
+        setStudentScheduleConflicts(e.conflicts)
+      } else if (/schedule conflict|same time|double time/i.test(text)) {
+        setStudentScheduleConflicts(timeConflicts.length ? timeConflicts : [{
+          studentId,
+          studentName: student?.name || studentId,
+          otherClassId: '',
+          otherClassName: '',
+          otherSchedule: '',
+          thisSchedule: form.schedule || cls.schedule || '',
+        }])
+      } else if (/already in this class/i.test(text)) {
         setDuplicateStudent({
           id: studentId,
           name: student?.name || studentId,
@@ -684,6 +759,10 @@ export default function ClassManagement() {
       <DuplicateStudentModal
         info={duplicateStudent}
         onClose={() => setDuplicateStudent(null)}
+      />
+      <StudentScheduleConflictModal
+        conflicts={studentScheduleConflicts}
+        onClose={() => setStudentScheduleConflicts(null)}
       />
     </div>
   )

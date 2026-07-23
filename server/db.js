@@ -3,6 +3,10 @@ import dotenv from 'dotenv'
 import { promises as fs } from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import {
+  findStudentScheduleConflicts,
+  formatStudentConflictMessage,
+} from './scheduleConflict.js'
 
 dotenv.config()
 
@@ -789,6 +793,26 @@ async function addClassStudent(classId, studentId) {
     throw err
   }
 
+  const { rows: otherClasses } = await pool.query(
+    `SELECT c.id, c.name, c.schedule
+     FROM class_students cs
+     JOIN classes c ON c.id = cs.class_id
+     WHERE cs.student_id = $1 AND cs.class_id <> $2`,
+    [studentId, classId]
+  )
+  const scheduleConflicts = findStudentScheduleConflicts({
+    classId,
+    schedule: cls.schedule || '',
+    student: { id: student.id, name: student.name },
+    otherClasses,
+  })
+  if (scheduleConflicts.length) {
+    const err = new Error(formatStudentConflictMessage(scheduleConflicts))
+    err.status = 409
+    err.conflicts = scheduleConflicts
+    throw err
+  }
+
   const { enrolled, max } = parseCapacity(cls.capacity)
   if (enrolled >= max) {
     const err = new Error(`Class is full (max ${max} students)`)
@@ -1133,6 +1157,11 @@ async function migrateUserClasses() {
   await seedDemoTeacherClasses()
 }
 
+async function migrateAuditLogs() {
+  const { ensureAuditLogsTable } = await import('./auditLog.js')
+  await ensureAuditLogsTable()
+}
+
 async function seedIfEmpty() {
   await waitForDb()
   await initSchema()
@@ -1149,6 +1178,7 @@ async function seedIfEmpty() {
   await migrateClassStudents()
   await migrateDefaultPrograms()
   await migrateDefaultUsers()
+  await migrateAuditLogs()
   await initDbeaverViews()
 
   if (await isEmpty()) {

@@ -36,6 +36,7 @@ const ROUTE_ACCESS = {
   '/admin/users': [ROLES.ADMIN],
   '/admin/teachers': [ROLES.ADMIN, ROLES.SCHOOL_ADMIN],
   '/admin/staff': [ROLES.ADMIN, ROLES.SCHOOL_ADMIN],
+  '/admin/audit-log': [ROLES.ADMIN],
 }
 
 export const NAV_ITEMS = [
@@ -83,6 +84,7 @@ export const NAV_ITEMS = [
       { to: '/admin/teachers', label: 'Teacher Info', icon: 'teacher' },
       { to: '/admin/staff', label: 'Staff Info', icon: 'staff' },
       { to: '/admin/users', label: 'User Management', icon: 'users' },
+      { to: '/admin/audit-log', label: 'Audit Log', icon: 'audit' },
     ],
   },
 ]

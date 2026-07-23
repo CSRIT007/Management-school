@@ -17,6 +17,7 @@ import StockReport from './pages/stock/Report.jsx'
 import UserManagement from './pages/admin/UserManagement.jsx'
 import TeacherInfo from './pages/admin/TeacherInfo.jsx'
 import StaffInfo from './pages/admin/StaffInfo.jsx'
+import AuditLog from './pages/admin/AuditLog.jsx'
 import FinanceOverview from './pages/finance/FinanceOverview.jsx'
 import TuitionReport from './pages/finance/TuitionReport.jsx'
 import PosRevenue from './pages/finance/PosRevenue.jsx'
@@ -59,6 +60,7 @@ export default function App() {
               <Route path="/admin/teachers" element={<TeacherInfo />} />
               <Route path="/admin/staff" element={<StaffInfo />} />
               <Route path="/admin/users" element={<UserManagement />} />
+              <Route path="/admin/audit-log" element={<AuditLog />} />
               <Route path="*" element={<Navigate to="/" />} />
             </Route>
           </Route>
