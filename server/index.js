@@ -700,12 +700,19 @@ app.get('/api/:col', requireCollectionAccess('read'), async (req, res) => {
   }
 })
 
+function normalizePaymentDate(value) {
+  if (!value) return ''
+  const s = String(value)
+  return s.length >= 10 ? s.slice(0, 10) : s
+}
+
 function describePaymentAudit(action, id, before, after) {
   if (action === 'create') {
     return {
       summary: `Created payment ${id} · ${after?.studentName || '—'} · purpose "${after?.purpose || '—'}" · $${Number(after?.amount || 0).toFixed(2)} (${after?.method || 'Cash'})`,
       meta: {
         purpose: after?.purpose || '',
+        date: normalizePaymentDate(after?.date),
         amount: after?.amount,
         method: after?.method,
         status: after?.status,
@@ -714,7 +721,7 @@ function describePaymentAudit(action, id, before, after) {
     }
   }
 
-  const fields = ['purpose', 'amount', 'status', 'method', 'studentName', 'note']
+  const fields = ['date', 'purpose', 'amount', 'status', 'method', 'studentName', 'note']
   const changes = []
   for (const key of fields) {
     let prev = before?.[key] ?? ''
@@ -726,6 +733,13 @@ function describePaymentAudit(action, id, before, after) {
       changes.push(`${key}: $${prev} → $${next}`)
       continue
     }
+    if (key === 'date') {
+      prev = normalizePaymentDate(prev)
+      next = normalizePaymentDate(next)
+      if (prev === next) continue
+      changes.push(`date: "${prev || '—'}" → "${next || '—'}"`)
+      continue
+    }
     prev = String(prev)
     next = String(next)
     if (prev !== next) {
@@ -733,15 +747,16 @@ function describePaymentAudit(action, id, before, after) {
     }
   }
 
-  const purposeLine = changes.find((c) => c.startsWith('purpose:'))
+  const highlight = changes.find((c) => c.startsWith('purpose:') || c.startsWith('date:'))
   return {
-    summary: purposeLine
-      ? `Finance changed payment ${id} ${purposeLine}${changes.length > 1 ? ` · also ${changes.filter((c) => !c.startsWith('purpose:')).join('; ')}` : ''}`
+    summary: highlight
+      ? `Finance changed payment ${id} ${highlight}${changes.length > 1 ? ` · also ${changes.filter((c) => c !== highlight).join('; ')}` : ''}`
       : changes.length
         ? `Updated payment ${id} · ${changes.join('; ')}`
         : `Updated payment ${id}`,
     meta: {
       purpose: after?.purpose || '',
+      date: normalizePaymentDate(after?.date),
       amount: after?.amount,
       method: after?.method,
       status: after?.status,

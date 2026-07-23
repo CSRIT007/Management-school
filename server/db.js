@@ -232,8 +232,18 @@ const TABLE_CONFIG = {
 
 function fmtDate(val) {
   if (!val) return ''
-  if (val instanceof Date) return val.toISOString().slice(0, 10)
-  return String(val).slice(0, 10)
+  // DATE-only values from node-pg are Date at local midnight. Using toISOString()
+  // shifts the calendar day in Asia/Phnom_Penh (UTC+7) — e.g. 23 Jul → 22 Jul.
+  if (val instanceof Date) {
+    if (Number.isNaN(val.getTime())) return ''
+    const y = val.getFullYear()
+    const m = String(val.getMonth() + 1).padStart(2, '0')
+    const d = String(val.getDate()).padStart(2, '0')
+    return `${y}-${m}-${d}`
+  }
+  const s = String(val).trim()
+  const m = /^(\d{4}-\d{2}-\d{2})/.exec(s)
+  return m ? m[1] : ''
 }
 
 function makeId() {

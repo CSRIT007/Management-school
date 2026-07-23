@@ -1,3 +1,5 @@
+import { todayIso, toIsoDate } from './dateFormat.js'
+
 export function orderToInvoice(order, { students = [], user } = {}) {
   if (!order) return null
   const studentId = order.studentId
@@ -5,7 +7,7 @@ export function orderToInvoice(order, { students = [], user } = {}) {
     || ''
   return {
     id: order.id,
-    date: order.date?.slice?.(0, 10) || new Date().toISOString().slice(0, 10),
+    date: toIsoDate(order.date) || todayIso(),
     amount: Number(order.total) || 0,
     method: order.paymentMethod || 'Cash',
     status: 'Paid',

@@ -1,7 +1,5 @@
 const DISPLAY_RE = /^(\d{1,2})-(\d{1,2})-(\d{4})$/
 const ISO_RE = /^(\d{4})-(\d{2})-(\d{2})$/
-/** ISO date, or datetime like 2026-07-01T10:00:00.000Z / 2026-07-01 10:00:00 */
-const ISO_PREFIX_RE = /^(\d{4})-(\d{2})-(\d{2})(?:[T\s].*)?$/
 
 function pad2(n) {
   return String(n).padStart(2, '0')
@@ -41,13 +39,11 @@ export function toIsoDate(value) {
     return isValidParts(d, m, y) ? s : ''
   }
 
-  const isoPrefix = ISO_PREFIX_RE.exec(s)
-  if (isoPrefix) {
-    const year = Number(isoPrefix[1])
-    const month = Number(isoPrefix[2])
-    const day = Number(isoPrefix[3])
-    if (!isValidParts(day, month, year)) return ''
-    return `${isoPrefix[1]}-${isoPrefix[2]}-${isoPrefix[3]}`
+  // Datetime → calendar day in the user's local timezone (Cambodia UTC+7).
+  // Do not take the UTC yyyy-mm-dd prefix from the string (that shifts the day).
+  if (/^\d{4}-\d{2}-\d{2}[T\s]/.test(s)) {
+    const parsed = new Date(s)
+    if (!Number.isNaN(parsed.getTime())) return fromLocalDate(parsed)
   }
 
   const display = DISPLAY_RE.exec(s)

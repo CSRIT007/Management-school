@@ -46,8 +46,14 @@ function formatWhen(iso) {
   try {
     const d = new Date(iso)
     if (Number.isNaN(d.getTime())) return String(iso)
-    const date = formatDisplayDate(d.toISOString().slice(0, 10))
-    const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    const date = formatDisplayDate(d)
+    const time = d.toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+      timeZone: 'Asia/Phnom_Penh',
+    })
     return `${date} ${time}`
   } catch {
     return String(iso)
