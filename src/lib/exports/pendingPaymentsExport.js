@@ -1,4 +1,4 @@
-import { formatDisplayDate } from '../dateFormat.js'
+import { formatDisplayDate, inDateRange } from '../dateFormat.js'
 import { formatInvNo } from '../invoiceId.js'
 import { downloadCsv, reportFilename } from '../exportCsv.js'
 import { SCHOOL_NAME } from '../schoolBrand.js'
@@ -21,14 +21,6 @@ export const PENDING_FILTER_INITIAL = {
   purpose: 'all',
   dateFrom: '',
   dateTo: '',
-}
-
-function inDateRange(isoDate, from, to) {
-  const d = (isoDate || '').slice(0, 10)
-  if (!d) return !from && !to
-  if (from && d < from) return false
-  if (to && d > to) return false
-  return true
 }
 
 export function filterPendingPayments(payments, filters) {

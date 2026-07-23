@@ -1,9 +1,11 @@
+import { toIsoDate } from './dateFormat.js'
+
 function money(n) {
   return Math.round((Number(n) || 0) * 100) / 100
 }
 
 export function inDateRange(isoDate, from, to) {
-  const d = (isoDate || '').slice(0, 10)
+  const d = toIsoDate(isoDate)
   if (!d) return !from && !to
   if (from && d < from) return false
   if (to && d > to) return false
@@ -11,7 +13,7 @@ export function inDateRange(isoDate, from, to) {
 }
 
 export function dayKey(isoDate) {
-  return (isoDate || '').slice(0, 10)
+  return toIsoDate(isoDate)
 }
 
 export function monthKey(isoDate) {

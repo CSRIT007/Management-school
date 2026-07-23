@@ -1,4 +1,5 @@
 import { SCHOOL_NAME } from './schoolBrand.js'
+import { APP_TIMEZONE, formatDisplayDate } from './dateFormat.js'
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -14,15 +15,20 @@ function cellValue(column, row) {
 }
 
 export function exportDateStamp(date = new Date()) {
-  const d = date
-  const pad = (n) => String(n).padStart(2, '0')
-  return `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()}`
+  return formatDisplayDate(date)
 }
 
 export function exportDateTimeStamp(date = new Date()) {
-  const d = date
-  const pad = (n) => String(n).padStart(2, '0')
-  return `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+  const d = date instanceof Date ? date : new Date(date)
+  if (Number.isNaN(d.getTime())) return formatDisplayDate(new Date())
+  const day = formatDisplayDate(d)
+  const time = d.toLocaleTimeString('en-GB', {
+    timeZone: APP_TIMEZONE,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+  return `${day} ${time}`
 }
 
 export function reportFilename(reportTitle, date = new Date()) {

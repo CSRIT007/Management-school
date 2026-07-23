@@ -3,7 +3,7 @@ import { get } from '../../lib/api.js'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { orderToInvoice } from '../../lib/posInvoice.js'
 import { formatInvNo } from '../../lib/invoiceId.js'
-import { formatDisplayDate, todayIso } from '../../lib/dateFormat.js'
+import { formatDisplayDate, todayIso, toIsoDate } from '../../lib/dateFormat.js'
 import PageHeader from '../../components/ui/PageHeader.jsx'
 import StatCard from '../../components/ui/StatCard.jsx'
 import DataTable from '../../components/ui/DataTable.jsx'
@@ -91,7 +91,7 @@ export default function StockReport() {
   )
 
   const ordersToday = useMemo(
-    () => orders.filter((o) => (o.date || '').startsWith(todayKey())).length,
+    () => orders.filter((o) => toIsoDate(o.date) === todayKey()).length,
     [orders]
   )
 

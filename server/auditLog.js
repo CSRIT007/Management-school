@@ -13,10 +13,10 @@ export async function ensureAuditLogsTable() {
       resource_type TEXT NOT NULL DEFAULT '',
       resource_id TEXT NOT NULL DEFAULT '',
       summary TEXT NOT NULL DEFAULT '',
-      meta JSONB NOT NULL DEFAULT '{}'::jsonb,
-      ip_address TEXT NOT NULL DEFAULT ''
+      meta JSONB NOT NULL DEFAULT '{}'::jsonb
     )
   `)
+  // Always add missing columns before any index/query that uses them
   await pool.query(`ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS ip_address TEXT NOT NULL DEFAULT ''`)
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at DESC)`)
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_audit_logs_resource ON audit_logs(resource_type, resource_id)`)

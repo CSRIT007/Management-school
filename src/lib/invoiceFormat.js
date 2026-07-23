@@ -1,3 +1,5 @@
+import { APP_TIMEZONE, formatDisplayDate } from './dateFormat.js'
+
 export function getBillToParts({ studentId, studentName } = {}) {
   return {
     name: studentName?.trim() || '—',
@@ -15,9 +17,9 @@ export function formatBillTo({ studentId, studentName } = {}) {
 export function formatInvoiceDateTime(value) {
   const d = value ? new Date(value) : new Date()
   if (Number.isNaN(d.getTime())) return '—'
-  const pad = (n) => String(n).padStart(2, '0')
-  const date = `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()}`
+  const date = formatDisplayDate(d)
   const time = d.toLocaleTimeString('en-US', {
+    timeZone: APP_TIMEZONE,
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,

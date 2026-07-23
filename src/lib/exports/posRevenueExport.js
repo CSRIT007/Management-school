@@ -1,4 +1,4 @@
-import { formatDisplayDate } from '../dateFormat.js'
+import { formatDisplayDate, inDateRange } from '../dateFormat.js'
 import { formatInvNo } from '../invoiceId.js'
 import { downloadCsv, reportFilename } from '../exportCsv.js'
 import { SCHOOL_NAME } from '../schoolBrand.js'
@@ -23,14 +23,6 @@ export const POS_REVENUE_FILTER_INITIAL = {
 function formatItems(items = []) {
   if (!items.length) return ''
   return items.map((i) => `${i.name || 'Item'} ×${i.qty || 0}`).join('; ')
-}
-
-function inDateRange(isoDate, from, to) {
-  const d = (isoDate || '').slice(0, 10)
-  if (!d) return !from && !to
-  if (from && d < from) return false
-  if (to && d > to) return false
-  return true
 }
 
 export function filterPosOrders(orders, filters) {

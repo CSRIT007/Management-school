@@ -1,11 +1,12 @@
 import { db } from './db.js'
+import { calendarDate, todayCalendarDate } from './calendarDate.js'
 
 function money(n) {
   return Math.round((Number(n) || 0) * 100) / 100
 }
 
 function inDateRange(isoDate, from, to) {
-  const d = (isoDate || '').slice(0, 10)
+  const d = calendarDate(isoDate)
   if (!d) return !from && !to
   if (from && d < from) return false
   if (to && d > to) return false
@@ -28,15 +29,15 @@ export async function getFinanceOverview({ dateFrom = '', dateTo = '' } = {}) {
   const tuitionPending = money(pending.reduce((s, p) => s + (Number(p.amount) || 0), 0))
   const posRevenue = money(filteredOrders.reduce((s, o) => s + (Number(o.total) || 0), 0))
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayCalendarDate()
   const tuitionToday = money(
     paid
-      .filter((p) => (p.date || '').slice(0, 10) === today)
+      .filter((p) => calendarDate(p.date) === today)
       .reduce((s, p) => s + (Number(p.amount) || 0), 0)
   )
   const posToday = money(
     filteredOrders
-      .filter((o) => (o.date || '').slice(0, 10) === today)
+      .filter((o) => calendarDate(o.date) === today)
       .reduce((s, o) => s + (Number(o.total) || 0), 0)
   )
 

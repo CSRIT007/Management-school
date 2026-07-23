@@ -1,4 +1,4 @@
-import { formatDisplayDate } from '../dateFormat.js'
+import { formatDisplayDate, inDateRange } from '../dateFormat.js'
 import { formatInvNo } from '../invoiceId.js'
 import { downloadCsvSections, reportFilename } from '../exportCsv.js'
 import { SCHOOL_NAME } from '../schoolBrand.js'
@@ -18,14 +18,6 @@ export const STOCK_FILTER_INITIAL = {
   dateFrom: '',
   dateTo: '',
   paymentMethod: 'all',
-}
-
-function inDateRange(isoDate, from, to) {
-  const d = (isoDate || '').slice(0, 10)
-  if (!d) return !from && !to
-  if (from && d < from) return false
-  if (to && d > to) return false
-  return true
 }
 
 function formatMoney(n) {

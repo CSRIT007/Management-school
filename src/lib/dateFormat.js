@@ -1,3 +1,6 @@
+/** School calendar timezone (Cambodia). */
+export const APP_TIMEZONE = 'Asia/Phnom_Penh'
+
 const DISPLAY_RE = /^(\d{1,2})-(\d{1,2})-(\d{4})$/
 const ISO_RE = /^(\d{4})-(\d{2})-(\d{2})$/
 
@@ -11,25 +14,29 @@ function isValidParts(day, month, year) {
   return d.getFullYear() === year && d.getMonth() === month - 1 && d.getDate() === day
 }
 
-function fromLocalDate(d) {
+/** yyyy-mm-dd for a Date/datetime in Asia/Phnom_Penh (not UTC, not browser-local only). */
+function fromAppTimezone(d) {
   if (!(d instanceof Date) || Number.isNaN(d.getTime())) return ''
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: APP_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(d)
 }
 
 /**
- * Convert UI / API date values to ISO `yyyy-mm-dd`.
+ * Convert UI / API date values to ISO `yyyy-mm-dd` (Cambodia calendar day).
  * Accepts:
  * - Date objects
- * - ISO `yyyy-mm-dd`
- * - ISO datetime (`yyyy-mm-ddTHH:mm:ss…`) — used by POS orders
- * - Display `dd-mm-yyyy` (full date only)
- *
- * Partial typing like "01" or "01-07" must NOT invent a date.
+ * - ISO `yyyy-mm-dd` (kept as-is)
+ * - ISO datetime (`yyyy-mm-ddTHH:mm:ss…`) — POS orders, etc.
+ * - Display `dd-mm-yyyy`
  */
 export function toIsoDate(value) {
   if (value == null || value === '') return ''
 
-  if (value instanceof Date) return fromLocalDate(value)
+  if (value instanceof Date) return fromAppTimezone(value)
 
   const s = String(value).trim()
   if (!s) return ''
@@ -39,11 +46,10 @@ export function toIsoDate(value) {
     return isValidParts(d, m, y) ? s : ''
   }
 
-  // Datetime → calendar day in the user's local timezone (Cambodia UTC+7).
-  // Do not take the UTC yyyy-mm-dd prefix from the string (that shifts the day).
+  // Datetime → Cambodia calendar day (fixes UTC overnight shift).
   if (/^\d{4}-\d{2}-\d{2}[T\s]/.test(s)) {
     const parsed = new Date(s)
-    if (!Number.isNaN(parsed.getTime())) return fromLocalDate(parsed)
+    if (!Number.isNaN(parsed.getTime())) return fromAppTimezone(parsed)
   }
 
   const display = DISPLAY_RE.exec(s)
@@ -71,7 +77,16 @@ export function formatDisplayDate(value) {
 }
 
 export function todayIso() {
-  return fromLocalDate(new Date())
+  return fromAppTimezone(new Date())
+}
+
+/** Compare calendar days in Cambodia time (yyyy-mm-dd filters). */
+export function inDateRange(value, from = '', to = '') {
+  const d = toIsoDate(value)
+  if (!d) return !from && !to
+  if (from && d < from) return false
+  if (to && d > to) return false
+  return true
 }
 
 /**

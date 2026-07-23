@@ -1174,6 +1174,8 @@ async function migrateAuditLogs() {
 
 async function seedIfEmpty() {
   await waitForDb()
+  // Audit column migrations must run before initSchema indexes that reference them
+  await migrateAuditLogs()
   await initSchema()
   await migrateUsersTable()
   await migrateTimestampColumns()

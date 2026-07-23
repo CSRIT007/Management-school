@@ -19,6 +19,7 @@ import {
 } from './users.js'
 import { getFinanceOverview } from './finance.js'
 import { writeAuditLog, listAuditLogs } from './auditLog.js'
+import { calendarDate, todayCalendarDate } from './calendarDate.js'
 import {
   getClassIdsForUser,
   getTeachersByClassIds,
@@ -471,10 +472,10 @@ app.get('/api/finance/overview', requireRole(...FINANCE_VIEW), async (req, res) 
 app.get('/api/reports/summary', requireRole(...STOCK_OPS), async (req, res) => {
   const products = await db.list('products')
   const lowStock = products.filter(p => (p.stock ?? 0) <= 3).length
-  const today = new Date().toISOString().slice(0,10)
+  const today = todayCalendarDate()
   const orders = await db.list('orders')
   const todaySales = orders
-    .filter(o => (o.date || '').startsWith(today))
+    .filter(o => calendarDate(o.date) === today)
     .reduce((s,o) => s + (o.total || 0), 0)
   res.json({ totalProducts: products.length, lowStockItems: lowStock, totalSalesToday: todaySales })
 })
@@ -483,7 +484,8 @@ app.get('/api/reports/sales-over-time', requireRole(...STOCK_OPS), async (req, r
   const orders = await db.list('orders')
   const map = new Map()
   for (const o of orders) {
-    const d = (o.date || '').slice(0,10)
+    const d = calendarDate(o.date)
+    if (!d) continue
     map.set(d, (map.get(d) || 0) + (o.total || 0))
   }
   res.json(Array.from(map, ([date, total]) => ({ date, total })))
@@ -701,9 +703,7 @@ app.get('/api/:col', requireCollectionAccess('read'), async (req, res) => {
 })
 
 function normalizePaymentDate(value) {
-  if (!value) return ''
-  const s = String(value)
-  return s.length >= 10 ? s.slice(0, 10) : s
+  return calendarDate(value)
 }
 
 function describePaymentAudit(action, id, before, after) {
