@@ -41,11 +41,13 @@ const ROUTE_ACCESS = {
 
 export const NAV_ITEMS = [
   {
-    section: 'Overview',
+    section: 'Dashboard',
+    icon: 'home',
     items: [{ to: '/', label: 'Dashboard', icon: 'home' }],
   },
   {
     section: 'Student Management',
+    icon: 'user',
     items: [
       { to: '/students/register', label: 'Student Register', icon: 'user' },
       { to: '/students/classes', label: 'Class Management', icon: 'class' },
@@ -57,6 +59,7 @@ export const NAV_ITEMS = [
   },
   {
     section: 'Stock Management',
+    icon: 'box',
     items: [
       { to: '/stock/category', label: 'Category', icon: 'tag' },
       { to: '/stock/product', label: 'Product', icon: 'box' },
@@ -66,6 +69,7 @@ export const NAV_ITEMS = [
   },
   {
     section: 'Finance',
+    icon: 'finance',
     items: [
       { to: '/finance/overview', label: 'Financial Overview', icon: 'finance' },
       { to: '/finance/tuition', label: 'Tuition & Fees', icon: 'payment' },
@@ -80,6 +84,7 @@ export const NAV_ITEMS = [
   },
   {
     section: 'Administration',
+    icon: 'users',
     items: [
       { to: '/admin/teachers', label: 'Teacher Info', icon: 'teacher' },
       { to: '/admin/staff', label: 'Staff Info', icon: 'staff' },

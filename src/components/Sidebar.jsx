@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 import { getNavItemsForRole } from '../lib/roles.js'
@@ -70,26 +71,37 @@ function Icon({ name }) {
     ledger: (
       <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
     ),
+    chevron: (
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+    ),
   }
 
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 shrink-0">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5 shrink-0">
       {icons[name]}
     </svg>
   )
 }
 
-function NavItem({ to, label, icon, collapsed }) {
+function pathMatches(pathname, to) {
+  if (to === '/') return pathname === '/'
+  return pathname === to || pathname.startsWith(`${to}/`)
+}
+
+function NavItem({ to, label, icon, collapsed, nested = false }) {
   return (
     <NavLink
       to={to}
-      end
+      end={to === '/'}
       className={({ isActive }) =>
         [
-          'group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
+          'group flex items-center gap-3 rounded-xl text-sm font-medium transition-all duration-200',
+          nested ? 'px-3 py-2' : 'px-3 py-2.5',
           isActive
             ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-            : 'text-slate-400 hover:bg-slate-800 hover:text-white',
+            : nested
+              ? 'text-slate-400 hover:bg-slate-800/80 hover:text-white'
+              : 'text-slate-300 hover:bg-slate-800 hover:text-white',
           collapsed ? 'justify-center px-2' : '',
         ].join(' ')
       }
@@ -101,10 +113,82 @@ function NavItem({ to, label, icon, collapsed }) {
   )
 }
 
+function SectionButton({
+  section,
+  icon,
+  open,
+  active,
+  collapsed,
+  onToggle,
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      title={collapsed ? section : undefined}
+      className={[
+        'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-200',
+        active || open
+          ? 'bg-slate-800 text-white'
+          : 'text-slate-300 hover:bg-slate-800/70 hover:text-white',
+        collapsed ? 'justify-center px-2' : '',
+      ].join(' ')}
+      aria-expanded={open}
+    >
+      <Icon name={icon || 'box'} />
+      {!collapsed && (
+        <>
+          <span className="min-w-0 flex-1 truncate text-left">{section}</span>
+          <span
+            className={[
+              'text-slate-500 transition-transform duration-200',
+              open ? 'rotate-90 text-indigo-400' : '',
+            ].join(' ')}
+          >
+            <Icon name="chevron" />
+          </span>
+        </>
+      )}
+    </button>
+  )
+}
+
 export default function Sidebar({ collapsed }) {
   const location = useLocation()
   const { role } = useAuth()
-  const visibleNav = getNavItemsForRole(role)
+  const visibleNav = useMemo(() => getNavItemsForRole(role), [role])
+
+  const activeSection = useMemo(() => {
+    const match = visibleNav.find((group) =>
+      group.items.some((item) => pathMatches(location.pathname, item.to))
+    )
+    return match?.section || null
+  }, [visibleNav, location.pathname])
+
+  const [openSection, setOpenSection] = useState(activeSection)
+
+  useEffect(() => {
+    setOpenSection(activeSection)
+  }, [activeSection])
+
+  const currentLabel = useMemo(() => {
+    for (const group of visibleNav) {
+      const item = group.items.find((i) => pathMatches(location.pathname, i.to))
+      if (item) return item.label
+    }
+    return 'Home'
+  }, [visibleNav, location.pathname])
+
+  const toggleSection = (section) => {
+    setOpenSection((prev) => {
+      if (prev === section) {
+        // Keep the section that owns the current page open.
+        if (activeSection === section) return section
+        return null
+      }
+      return section
+    })
+  }
 
   return (
     <aside
@@ -113,7 +197,6 @@ export default function Sidebar({ collapsed }) {
         collapsed ? 'w-[72px]' : 'w-64',
       ].join(' ')}
     >
-      {/* Logo */}
       <div className={['flex h-16 items-center border-b border-slate-800', collapsed ? 'justify-center px-2' : 'gap-3 px-5'].join(' ')}>
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-sm font-bold text-white shadow-lg shadow-indigo-500/30">
           K
@@ -126,32 +209,69 @@ export default function Sidebar({ collapsed }) {
         )}
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
-        {visibleNav.map((group) => (
-          <div key={group.section}>
-            {!collapsed && (
-              <div className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-slate-600">
-                {group.section}
-              </div>
-            )}
-            <div className="space-y-0.5">
-              {group.items.map((item) => (
-                <NavItem key={item.to} {...item} collapsed={collapsed} />
-              ))}
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+        {visibleNav.map((group) => {
+          const isSingle = group.items.length === 1 && group.items[0].to === '/'
+          const isOpen = openSection === group.section
+          const isActive = activeSection === group.section
+
+          if (isSingle) {
+            const item = group.items[0]
+            return (
+              <NavItem
+                key={group.section}
+                to={item.to}
+                label={group.section}
+                icon={group.icon || item.icon}
+                collapsed={collapsed}
+              />
+            )
+          }
+
+          return (
+            <div key={group.section} className="space-y-0.5">
+              <SectionButton
+                section={group.section}
+                icon={group.icon}
+                open={isOpen}
+                active={isActive}
+                collapsed={collapsed}
+                onToggle={() => toggleSection(group.section)}
+              />
+              {isOpen && (
+                <div
+                  className={[
+                    'space-y-0.5',
+                    collapsed ? '' : 'ml-2 border-l border-slate-800 pl-2',
+                  ].join(' ')}
+                >
+                  {group.items.map((item) => (
+                    <NavItem
+                      key={item.to}
+                      {...item}
+                      collapsed={collapsed}
+                      nested
+                    />
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          )
+        })}
       </nav>
 
-      {/* Footer */}
       {!collapsed && (
         <div className="border-t border-slate-800 p-4">
           <div className="rounded-xl bg-slate-800/50 p-3">
             <div className="text-xs text-slate-500">Current page</div>
             <div className="mt-0.5 truncate text-sm font-medium text-indigo-400">
-              {location.pathname === '/' ? 'Dashboard' : location.pathname.split('/').pop()?.replace(/-/g, ' ') || 'Home'}
+              {currentLabel}
             </div>
+            {activeSection && activeSection !== 'Dashboard' ? (
+              <div className="mt-0.5 truncate text-[10px] uppercase tracking-wider text-slate-500">
+                {activeSection}
+              </div>
+            ) : null}
           </div>
         </div>
       )}
