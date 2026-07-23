@@ -142,6 +142,16 @@ export default function AuditLog() {
       render: (r) => ROLE_LABELS[r.actorRole] || r.actorRole || '—',
     },
     {
+      key: 'ipAddress',
+      label: 'IP address',
+      className: 'whitespace-nowrap font-mono text-xs',
+      render: (r) => (
+        <span className="text-slate-700 dark:text-slate-300" title={r.ipAddress || ''}>
+          {r.ipAddress || '—'}
+        </span>
+      ),
+    },
+    {
       key: 'action',
       label: 'Action',
       render: (r) => <Badge variant={actionVariant(r.action)}>{r.action || '—'}</Badge>,
@@ -200,7 +210,7 @@ export default function AuditLog() {
     <div className="space-y-6">
       <PageHeader
         title="Audit Log"
-        subtitle="Who changed what — login, users, students, classes, payments, and POS"
+        subtitle="Who changed what, from which IP — login, users, students, classes, payments, and POS"
       />
 
       <FormAlert message={error} error />
@@ -212,7 +222,7 @@ export default function AuditLog() {
             className="input"
             value={filters.q}
             onChange={(e) => setFilters((f) => ({ ...f, q: e.target.value }))}
-            placeholder="Actor, summary, resource ID…"
+            placeholder="Actor, IP, summary, resource ID…"
           />
         </div>
         <div>

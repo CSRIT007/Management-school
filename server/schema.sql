@@ -207,13 +207,15 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   resource_type TEXT NOT NULL DEFAULT '',
   resource_id TEXT NOT NULL DEFAULT '',
   summary TEXT NOT NULL DEFAULT '',
-  meta JSONB NOT NULL DEFAULT '{}'::jsonb
+  meta JSONB NOT NULL DEFAULT '{}'::jsonb,
+  ip_address TEXT NOT NULL DEFAULT ''
 );
 
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_resource ON audit_logs(resource_type, resource_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_actor ON audit_logs(actor_id);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_ip ON audit_logs(ip_address);
 
 -- updated_at triggers
 DO $$

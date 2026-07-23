@@ -31,6 +31,8 @@ import {
 } from './userClasses.js'
 
 const app = express()
+// Needed so req.ip / X-Forwarded-For are correct behind nginx / Cloudflare.
+app.set('trust proxy', 1)
 const PORT = process.env.PORT || 4000
 const HOST = process.env.HOST || '0.0.0.0'
 
@@ -159,15 +161,13 @@ app.post('/api/auth/login', async (req, res) => {
     await touchUserLogin(row.id)
     const user = sanitizeUser(row)
     const token = signToken(user)
-    await writeAuditLog(
-      { user: { id: user.id, email: user.email, name: user.name, role: user.role } },
-      {
-        action: 'login',
-        resourceType: 'auth',
-        resourceId: user.id,
-        summary: `Signed in as ${user.email}`,
-      }
-    )
+    req.user = { id: user.id, email: user.email, name: user.name, role: user.role }
+    await writeAuditLog(req, {
+      action: 'login',
+      resourceType: 'auth',
+      resourceId: user.id,
+      summary: `Signed in as ${user.email}`,
+    })
     res.json({ token, user })
   } catch (e) {
     console.error('POST /api/auth/login failed:', e)
