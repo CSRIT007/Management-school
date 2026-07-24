@@ -364,6 +364,7 @@ app.put('/api/people/teachers/:id', requireAuth, requireRole(...PEOPLE_MANAGE), 
       return res.status(400).json({ error: 'Password must be at least 6 characters' })
     }
     const updated = await updateUser(req.params.id, { ...fields, role: TEACHER_ROLE })
+    if (!updated) return res.status(404).json({ error: 'Teacher not found' })
     if (password) await setUserPassword(req.params.id, password)
     await writeAuditLog(req, {
       action: password ? 'update_password' : 'update',
@@ -435,6 +436,7 @@ app.put('/api/people/staff/:id', requireAuth, requireRole(...PEOPLE_MANAGE), asy
       return res.status(400).json({ error: 'Password must be at least 6 characters' })
     }
     const updated = await updateUser(req.params.id, { ...fields, role: nextRole })
+    if (!updated) return res.status(404).json({ error: 'Staff member not found' })
     if (password) await setUserPassword(req.params.id, password)
     await writeAuditLog(req, {
       action: password ? 'update_password' : 'update',

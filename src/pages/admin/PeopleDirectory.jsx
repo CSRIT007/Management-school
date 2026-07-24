@@ -10,6 +10,11 @@ import FormAlert from '../../components/ui/FormAlert.jsx'
 import Badge from '../../components/ui/Badge.jsx'
 import DateField from '../../components/ui/DateField.jsx'
 
+const EMPLOYMENT_LABELS = {
+  full_time: 'Full time',
+  part_time: 'Part time',
+}
+
 const emptyProfile = {
   name: '',
   email: '',
@@ -22,6 +27,17 @@ const emptyProfile = {
   note: '',
   role: '',
   active: true,
+  employmentType: '',
+  salary: '',
+  hourlyRate: '',
+  educationDegree: '',
+  majorSkill: '',
+}
+
+function formatMoney(n) {
+  const v = Number(n)
+  if (!Number.isFinite(v) || v <= 0) return '—'
+  return `$${v.toFixed(2)}`
 }
 
 /**
@@ -99,6 +115,11 @@ export default function PeopleDirectory({
       note: row.note || '',
       role: row.role || defaultRole,
       active: row.active !== false,
+      employmentType: row.employmentType || '',
+      salary: row.salary ? String(row.salary) : '',
+      hourlyRate: row.hourlyRate ? String(row.hourlyRate) : '',
+      educationDegree: row.educationDegree || '',
+      majorSkill: row.majorSkill || '',
     })
     setPassword('')
     setMessage('')
@@ -117,6 +138,7 @@ export default function PeopleDirectory({
     setMessage('')
     setError(false)
 
+    const empType = form.employmentType || ''
     const profile = {
       name: form.name.trim(),
       email: form.email.trim(),
@@ -127,6 +149,11 @@ export default function PeopleDirectory({
       hireDate: form.hireDate || '',
       note: form.note.trim(),
       active: form.active,
+      employmentType: empType,
+      salary: empType === 'full_time' ? Number(form.salary) || 0 : 0,
+      hourlyRate: empType === 'part_time' ? Number(form.hourlyRate) || 0 : 0,
+      educationDegree: form.educationDegree.trim(),
+      majorSkill: form.majorSkill.trim(),
     }
     if (isStaff) profile.role = form.role || defaultRole
 
@@ -134,7 +161,9 @@ export default function PeopleDirectory({
       if (editingId) {
         if (password.trim()) profile.password = password.trim()
         await put(`${listUrl}/${editingId}`, profile)
-        showMsg(password.trim() ? 'Updated and password reset.' : 'Updated successfully.')
+        const okMsg = password.trim() ? 'Updated and password reset.' : 'Updated successfully.'
+        reset()
+        showMsg(okMsg)
       } else {
         if (!form.password || form.password.length < 6) {
           showMsg('Password must be at least 6 characters.', true)
@@ -142,9 +171,10 @@ export default function PeopleDirectory({
           return
         }
         await post(listUrl, { ...profile, password: form.password })
-        showMsg(`${isStaff ? 'Staff' : 'Teacher'} saved successfully.`)
+        const okMsg = `${isStaff ? 'Staff' : 'Teacher'} saved successfully.`
+        reset()
+        showMsg(okMsg)
       }
-      reset()
       await load()
     } catch (err) {
       showMsg(err.message, true)
@@ -159,7 +189,33 @@ export default function PeopleDirectory({
     { key: 'email', label: 'Email' },
     { key: 'phone', label: 'Phone', render: (r) => r.phone || '—' },
     { key: 'position', label: 'Position', render: (r) => r.position || '—' },
-    { key: 'department', label: 'Department', render: (r) => r.department || '—' },
+    {
+      key: 'employmentType',
+      label: 'Type',
+      render: (r) => EMPLOYMENT_LABELS[r.employmentType] || '—',
+    },
+    {
+      key: 'pay',
+      label: 'Pay',
+      render: (r) => {
+        if (r.employmentType === 'full_time') return formatMoney(r.salary)
+        if (r.employmentType === 'part_time') {
+          const v = formatMoney(r.hourlyRate)
+          return v === '—' ? '—' : `${v}/hr`
+        }
+        return '—'
+      },
+    },
+    {
+      key: 'educationDegree',
+      label: 'Degree',
+      render: (r) => r.educationDegree || '—',
+    },
+    {
+      key: 'majorSkill',
+      label: 'Major / Skill',
+      render: (r) => r.majorSkill || '—',
+    },
     ...(isStaff
       ? [{
           key: 'role',
@@ -261,6 +317,74 @@ export default function PeopleDirectory({
               onChange={(hireDate) => setForm((f) => ({ ...f, hireDate }))}
             />
           </div>
+
+          <div>
+            <label className="label">Degree of Education</label>
+            <input
+              className="input"
+              value={form.educationDegree}
+              onChange={(e) => setForm((f) => ({ ...f, educationDegree: e.target.value }))}
+              placeholder="e.g. Bachelor, Master, PhD"
+            />
+          </div>
+          <div>
+            <label className="label">Major / Skill</label>
+            <input
+              className="input"
+              value={form.majorSkill}
+              onChange={(e) => setForm((f) => ({ ...f, majorSkill: e.target.value }))}
+              placeholder={isStaff ? 'e.g. Accounting, HR' : 'e.g. Mathematics, English'}
+            />
+          </div>
+
+          <div>
+            <label className="label">Employment Type</label>
+            <select
+              className="input"
+              value={form.employmentType}
+              onChange={(e) => setForm((f) => ({
+                ...f,
+                employmentType: e.target.value,
+                salary: e.target.value === 'full_time' ? f.salary : '',
+                hourlyRate: e.target.value === 'part_time' ? f.hourlyRate : '',
+              }))}
+            >
+              <option value="">Select type</option>
+              <option value="full_time">Full time</option>
+              <option value="part_time">Part time</option>
+            </select>
+          </div>
+
+          {form.employmentType === 'full_time' && (
+            <div>
+              <label className="label">Salary ($ / month)</label>
+              <input
+                className="input"
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.salary}
+                onChange={(e) => setForm((f) => ({ ...f, salary: e.target.value }))}
+                placeholder="0.00"
+              />
+            </div>
+          )}
+
+          {form.employmentType === 'part_time' && (
+            <div>
+              <label className="label">Amount / Hour ($)</label>
+              <input
+                className="input"
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.hourlyRate}
+                onChange={(e) => setForm((f) => ({ ...f, hourlyRate: e.target.value }))}
+                placeholder="0.00"
+              />
+            </div>
+          )}
+
           {isStaff && selectableRoles && (
             <div>
               <label className="label">Staff Role</label>

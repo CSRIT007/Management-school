@@ -12,7 +12,7 @@ export default function StaffInfo() {
     <PeopleDirectory
       kind="staff"
       title="Staff Info"
-      subtitle="Store office, finance, and admin staff profiles"
+      subtitle="Store office, finance, and admin staff profiles with employment and education info"
       defaultRole={ROLES.SCHOOL_ADMIN}
       roleOptions={STAFF_ROLE_OPTIONS}
     />

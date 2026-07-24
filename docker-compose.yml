@@ -34,9 +34,9 @@ services:
       JWT_SECRET: ${JWT_SECRET:-dev-only-change-me-in-production}
     expose:
       - "4000"
-    ports:
-      # Local dev (npm run dev) can proxy /api here
-      - "127.0.0.1:4000:4000"
+    # Do NOT publish host :4000 here — it steals traffic from `npm run server`
+    # (Vite proxies to 127.0.0.1:4000). Use npm run server + npm run dev for local API,
+    # or open http://localhost:8080 for the Docker stack (nginx → api on the compose network).
     depends_on:
       db:
         condition: service_healthy

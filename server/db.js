@@ -329,6 +329,11 @@ async function migrateUsersTable() {
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS department TEXT NOT NULL DEFAULT ''`)
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS hire_date DATE`)
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS note TEXT NOT NULL DEFAULT ''`)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS employment_type TEXT NOT NULL DEFAULT ''`)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS salary NUMERIC NOT NULL DEFAULT 0`)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS hourly_rate NUMERIC NOT NULL DEFAULT 0`)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS education_degree TEXT NOT NULL DEFAULT ''`)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS major_skill TEXT NOT NULL DEFAULT ''`)
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`)
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)`)
 }

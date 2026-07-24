@@ -176,6 +176,11 @@ CREATE TABLE IF NOT EXISTS users (
   department TEXT NOT NULL DEFAULT '',
   hire_date DATE,
   note TEXT NOT NULL DEFAULT '',
+  employment_type TEXT NOT NULL DEFAULT '',
+  salary NUMERIC NOT NULL DEFAULT 0,
+  hourly_rate NUMERIC NOT NULL DEFAULT 0,
+  education_degree TEXT NOT NULL DEFAULT '',
+  major_skill TEXT NOT NULL DEFAULT '',
   last_login_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

@@ -6,7 +6,7 @@ export default function TeacherInfo() {
     <PeopleDirectory
       kind="teachers"
       title="Teacher Info"
-      subtitle="Store teacher profiles and login accounts used for class assignment"
+      subtitle="Store teacher profiles, employment type, pay, and education"
       defaultRole={ROLES.TEACHER}
     />
   )
