@@ -208,11 +208,20 @@ export default function StudentRegister() {
   }, [students])
 
   const columns = [
-    { key: 'id', label: 'Student ID', className: 'font-semibold text-slate-900 dark:text-slate-100' },
-    { key: 'name', label: 'Full Name' },
-    { key: 'email', label: 'Email' },
-    { key: 'phone', label: 'Phone' },
-    { key: 'program', label: 'Program' },
+    {
+      key: 'id',
+      label: 'Student ID',
+      className: 'whitespace-nowrap font-semibold text-slate-900 dark:text-slate-100',
+    },
+    { key: 'name', label: 'Full Name', className: 'whitespace-nowrap' },
+    { key: 'email', label: 'Email', className: 'whitespace-nowrap' },
+    { key: 'phone', label: 'Phone', className: 'whitespace-nowrap' },
+    {
+      key: 'program',
+      label: 'Program',
+      // Header stays 1 line via DataTable; cell may wrap up to 2 lines
+      cellClassName: 'max-w-[11rem] break-words line-clamp-2',
+    },
     {
       key: 'dob',
       label: 'Date of Birth',
@@ -228,7 +237,7 @@ export default function StudentRegister() {
     {
       key: 'actions',
       label: '',
-      className: 'text-right',
+      className: 'whitespace-nowrap text-right',
       render: (row) => (
         <div className="flex justify-end gap-2">
           <Button size="sm" variant="secondary" onClick={() => startEdit(row)}>Edit</Button>
