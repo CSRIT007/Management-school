@@ -198,13 +198,16 @@ export default function Sidebar({ collapsed }) {
       ].join(' ')}
     >
       <div className={['flex h-16 items-center border-b border-slate-800', collapsed ? 'justify-center px-2' : 'gap-3 px-5'].join(' ')}>
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-sm font-bold text-white shadow-lg shadow-indigo-500/30">
-          K
-        </div>
+        <img
+          src="/school-logo.png?v=3"
+          alt="Smile International School"
+          className="h-10 w-10 shrink-0 object-contain"
+          draggable={false}
+        />
         {!collapsed && (
-          <div>
-            <div className="text-sm font-bold text-white">Management</div>
-            <div className="text-[10px] font-medium uppercase tracking-widest text-slate-500">System</div>
+          <div className="min-w-0">
+            <div className="truncate text-sm font-bold text-white">Smile International</div>
+            <div className="text-[10px] font-medium uppercase tracking-widest text-slate-500">School</div>
           </div>
         )}
       </div>

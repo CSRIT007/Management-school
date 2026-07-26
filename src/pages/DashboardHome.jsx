@@ -71,7 +71,7 @@ export default function DashboardHome() {
         <div className="absolute -right-8 -top-8 h-48 w-48 rounded-full bg-white/10 blur-2xl" />
         <div className="relative">
           <p className="text-sm font-medium text-indigo-200">Welcome back</p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight">Management School System</h1>
+          <h1 className="mt-1 text-3xl font-bold tracking-tight">Smile International School</h1>
           <p className="mt-2 max-w-lg text-indigo-100/80">
             Manage students, classes, payments, and inventory from one unified dashboard.
           </p>

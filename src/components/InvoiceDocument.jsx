@@ -5,6 +5,7 @@ import { formatDisplayDate } from '../lib/dateFormat.js'
 import { getBillToParts, formatInvoiceDateTime } from '../lib/invoiceFormat.js'
 import {
   SCHOOL_NAME,
+  SCHOOL_LOGO,
   SCHOOL_WEBSITE,
   SCHOOL_EMAIL,
   SCHOOL_LOCATION,
@@ -85,9 +86,12 @@ export default function InvoiceDocument({ invoice, compact = false, showActions 
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15 text-lg font-bold backdrop-blur">
-                MS
-              </div>
+              <img
+                src={SCHOOL_LOGO}
+                alt={SCHOOL_NAME}
+                className="h-11 w-11 object-contain"
+                draggable={false}
+              />
               <div>
                 <h2 className="text-lg font-bold tracking-tight">{SCHOOL_NAME}</h2>
                 <p className="text-xs text-indigo-100">School Admin Portal</p>
@@ -230,6 +234,8 @@ export function printInvoice(invoice) {
         </tr>`
   }).join('')
 
+  const logoUrl = `${window.location.origin}${SCHOOL_LOGO}`
+
   win.document.write(`<!DOCTYPE html>
 <html>
 <head>
@@ -242,7 +248,7 @@ export function printInvoice(invoice) {
     .invoice-main { flex: 1; }
     .header { background: linear-gradient(135deg, #4f46e5, #6d28d9); color: white; padding: 24px 32px; border-radius: 12px 12px 0 0; display: flex; justify-content: space-between; align-items: flex-start; }
     .brand { display: flex; gap: 12px; align-items: center; }
-    .logo { width: 44px; height: 44px; background: rgba(255,255,255,0.15); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; }
+    .logo { width: 44px; height: 44px; object-fit: contain; background: transparent; }
     .body { border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 12px 12px; padding: 32px; }
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
     .label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: #94a3b8; font-weight: 600; }
@@ -273,7 +279,7 @@ export function printInvoice(invoice) {
   <div class="invoice-main">
   <div class="header">
     <div class="brand">
-      <div class="logo">MS</div>
+      <img class="logo" src="${logoUrl}" alt="${SCHOOL_NAME}" />
       <div>
         <h1 style="font-size: 18px;">${SCHOOL_NAME}</h1>
         <p style="font-size: 12px; opacity: 0.85;">School Admin Portal</p>

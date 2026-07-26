@@ -1,5 +1,6 @@
-export const SCHOOL_NAME = 'Management School System'
-export const SCHOOL_SHORT = 'MS'
+export const SCHOOL_NAME = 'Smile International School'
+export const SCHOOL_SHORT = 'S.I.S.'
+export const SCHOOL_LOGO = '/school-logo.png?v=3'
 export const SCHOOL_WEBSITE = 'www.school.csrsms.com'
 export const SCHOOL_EMAIL = 'school.csrsms@gmail.com'
 export const SCHOOL_LOCATION = 'Phnom Penh, Cambodia'
