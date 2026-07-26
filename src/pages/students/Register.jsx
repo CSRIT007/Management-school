@@ -197,6 +197,16 @@ export default function StudentRegister() {
     return names
   }, [students])
 
+  // Newest registrations first (Date Created DESC)
+  const studentsNewestFirst = useMemo(() => {
+    return [...students].sort((a, b) => {
+      const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0
+      const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0
+      if (tb !== ta) return tb - ta
+      return String(b.id || '').localeCompare(String(a.id || ''))
+    })
+  }, [students])
+
   const columns = [
     { key: 'id', label: 'Student ID', className: 'font-semibold text-slate-900 dark:text-slate-100' },
     { key: 'name', label: 'Full Name' },
@@ -338,7 +348,7 @@ export default function StudentRegister() {
       </form>
 
       <div>
-        <TableExportHeader title={STUDENT_REPORT_TITLE} count={students.length}>
+        <TableExportHeader title={STUDENT_REPORT_TITLE} count={studentsNewestFirst.length}>
           <ExportReportButton
             reportTitle={STUDENT_REPORT_TITLE}
             modalTitle="Export Register Students"
@@ -362,13 +372,13 @@ export default function StudentRegister() {
                 </div>
               ),
             }}
-            getRows={(filterState) => filterStudents(students, filterState)}
+            getRows={(filterState) => filterStudents(studentsNewestFirst, filterState)}
             onDownload={downloadStudentRegisterCsv}
-            disabled={students.length === 0}
+            disabled={studentsNewestFirst.length === 0}
             size="sm"
           />
         </TableExportHeader>
-        <DataTable columns={columns} rows={students} emptyMessage="No students registered yet." />
+        <DataTable columns={columns} rows={studentsNewestFirst} emptyMessage="No students registered yet." />
       </div>
     </div>
   )
