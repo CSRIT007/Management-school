@@ -1,4 +1,4 @@
-import { formatDisplayDate } from '../dateFormat.js'
+import { formatDisplayDate, formatDisplayDateTime } from '../dateFormat.js'
 import { downloadCsv, reportFilename } from '../exportCsv.js'
 import { SCHOOL_NAME } from '../schoolBrand.js'
 
@@ -13,6 +13,7 @@ export const STUDENT_EXPORT_COLUMNS = [
   { key: 'dob', label: 'Date of Birth', getValue: (r) => formatDisplayDate(r.dob) },
   { key: 'emergency', label: 'Emergency Contact', getValue: (r) => r.emergency || '' },
   { key: 'program', label: 'Program / Course', getValue: (r) => r.program || '' },
+  { key: 'createdAt', label: 'Date Created', getValue: (r) => formatDisplayDateTime(r.createdAt) },
 ]
 
 export const STUDENT_FILTER_INITIAL = { program: 'all' }

@@ -46,6 +46,7 @@ const TABLE_CONFIG = {
       dob: fmtDate(r.dob),
       emergency: r.emergency,
       program: r.program,
+      createdAt: r.created_at ?? null,
     }),
     toDb: (o) => ({
       id: o.id,

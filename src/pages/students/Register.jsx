@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { formatDisplayDate, isValidIsoDate } from '../../lib/dateFormat.js'
+import { formatDisplayDate, formatDisplayDateTime, isValidIsoDate } from '../../lib/dateFormat.js'
 import DateField from '../../components/ui/DateField.jsx'
 import ProgramCourseField from './components/ProgramCourseField.jsx'
 import { get, post, put, del } from '../../lib/api.js'
@@ -203,7 +203,18 @@ export default function StudentRegister() {
     { key: 'email', label: 'Email' },
     { key: 'phone', label: 'Phone' },
     { key: 'program', label: 'Program' },
-    { key: 'dob', label: 'Date of Birth', render: (r) => formatDisplayDate(r.dob) },
+    {
+      key: 'dob',
+      label: 'Date of Birth',
+      className: 'whitespace-nowrap',
+      render: (r) => formatDisplayDate(r.dob),
+    },
+    {
+      key: 'createdAt',
+      label: 'Date Created',
+      className: 'whitespace-nowrap text-slate-600 dark:text-slate-300',
+      render: (r) => formatDisplayDateTime(r.createdAt),
+    },
     {
       key: 'actions',
       label: '',

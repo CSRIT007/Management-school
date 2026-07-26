@@ -76,6 +76,21 @@ export function formatDisplayDate(value) {
   return `${d}-${m}-${y}`
 }
 
+/** dd-mm-yyyy HH:mm in Asia/Phnom_Penh (registration / audit timestamps). */
+export function formatDisplayDateTime(value) {
+  if (value == null || value === '') return '—'
+  const d = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(d.getTime())) return '—'
+  const date = formatDisplayDate(d)
+  const time = d.toLocaleTimeString('en-GB', {
+    timeZone: APP_TIMEZONE,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+  return `${date} ${time}`
+}
+
 export function todayIso() {
   return fromAppTimezone(new Date())
 }
