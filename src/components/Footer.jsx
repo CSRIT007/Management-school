@@ -1,6 +1,4 @@
 import {
-  SCHOOL_NAME,
-  SCHOOL_LOGO,
   SCHOOL_WEBSITE,
   SCHOOL_EMAIL,
   SCHOOL_LOCATION_LINE,
@@ -12,17 +10,9 @@ export default function Footer() {
   return (
     <footer className="mt-auto border-t border-slate-200/80 bg-white/80 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/80">
       <div className="flex flex-col items-center justify-between gap-3 px-6 py-4 text-xs text-slate-500 dark:text-slate-400 sm:flex-row lg:px-8">
-        <div className="flex items-center gap-2">
-          <img
-            src={SCHOOL_LOGO}
-            alt={SCHOOL_NAME}
-            className="h-7 w-7 object-contain"
-            draggable={false}
-          />
-          <span>
-            <span className="font-semibold text-slate-700 dark:text-slate-300">{SCHOOL_NAME}</span>
-            {' · '}
-            © {year}
+        <div>
+          <span className="font-semibold text-slate-700 dark:text-slate-300">
+            © {year} All Rights Reserved
           </span>
         </div>
 
