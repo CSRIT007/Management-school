@@ -24,8 +24,12 @@ const GENDER_OPTIONS = [
 
 const PHONE_PREFIX = '+855'
 
+const FORM_STEPS = [
+  { id: 'personal', label: 'Personal Info', short: '1' },
+  { id: 'program', label: 'Program / Course', short: '2' },
+]
+
 const emptyForm = {
-  id: '',
   firstName: '',
   lastName: '',
   gender: '',
@@ -61,7 +65,7 @@ function splitLegacyName(name) {
   return { firstName: trimmed.slice(0, i), lastName: trimmed.slice(i + 1).trim() }
 }
 
-function validateForm(form) {
+function validatePersonal(form) {
   const errors = {}
   const firstName = form.firstName.trim()
   const lastName = form.lastName.trim()
@@ -94,21 +98,13 @@ export default function StudentRegister() {
   const [error, setError] = useState(false)
   const [fieldErrors, setFieldErrors] = useState({})
   const [programs, setPrograms] = useState([])
+  const [step, setStep] = useState(0)
 
   const load = async () => {
     try {
       setStudents(await get('/api/students'))
     } catch (e) {
       showMsg(e.message, true)
-    }
-  }
-
-  const loadNextId = async () => {
-    try {
-      const { id } = await get('/api/students/next-id')
-      setForm((f) => ({ ...f, id }))
-    } catch {
-      // ignore — server auto-generates on save
     }
   }
 
@@ -130,10 +126,6 @@ export default function StudentRegister() {
 
   useEffect(() => { load(); loadPrograms() }, [])
 
-  useEffect(() => {
-    if (!editingId) loadNextId()
-  }, [editingId])
-
   const showMsg = (text, isError = false) => {
     setMessage(text)
     setError(isError)
@@ -145,11 +137,11 @@ export default function StudentRegister() {
     setMessage('')
     setError(false)
     setFieldErrors({})
+    setStep(0)
   }
 
-  const startCreate = async () => {
+  const startCreate = () => {
     reset()
-    await loadNextId()
   }
 
   const startEdit = (student) => {
@@ -162,7 +154,6 @@ export default function StudentRegister() {
     }
     setEditingId(student.id)
     setForm({
-      id: student.id,
       firstName: fromParts.firstName,
       lastName: fromParts.lastName,
       gender: student.gender || '',
@@ -176,6 +167,7 @@ export default function StudentRegister() {
     setMessage('')
     setError(false)
     setFieldErrors({})
+    setStep(0)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -194,11 +186,36 @@ export default function StudentRegister() {
     clearFieldError('phoneLocal')
   }
 
-  const submit = async (e) => {
-    e.preventDefault()
-    const errors = validateForm(form)
+  const goNext = () => {
+    const errors = validatePersonal(form)
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors)
+      showMsg('Please complete personal info before continuing.', true)
+      return
+    }
+    setFieldErrors({})
+    setMessage('')
+    setError(false)
+    setStep(1)
+  }
+
+  const goBack = () => {
+    setMessage('')
+    setError(false)
+    setStep(0)
+  }
+
+  const submit = async (e) => {
+    e.preventDefault()
+    if (step === 0) {
+      goNext()
+      return
+    }
+
+    const errors = validatePersonal(form)
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors)
+      setStep(0)
       showMsg('Please fill in all required fields before saving.', true)
       return
     }
@@ -226,7 +243,6 @@ export default function StudentRegister() {
         await put(`/api/students/${editingId}`, payload)
         showMsg('Student updated successfully.')
       } else {
-        if (form.id.trim()) payload.id = form.id.trim().toUpperCase()
         await post('/api/students', payload)
         showMsg('Student registered successfully.')
       }
@@ -338,134 +354,181 @@ export default function StudentRegister() {
         </div>
       )}
 
-      <form onSubmit={submit} className="panel p-6">
+      <form
+        onSubmit={submit}
+        className="panel p-6"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && step === 0) {
+            e.preventDefault()
+            goNext()
+          }
+        }}
+      >
         <h3 className="mb-4 text-base font-bold text-slate-900 dark:text-slate-100">
           {editingId ? `Edit Student — ${editingId}` : 'Register New Student'}
         </h3>
         <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
-          Fields marked with <span className="text-rose-500">*</span> are required.
+          Fields marked with <span className="text-rose-500">*</span> are required. Student ID is created automatically.
         </p>
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          <div>
-            <label className="label">Student ID</label>
-            <input
-              className="input"
-              value={form.id}
-              onChange={(e) => setForm((f) => ({ ...f, id: e.target.value.toUpperCase() }))}
-              placeholder="Auto: STU-0001"
-              disabled={!!editingId}
-              readOnly={!!editingId}
-            />
-            {!editingId && (
-              <p className="mt-1 text-xs text-slate-400">Leave as suggested or enter a unique ID (e.g. STU-0005)</p>
-            )}
-          </div>
-          <div>
-            <label className="label">
-              Gender <span className="text-rose-500">*</span>
-            </label>
-            <select
-              className={`input ${fieldErrors.gender ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/20' : ''}`}
-              value={form.gender}
-              onChange={(e) => {
-                setForm((f) => ({ ...f, gender: e.target.value }))
-                clearFieldError('gender')
-              }}
-              required
-            >
-              <option value="">Select gender</option>
-              {GENDER_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-            {fieldErrors.gender && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{fieldErrors.gender}</p>}
-          </div>
-          <div>
-            <label className="label">
-              First Name <span className="text-rose-500">*</span>
-            </label>
-            <input
-              value={form.firstName}
-              onChange={(e) => {
-                setForm((f) => ({ ...f, firstName: e.target.value }))
-                clearFieldError('firstName')
-              }}
-              className={`input ${fieldErrors.firstName ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/20' : ''}`}
-              placeholder="Jane"
-              required
-            />
-            {fieldErrors.firstName && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{fieldErrors.firstName}</p>}
-          </div>
-          <div>
-            <label className="label">
-              Last Name <span className="text-rose-500">*</span>
-            </label>
-            <input
-              value={form.lastName}
-              onChange={(e) => {
-                setForm((f) => ({ ...f, lastName: e.target.value }))
-                clearFieldError('lastName')
-              }}
-              className={`input ${fieldErrors.lastName ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/20' : ''}`}
-              placeholder="Doe"
-              required
-            />
-            {fieldErrors.lastName && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{fieldErrors.lastName}</p>}
-          </div>
-          <div>
-            <label className="label">
-              Email <span className="text-rose-500">*</span>
-            </label>
-            <input
-              type="email"
-              value={form.email}
-              onChange={(e) => {
-                setForm((f) => ({ ...f, email: e.target.value }))
-                clearFieldError('email')
-              }}
-              className={`input ${fieldErrors.email ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/20' : ''}`}
-              placeholder="name@example.com"
-              required
-            />
-            {fieldErrors.email && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{fieldErrors.email}</p>}
-          </div>
-          <div>
-            <label className="label">Phone Number</label>
-            <div className="flex overflow-hidden rounded-xl border border-slate-200 bg-white focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-900">
-              <span className="flex items-center border-r border-slate-200 bg-slate-50 px-3 text-sm font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                {PHONE_PREFIX}
-              </span>
+
+        <div className="mb-6 grid grid-cols-2 gap-2 sm:gap-3">
+          {FORM_STEPS.map((s, i) => {
+            const done = i < step
+            const active = i === step
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => {
+                  if (i <= step) setStep(i)
+                  else if (i === 1) goNext()
+                }}
+                className={[
+                  'rounded-xl border px-2 py-3 text-left transition-colors sm:px-4',
+                  active
+                    ? 'border-indigo-500 bg-indigo-50 dark:border-indigo-400 dark:bg-indigo-950/40'
+                    : done
+                      ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/30'
+                      : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50',
+                ].join(' ')}
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className={[
+                      'flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold',
+                      active
+                        ? 'bg-indigo-600 text-white'
+                        : done
+                          ? 'bg-emerald-500 text-white'
+                          : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
+                    ].join(' ')}
+                  >
+                    {done ? '✓' : s.short}
+                  </span>
+                  <span
+                    className={[
+                      'text-xs font-semibold sm:text-sm',
+                      active
+                        ? 'text-indigo-800 dark:text-indigo-200'
+                        : done
+                          ? 'text-emerald-800 dark:text-emerald-300'
+                          : 'text-slate-500 dark:text-slate-400',
+                    ].join(' ')}
+                  >
+                    {s.label}
+                  </span>
+                </div>
+              </button>
+            )
+          })}
+        </div>
+
+        {step === 0 && (
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            <div>
+              <label className="label">
+                First Name <span className="text-rose-500">*</span>
+              </label>
               <input
-                value={form.phoneLocal}
-                onChange={(e) => onPhoneLocalChange(e.target.value)}
-                className="min-w-0 flex-1 border-0 bg-transparent px-3 py-2.5 text-sm text-slate-800 outline-none dark:text-slate-100"
-                placeholder="12 345 678"
-                inputMode="numeric"
-                autoComplete="tel-national"
+                value={form.firstName}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, firstName: e.target.value }))
+                  clearFieldError('firstName')
+                }}
+                className={`input ${fieldErrors.firstName ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/20' : ''}`}
+                placeholder="Jane"
               />
+              {fieldErrors.firstName && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{fieldErrors.firstName}</p>}
             </div>
-            <p className="mt-1 text-xs text-slate-400">Cambodia (+855). Do not type a leading 0.</p>
-            {fieldErrors.phoneLocal && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{fieldErrors.phoneLocal}</p>}
+            <div>
+              <label className="label">
+                Last Name <span className="text-rose-500">*</span>
+              </label>
+              <input
+                value={form.lastName}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, lastName: e.target.value }))
+                  clearFieldError('lastName')
+                }}
+                className={`input ${fieldErrors.lastName ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/20' : ''}`}
+                placeholder="Doe"
+              />
+              {fieldErrors.lastName && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{fieldErrors.lastName}</p>}
+            </div>
+            <div>
+              <label className="label">
+                Gender <span className="text-rose-500">*</span>
+              </label>
+              <select
+                className={`input ${fieldErrors.gender ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/20' : ''}`}
+                value={form.gender}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, gender: e.target.value }))
+                  clearFieldError('gender')
+                }}
+              >
+                <option value="">Select gender</option>
+                {GENDER_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              {fieldErrors.gender && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{fieldErrors.gender}</p>}
+            </div>
+            <div>
+              <label className="label">
+                Email <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="email"
+                value={form.email}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, email: e.target.value }))
+                  clearFieldError('email')
+                }}
+                className={`input ${fieldErrors.email ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/20' : ''}`}
+                placeholder="name@example.com"
+              />
+              {fieldErrors.email && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{fieldErrors.email}</p>}
+            </div>
+            <div>
+              <label className="label">Phone Number</label>
+              <div className="flex overflow-hidden rounded-xl border border-slate-200 bg-white focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-900">
+                <span className="flex items-center border-r border-slate-200 bg-slate-50 px-3 text-sm font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                  {PHONE_PREFIX}
+                </span>
+                <input
+                  value={form.phoneLocal}
+                  onChange={(e) => onPhoneLocalChange(e.target.value)}
+                  className="min-w-0 flex-1 border-0 bg-transparent px-3 py-2.5 text-sm text-slate-800 outline-none dark:text-slate-100"
+                  placeholder="12 345 678"
+                  inputMode="numeric"
+                  autoComplete="tel-national"
+                />
+              </div>
+              {fieldErrors.phoneLocal && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{fieldErrors.phoneLocal}</p>}
+            </div>
+            <DateField
+              label="Date of Birth *"
+              value={form.dob}
+              onChange={(dob) => {
+                setForm((f) => ({ ...f, dob }))
+                clearFieldError('dob')
+              }}
+              error={fieldErrors.dob}
+            />
+            <div className="md:col-span-2">
+              <label className="label">Address</label>
+              <input value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} className="input" placeholder="Street, City" />
+            </div>
+            <div className="md:col-span-2">
+              <label className="label">Emergency Contact</label>
+              <input value={form.emergency} onChange={(e) => setForm((f) => ({ ...f, emergency: e.target.value }))} className="input" placeholder="Name & Phone" />
+            </div>
           </div>
-          <div className="md:col-span-2">
-            <label className="label">Address</label>
-            <input value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} className="input" placeholder="Street, City" />
-          </div>
-          <DateField
-            label="Date of Birth *"
-            value={form.dob}
-            onChange={(dob) => {
-              setForm((f) => ({ ...f, dob }))
-              clearFieldError('dob')
-            }}
-            required
-            error={fieldErrors.dob}
-          />
-          <div>
-            <label className="label">Emergency Contact</label>
-            <input value={form.emergency} onChange={(e) => setForm((f) => ({ ...f, emergency: e.target.value }))} className="input" placeholder="Name & Phone" />
-          </div>
-          <div className="md:col-span-2">
+        )}
+
+        {step === 1 && (
+          <div className="grid grid-cols-1 gap-5">
             <ProgramCourseField
               value={form.program}
               onChange={(program) => setForm((f) => ({ ...f, program }))}
@@ -473,13 +536,26 @@ export default function StudentRegister() {
               onAdd={addProgram}
             />
           </div>
-        </div>
+        )}
 
-        <div className="mt-6 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800 pt-6">
+        <div className="mt-6 flex justify-between gap-3 border-t border-slate-100 pt-6 dark:border-slate-800">
           <Button type="button" variant="secondary" onClick={reset}>Cancel</Button>
-          <Button type="submit" disabled={saving}>
-            {saving ? 'Saving…' : editingId ? 'Update Student' : 'Register Student'}
-          </Button>
+          <div className="flex gap-3">
+            {step > 0 && (
+              <Button type="button" variant="secondary" onClick={goBack}>
+                Back
+              </Button>
+            )}
+            {step === 0 ? (
+              <Button type="button" onClick={goNext}>
+                Next
+              </Button>
+            ) : (
+              <Button type="submit" disabled={saving}>
+                {saving ? 'Saving…' : editingId ? 'Update Student' : 'Register Student'}
+              </Button>
+            )}
+          </div>
         </div>
       </form>
 

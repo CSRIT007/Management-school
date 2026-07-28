@@ -23,6 +23,12 @@ const GENDER_OPTIONS = [
 
 const PHONE_PREFIX = '+855'
 
+const FORM_STEPS = [
+  { id: 'personal', label: 'Personal Info', short: '1' },
+  { id: 'education', label: 'Education Info', short: '2' },
+  { id: 'other', label: 'Other', short: '3' },
+]
+
 const emptyProfile = {
   firstName: '',
   lastName: '',
@@ -96,6 +102,7 @@ export default function PeopleDirectory({
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState(false)
+  const [step, setStep] = useState(0)
 
   const selectableRoles = useMemo(() => {
     if (!roleOptions) return null
@@ -124,6 +131,7 @@ export default function PeopleDirectory({
     setPassword('')
     setMessage('')
     setError(false)
+    setStep(0)
   }
 
   const canEditRow = (row) => {
@@ -168,27 +176,77 @@ export default function PeopleDirectory({
     setPassword('')
     setMessage('')
     setError(false)
+    setStep(0)
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const validateStep = (stepIndex) => {
+    if (stepIndex === 0) {
+      if (!form.firstName.trim() || !form.lastName.trim()) {
+        showMsg('First name and last name are required.', true)
+        return false
+      }
+      if (!form.gender) {
+        showMsg('Gender is required.', true)
+        return false
+      }
+      if (!form.email.trim()) {
+        showMsg('Email is required.', true)
+        return false
+      }
+      if (!form.email.includes('@') || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+        showMsg('Enter a valid email address with @.', true)
+        return false
+      }
+      const phoneLocal = toPhoneLocal(form.phoneLocal)
+      if (phoneLocal && !/^\d{7,10}$/.test(phoneLocal)) {
+        showMsg('Phone: enter 7–10 digits after +855 (no leading 0).', true)
+        return false
+      }
+      return true
+    }
+    if (stepIndex === 1) {
+      // Education optional — allow continue
+      return true
+    }
+    if (stepIndex === 2) {
+      if (!editingId && (!form.password || form.password.length < 6)) {
+        showMsg('Password must be at least 6 characters.', true)
+        return false
+      }
+      if (editingId && password.trim() && password.trim().length < 6) {
+        showMsg('Password must be at least 6 characters.', true)
+        return false
+      }
+      return true
+    }
+    return true
+  }
+
+  const goNext = () => {
+    if (!validateStep(step)) return
+    setMessage('')
+    setError(false)
+    setStep((s) => Math.min(s + 1, FORM_STEPS.length - 1))
+  }
+
+  const goBack = () => {
+    setMessage('')
+    setError(false)
+    setStep((s) => Math.max(s - 1, 0))
   }
 
   const submit = async (e) => {
     e.preventDefault()
-    if (!form.firstName.trim() || !form.lastName.trim() || !form.email.trim()) {
-      showMsg('First name, last name, and email are required.', true)
+    if (step !== FORM_STEPS.length - 1) {
+      goNext()
       return
     }
-    if (!form.gender) {
-      showMsg('Gender is required.', true)
-      return
-    }
-    if (!form.email.includes('@')) {
-      showMsg('Email must include @.', true)
-      return
-    }
-    const phoneLocal = toPhoneLocal(form.phoneLocal)
-    if (phoneLocal && !/^\d{7,10}$/.test(phoneLocal)) {
-      showMsg('Phone: enter 7–10 digits after +855 (no leading 0).', true)
-      return
+    for (let i = 0; i < FORM_STEPS.length; i += 1) {
+      if (!validateStep(i)) {
+        setStep(i)
+        return
+      }
     }
 
     setSaving(true)
@@ -228,11 +286,6 @@ export default function PeopleDirectory({
         reset()
         showMsg(okMsg)
       } else {
-        if (!form.password || form.password.length < 6) {
-          showMsg('Password must be at least 6 characters.', true)
-          setSaving(false)
-          return
-        }
         await post(listUrl, { ...profile, password: form.password })
         const okMsg = `${isStaff ? 'Staff' : 'Teacher'} saved successfully.`
         reset()
@@ -341,248 +394,334 @@ export default function PeopleDirectory({
       <PageHeader title={title} subtitle={subtitle} />
       <FormAlert message={message} error={error} />
 
-      <form onSubmit={submit} className="panel p-6">
+      <form
+        onSubmit={submit}
+        className="panel p-6"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && step < FORM_STEPS.length - 1) {
+            e.preventDefault()
+            goNext()
+          }
+        }}
+      >
         <h3 className="mb-4 text-base font-bold text-slate-900 dark:text-slate-100">
           {editingId ? `Edit — ${editingId}` : `Add ${isStaff ? 'Staff' : 'Teacher'}`}
         </h3>
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          <div>
-            <label className="label">First Name <span className="text-rose-500">*</span></label>
-            <input
-              className="input"
-              value={form.firstName}
-              onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
-              placeholder="Jane"
-              required
-            />
-          </div>
-          <div>
-            <label className="label">Last Name <span className="text-rose-500">*</span></label>
-            <input
-              className="input"
-              value={form.lastName}
-              onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
-              placeholder="Doe"
-              required
-            />
-          </div>
-          <div>
-            <label className="label">Gender <span className="text-rose-500">*</span></label>
-            <select
-              className="input"
-              value={form.gender}
-              onChange={(e) => setForm((f) => ({ ...f, gender: e.target.value }))}
-              required
-            >
-              <option value="">Select gender</option>
-              {GENDER_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="label">Email (login) <span className="text-rose-500">*</span></label>
-            <input
-              className="input"
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-              placeholder="name@example.com"
-              required
-            />
-          </div>
-          <div>
-            <label className="label">Phone</label>
-            <div className="flex overflow-hidden rounded-xl border border-slate-200 bg-white focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-900">
-              <span className="flex items-center border-r border-slate-200 bg-slate-50 px-3 text-sm font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                {PHONE_PREFIX}
-              </span>
-              <input
-                value={form.phoneLocal}
-                onChange={(e) => setForm((f) => ({ ...f, phoneLocal: toPhoneLocal(e.target.value) }))}
-                className="min-w-0 flex-1 border-0 bg-transparent px-3 py-2.5 text-sm text-slate-800 outline-none dark:text-slate-100"
-                placeholder="12 345 678"
-                inputMode="numeric"
-                autoComplete="tel-national"
-              />
-            </div>
-            <p className="mt-1 text-xs text-slate-400">Cambodia (+855). Do not type a leading 0.</p>
-          </div>
-          <div>
-            <DateField
-              label="Date of Birth"
-              value={form.dob}
-              onChange={(dob) => setForm((f) => ({ ...f, dob }))}
-            />
-          </div>
-          <div>
-            <label className="label">Position / Title</label>
-            <input
-              className="input"
-              value={form.position}
-              onChange={(e) => setForm((f) => ({ ...f, position: e.target.value }))}
-              placeholder={isStaff ? 'Office Manager' : 'Math Teacher'}
-            />
-          </div>
-          <div>
-            <label className="label">Department</label>
-            <input
-              className="input"
-              value={form.department}
-              onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))}
-              placeholder={isStaff ? 'Administration' : 'Academics'}
-            />
-          </div>
-          <div>
-            <DateField
-              label="Hire Date"
-              value={form.hireDate}
-              onChange={(hireDate) => setForm((f) => ({ ...f, hireDate }))}
-            />
-          </div>
 
-          <div>
-            <label className="label">Degree of Education</label>
-            <input
-              className="input"
-              value={form.educationDegree}
-              onChange={(e) => setForm((f) => ({ ...f, educationDegree: e.target.value }))}
-              placeholder="e.g. Bachelor, Master, PhD"
-            />
-          </div>
-          <div>
-            <label className="label">Major / Skill</label>
-            <input
-              className="input"
-              value={form.majorSkill}
-              onChange={(e) => setForm((f) => ({ ...f, majorSkill: e.target.value }))}
-              placeholder={isStaff ? 'e.g. Accounting, HR' : 'e.g. Mathematics, English'}
-            />
-          </div>
+        {/* Left → right sections */}
+        <div className="mb-6 grid grid-cols-3 gap-2 sm:gap-3">
+          {FORM_STEPS.map((s, i) => {
+            const done = i < step
+            const active = i === step
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => {
+                  if (i <= step) setStep(i)
+                  else if (i === step + 1 && validateStep(step)) {
+                    setMessage('')
+                    setError(false)
+                    setStep(i)
+                  }
+                }}
+                className={[
+                  'rounded-xl border px-2 py-3 text-left transition-colors sm:px-4',
+                  active
+                    ? 'border-indigo-500 bg-indigo-50 dark:border-indigo-400 dark:bg-indigo-950/40'
+                    : done
+                      ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/30'
+                      : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50',
+                ].join(' ')}
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className={[
+                      'flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold',
+                      active
+                        ? 'bg-indigo-600 text-white'
+                        : done
+                          ? 'bg-emerald-500 text-white'
+                          : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
+                    ].join(' ')}
+                  >
+                    {done ? '✓' : s.short}
+                  </span>
+                  <span
+                    className={[
+                      'text-xs font-semibold sm:text-sm',
+                      active
+                        ? 'text-indigo-800 dark:text-indigo-200'
+                        : done
+                          ? 'text-emerald-800 dark:text-emerald-300'
+                          : 'text-slate-500 dark:text-slate-400',
+                    ].join(' ')}
+                  >
+                    {s.label}
+                  </span>
+                </div>
+              </button>
+            )
+          })}
+        </div>
 
-          <div>
-            <label className="label">Employment Type</label>
-            <select
-              className="input"
-              value={form.employmentType}
-              onChange={(e) => setForm((f) => ({
-                ...f,
-                employmentType: e.target.value,
-                salary: e.target.value === 'full_time' ? f.salary : '',
-                hourlyRate: e.target.value === 'part_time' ? f.hourlyRate : '',
-              }))}
-            >
-              <option value="">Select type</option>
-              <option value="full_time">Full time</option>
-              <option value="part_time">Part time</option>
-            </select>
-          </div>
-
-          {form.employmentType === 'full_time' && (
+        {step === 0 && (
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <div>
-              <label className="label">Salary ($ / month)</label>
+              <label className="label">First Name <span className="text-rose-500">*</span></label>
               <input
                 className="input"
-                type="number"
-                min="0"
-                step="0.01"
-                value={form.salary}
-                onChange={(e) => setForm((f) => ({ ...f, salary: e.target.value }))}
-                placeholder="0.00"
+                value={form.firstName}
+                onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
+                placeholder="Jane"
               />
             </div>
-          )}
-
-          {form.employmentType === 'part_time' && (
             <div>
-              <label className="label">Amount / Hour ($)</label>
+              <label className="label">Last Name <span className="text-rose-500">*</span></label>
               <input
                 className="input"
-                type="number"
-                min="0"
-                step="0.01"
-                value={form.hourlyRate}
-                onChange={(e) => setForm((f) => ({ ...f, hourlyRate: e.target.value }))}
-                placeholder="0.00"
+                value={form.lastName}
+                onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
+                placeholder="Doe"
               />
             </div>
-          )}
-
-          {isStaff && selectableRoles && (
             <div>
-              <label className="label">Staff Role</label>
+              <label className="label">Gender <span className="text-rose-500">*</span></label>
               <select
                 className="input"
-                value={form.role}
-                onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
+                value={form.gender}
+                onChange={(e) => setForm((f) => ({ ...f, gender: e.target.value }))}
               >
-                {selectableRoles.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
+                <option value="">Select gender</option>
+                {GENDER_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
                 ))}
               </select>
             </div>
-          )}
-          <div>
-            <label className="label">Status</label>
-            <select
-              className="input"
-              value={form.active ? '1' : '0'}
-              onChange={(e) => setForm((f) => ({ ...f, active: e.target.value === '1' }))}
-              disabled={editingId === currentUser?.id}
-            >
-              <option value="1">Active</option>
-              <option value="0">Inactive</option>
-            </select>
-          </div>
-          <div className="md:col-span-2">
-            <label className="label">Address</label>
-            <input
-              className="input"
-              value={form.address}
-              onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
-            />
-          </div>
-          <div className="md:col-span-2">
-            <label className="label">Note</label>
-            <textarea
-              className="input min-h-[80px]"
-              value={form.note}
-              onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
-              placeholder="Optional notes"
-            />
-          </div>
-          {!editingId ? (
             <div>
-              <label className="label">Password</label>
+              <label className="label">Email (login) <span className="text-rose-500">*</span></label>
               <input
                 className="input"
-                type="password"
-                value={form.password}
-                onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-                required
-                minLength={6}
-                placeholder="Min. 6 characters"
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                placeholder="name@example.com"
               />
             </div>
-          ) : (
             <div>
-              <label className="label">Reset Password (optional)</label>
+              <label className="label">Phone</label>
+              <div className="flex overflow-hidden rounded-xl border border-slate-200 bg-white focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-900">
+                <span className="flex items-center border-r border-slate-200 bg-slate-50 px-3 text-sm font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                  {PHONE_PREFIX}
+                </span>
+                <input
+                  value={form.phoneLocal}
+                  onChange={(e) => setForm((f) => ({ ...f, phoneLocal: toPhoneLocal(e.target.value) }))}
+                  className="min-w-0 flex-1 border-0 bg-transparent px-3 py-2.5 text-sm text-slate-800 outline-none dark:text-slate-100"
+                  placeholder="12 345 678"
+                  inputMode="numeric"
+                  autoComplete="tel-national"
+                />
+              </div>
+            </div>
+            <div>
+              <DateField
+                label="Date of Birth"
+                value={form.dob}
+                onChange={(dob) => setForm((f) => ({ ...f, dob }))}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="label">Address</label>
               <input
                 className="input"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                minLength={6}
-                placeholder="Leave blank to keep current"
+                value={form.address}
+                onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
               />
             </div>
-          )}
-        </div>
-        <div className="mt-6 flex justify-end gap-3 border-t border-slate-100 pt-6 dark:border-slate-800">
+          </div>
+        )}
+
+        {step === 1 && (
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            <div>
+              <label className="label">Degree of Education</label>
+              <input
+                className="input"
+                value={form.educationDegree}
+                onChange={(e) => setForm((f) => ({ ...f, educationDegree: e.target.value }))}
+                placeholder="e.g. Bachelor, Master, PhD"
+              />
+            </div>
+            <div>
+              <label className="label">Major / Skill</label>
+              <input
+                className="input"
+                value={form.majorSkill}
+                onChange={(e) => setForm((f) => ({ ...f, majorSkill: e.target.value }))}
+                placeholder={isStaff ? 'e.g. Accounting, HR' : 'e.g. Mathematics, English'}
+              />
+            </div>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            <div>
+              <label className="label">Position / Title</label>
+              <input
+                className="input"
+                value={form.position}
+                onChange={(e) => setForm((f) => ({ ...f, position: e.target.value }))}
+                placeholder={isStaff ? 'Office Manager' : 'Math Teacher'}
+              />
+            </div>
+            <div>
+              <label className="label">Department</label>
+              <input
+                className="input"
+                value={form.department}
+                onChange={(e) => setForm((f) => ({ ...f, department: e.target.value }))}
+                placeholder={isStaff ? 'Administration' : 'Academics'}
+              />
+            </div>
+            <div>
+              <DateField
+                label="Hire Date"
+                value={form.hireDate}
+                onChange={(hireDate) => setForm((f) => ({ ...f, hireDate }))}
+              />
+            </div>
+            <div>
+              <label className="label">Employment Type</label>
+              <select
+                className="input"
+                value={form.employmentType}
+                onChange={(e) => setForm((f) => ({
+                  ...f,
+                  employmentType: e.target.value,
+                  salary: e.target.value === 'full_time' ? f.salary : '',
+                  hourlyRate: e.target.value === 'part_time' ? f.hourlyRate : '',
+                }))}
+              >
+                <option value="">Select type</option>
+                <option value="full_time">Full time</option>
+                <option value="part_time">Part time</option>
+              </select>
+            </div>
+
+            {form.employmentType === 'full_time' && (
+              <div>
+                <label className="label">Salary ($ / month)</label>
+                <input
+                  className="input"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.salary}
+                  onChange={(e) => setForm((f) => ({ ...f, salary: e.target.value }))}
+                  placeholder="0.00"
+                />
+              </div>
+            )}
+
+            {form.employmentType === 'part_time' && (
+              <div>
+                <label className="label">Amount / Hour ($)</label>
+                <input
+                  className="input"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.hourlyRate}
+                  onChange={(e) => setForm((f) => ({ ...f, hourlyRate: e.target.value }))}
+                  placeholder="0.00"
+                />
+              </div>
+            )}
+
+            {isStaff && selectableRoles && (
+              <div>
+                <label className="label">Staff Role</label>
+                <select
+                  className="input"
+                  value={form.role}
+                  onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
+                >
+                  {selectableRoles.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <div>
+              <label className="label">Status</label>
+              <select
+                className="input"
+                value={form.active ? '1' : '0'}
+                onChange={(e) => setForm((f) => ({ ...f, active: e.target.value === '1' }))}
+                disabled={editingId === currentUser?.id}
+              >
+                <option value="1">Active</option>
+                <option value="0">Inactive</option>
+              </select>
+            </div>
+            {!editingId ? (
+              <div>
+                <label className="label">Password <span className="text-rose-500">*</span></label>
+                <input
+                  className="input"
+                  type="password"
+                  value={form.password}
+                  onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                  minLength={6}
+                  placeholder="Min. 6 characters"
+                />
+              </div>
+            ) : (
+              <div>
+                <label className="label">Reset Password (optional)</label>
+                <input
+                  className="input"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  minLength={6}
+                  placeholder="Leave blank to keep current"
+                />
+              </div>
+            )}
+            <div className={isStaff ? 'md:col-span-2' : ''}>
+              <label className="label">Note</label>
+              <textarea
+                className={`input resize-y ${isStaff ? 'min-h-[80px]' : 'min-h-[42px]'}`}
+                rows={isStaff ? 3 : 1}
+                value={form.note}
+                onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
+                placeholder="Optional notes"
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="mt-6 flex justify-between gap-3 border-t border-slate-100 pt-6 dark:border-slate-800">
           <Button type="button" variant="secondary" onClick={reset}>Cancel</Button>
-          <Button type="submit" disabled={saving}>
-            {saving ? 'Saving…' : editingId ? 'Update' : 'Save'}
-          </Button>
+          <div className="flex gap-3">
+            {step > 0 && (
+              <Button type="button" variant="secondary" onClick={goBack}>
+                Back
+              </Button>
+            )}
+            {step < FORM_STEPS.length - 1 ? (
+              <Button type="button" onClick={goNext}>
+                Next
+              </Button>
+            ) : (
+              <Button type="submit" disabled={saving}>
+                {saving ? 'Saving…' : editingId ? 'Update' : 'Save'}
+              </Button>
+            )}
+          </div>
         </div>
       </form>
 
