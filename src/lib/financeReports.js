@@ -1,4 +1,5 @@
 import { toIsoDate } from './dateFormat.js'
+import { formatMoney as formatMoneyDisplay } from './moneyFormat.js'
 
 function money(n) {
   return Math.round((Number(n) || 0) * 100) / 100
@@ -22,7 +23,7 @@ export function monthKey(isoDate) {
 }
 
 export function formatMoney(n) {
-  return `$${Number(n || 0).toFixed(2)}`
+  return formatMoneyDisplay(n)
 }
 
 export function formatMonthLabel(ym) {

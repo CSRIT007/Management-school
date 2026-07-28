@@ -21,9 +21,10 @@ import {
   filterPendingPayments,
   downloadPendingCsv,
 } from '../../lib/exports/pendingPaymentsExport.js'
+import { formatMoney } from '../../lib/moneyFormat.js'
 
 function money(n) {
-  return `$${Number(n || 0).toFixed(2)}`
+  return formatMoney(n)
 }
 
 export default function PendingPayments() {

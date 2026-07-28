@@ -9,6 +9,7 @@ import DataTable from '../../components/ui/DataTable.jsx'
 import FormAlert from '../../components/ui/FormAlert.jsx'
 import Badge from '../../components/ui/Badge.jsx'
 import DateField from '../../components/ui/DateField.jsx'
+import { formatMoney as formatMoneyDisplay } from '../../lib/moneyFormat.js'
 
 const EMPLOYMENT_LABELS = {
   full_time: 'Full time',
@@ -54,7 +55,7 @@ const emptyProfile = {
 function formatMoney(n) {
   const v = Number(n)
   if (!Number.isFinite(v) || v <= 0) return '—'
-  return `$${v.toFixed(2)}`
+  return formatMoneyDisplay(v)
 }
 
 function fullName(firstName, lastName) {

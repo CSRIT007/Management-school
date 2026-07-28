@@ -11,9 +11,10 @@ import DateField from '../../components/ui/DateField.jsx'
 import Button from '../../components/ui/Button.jsx'
 import { downloadCsv, reportFilename } from '../../lib/exportCsv.js'
 import { SCHOOL_NAME } from '../../lib/schoolBrand.js'
+import { formatMoney } from '../../lib/moneyFormat.js'
 
 function money(n) {
-  return `$${Number(n || 0).toFixed(2)}`
+  return formatMoney(n)
 }
 
 const emptyOverview = {
@@ -30,6 +31,7 @@ const emptyOverview = {
   expensesPending: 0,
   expensesCount: 0,
   expensesPaidCount: 0,
+  totalExpenses: 0,
   netCash: 0,
   tuitionToday: 0,
   posToday: 0,
@@ -79,6 +81,7 @@ export default function FinanceOverview() {
       { key: 'value', label: 'Value' },
     ], [
       { metric: 'Total Revenue', value: money(data.totalRevenue) },
+      { metric: 'Total Expense', value: money(data.totalExpenses) },
       { metric: 'Salary Paid', value: money(data.salaryPaid) },
       { metric: 'Expenses Paid', value: money(data.expensesPaid) },
       { metric: 'Net Cash', value: money(data.netCash) },
@@ -143,10 +146,18 @@ export default function FinanceOverview() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label="Total Revenue" value={loading ? '…' : money(data.totalRevenue)} accent="indigo" />
         <StatCard label="Tuition Collected" value={loading ? '…' : money(data.tuitionCollected)} accent="emerald" />
         <StatCard label="POS Revenue" value={loading ? '…' : money(data.posRevenue)} accent="amber" />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          label="Total Expense"
+          value={loading ? '…' : money(data.totalExpenses ?? (Number(data.salaryPaid || 0) + Number(data.expensesPaid || 0)))}
+          accent="amber"
+        />
         <StatCard label="Salary Paid" value={loading ? '…' : money(data.salaryPaid)} accent="rose" />
         <StatCard label="Expenses Paid" value={loading ? '…' : money(data.expensesPaid)} accent="rose" />
         <StatCard label="Net Cash" value={loading ? '…' : money(data.netCash)} accent="indigo" />

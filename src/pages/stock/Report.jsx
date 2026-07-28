@@ -19,10 +19,7 @@ import {
   countStockExportRows,
   downloadStockReportCsv,
 } from '../../lib/exports/stockReportExport.js'
-
-function formatMoney(n) {
-  return `$${Number(n || 0).toFixed(2)}`
-}
+import { formatMoney } from '../../lib/moneyFormat.js'
 
 function formatItemsLine(items = []) {
   if (!items.length) return '—'

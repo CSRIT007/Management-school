@@ -19,6 +19,7 @@ import {
   filterSalaryPayouts,
   filterSalaryRoster,
 } from '../../lib/exports/salaryExport.js'
+import { formatMoney } from '../../lib/moneyFormat.js'
 
 const EMPLOYMENT_LABELS = {
   full_time: 'Full time',
@@ -31,7 +32,7 @@ const KIND_LABELS = {
 }
 
 function money(n) {
-  return `$${Number(n || 0).toFixed(2)}`
+  return formatMoney(n)
 }
 
 function currentPeriod() {

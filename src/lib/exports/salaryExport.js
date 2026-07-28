@@ -1,6 +1,7 @@
 import { formatDisplayDate, inDateRange } from '../dateFormat.js'
 import { downloadCsv, reportFilename } from '../exportCsv.js'
 import { SCHOOL_NAME } from '../schoolBrand.js'
+import { formatMoneyAmount } from '../moneyFormat.js'
 
 export const SALARY_REPORT_TITLE = 'Staff & Teacher Salary'
 
@@ -12,7 +13,7 @@ export const SALARY_PAYOUT_EXPORT_COLUMNS = [
   { key: 'period', label: 'Period', getValue: (r) => r.period || '' },
   { key: 'date', label: 'Payment Date', getValue: (r) => formatDisplayDate(r.date) },
   { key: 'hours', label: 'Hours', getValue: (r) => Number(r.hours || 0).toFixed(2) },
-  { key: 'amount', label: 'Amount', getValue: (r) => Number(r.amount || 0).toFixed(2) },
+  { key: 'amount', label: 'Amount', getValue: (r) => formatMoneyAmount(r.amount) },
   { key: 'method', label: 'Method', getValue: (r) => r.method || '' },
   { key: 'status', label: 'Status', getValue: (r) => r.status || '' },
   { key: 'note', label: 'Note', getValue: (r) => r.note || '' },

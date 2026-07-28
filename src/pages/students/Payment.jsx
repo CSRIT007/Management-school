@@ -13,6 +13,7 @@ import FormAlert from '../../components/ui/FormAlert.jsx'
 import ExportReportButton from '../../components/ui/ExportReportButton.jsx'
 import TableExportHeader from '../../components/ui/TableExportHeader.jsx'
 import InvoiceDocument, { printInvoice } from '../../components/InvoiceDocument.jsx'
+import { formatMoney } from '../../lib/moneyFormat.js'
 import PaymentPurposeField from './components/PaymentPurposeField.jsx'
 import PaymentNoteField from './components/PaymentNoteField.jsx'
 import { PAYMENT_PURPOSE_OPTIONS } from '../../lib/paymentPurpose.js'
@@ -210,7 +211,7 @@ export default function StudentPayment() {
     },
     { key: 'date', label: 'Date', render: (r) => formatDisplayDate(r.date) },
     { key: 'purpose', label: 'Purpose' },
-    { key: 'amount', label: 'Amount', render: (r) => `$${Number(r.amount || 0).toFixed(2)}` },
+    { key: 'amount', label: 'Amount', render: (r) => formatMoney(r.amount) },
     { key: 'method', label: 'Method' },
     { key: 'status', label: 'Status', render: (r) => <Badge status={r.status} /> },
     {

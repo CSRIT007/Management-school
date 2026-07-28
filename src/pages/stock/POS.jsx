@@ -6,6 +6,7 @@ import { formatInvNo } from '../../lib/invoiceId.js'
 import PageHeader from '../../components/ui/PageHeader.jsx'
 import Button from '../../components/ui/Button.jsx'
 import InvoiceDocument, { printInvoice } from '../../components/InvoiceDocument.jsx'
+import { formatMoney } from '../../lib/moneyFormat.js'
 
 function ProductThumb({ name }) {
   const initial = (name || '?')[0].toUpperCase()
@@ -157,7 +158,7 @@ export default function POS() {
                 )}
                 <div className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400">{p.name}</div>
                 <div className="mt-0.5 flex items-center justify-between">
-                  <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">${Number(p.price).toFixed(2)}</span>
+                  <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">{formatMoney(p.price)}</span>
                   <span className="text-xs text-slate-400">Stock: {p.stock}</span>
                 </div>
               </button>
@@ -208,14 +209,14 @@ export default function POS() {
                     >
                       ×
                     </button>
-                    <span className="w-16 text-right font-semibold text-slate-900 dark:text-slate-100">${(i.price * i.qty).toFixed(2)}</span>
+                    <span className="w-16 text-right font-semibold text-slate-900 dark:text-slate-100">{formatMoney(i.price * i.qty)}</span>
                   </div>
                 </div>
               ))}
             </div>
             <div className="mt-4 flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-4">
               <span className="font-semibold text-slate-700 dark:text-slate-300">Total</span>
-              <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">${total.toFixed(2)}</span>
+              <span className="text-2xl font-bold text-slate-900 dark:text-slate-100">{formatMoney(total)}</span>
             </div>
           </div>
 

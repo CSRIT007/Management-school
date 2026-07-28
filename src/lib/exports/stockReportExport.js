@@ -2,6 +2,7 @@ import { formatDisplayDate, inDateRange } from '../dateFormat.js'
 import { formatInvNo } from '../invoiceId.js'
 import { downloadCsvSections, reportFilename } from '../exportCsv.js'
 import { SCHOOL_NAME } from '../schoolBrand.js'
+import { formatMoneyAmount } from '../moneyFormat.js'
 
 export const STOCK_REPORT_TITLE = 'Stock Report'
 
@@ -21,7 +22,7 @@ export const STOCK_FILTER_INITIAL = {
 }
 
 function formatMoney(n) {
-  return Number(n || 0).toFixed(2)
+  return formatMoneyAmount(n)
 }
 
 function formatItemsLine(items = []) {

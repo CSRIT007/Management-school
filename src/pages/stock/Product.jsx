@@ -5,6 +5,7 @@ import Button from '../../components/ui/Button.jsx'
 import DataTable from '../../components/ui/DataTable.jsx'
 import Badge from '../../components/ui/Badge.jsx'
 import FormAlert from '../../components/ui/FormAlert.jsx'
+import { formatMoney } from '../../lib/moneyFormat.js'
 
 const emptyForm = { id: '', name: '', description: '', category: '', price: '', cost: '', stock: '', sku: '' }
 
@@ -127,7 +128,7 @@ export default function ProductManagement() {
         <Badge variant={(r.stock ?? 0) <= 3 ? 'danger' : 'success'}>{r.stock}</Badge>
       ),
     },
-    { key: 'price', label: 'Price', render: (r) => `$${Number(r.price || 0).toFixed(2)}` },
+    { key: 'price', label: 'Price', render: (r) => formatMoney(r.price) },
     {
       key: 'actions',
       label: '',

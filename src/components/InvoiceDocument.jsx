@@ -11,6 +11,7 @@ import {
   SCHOOL_LOCATION,
   SCHOOL_PHONE,
 } from '../lib/schoolBrand.js'
+import { formatMoney as formatDollar } from '../lib/moneyFormat.js'
 
 const INVOICE_CONTACT = {
   website: SCHOOL_WEBSITE,
@@ -57,7 +58,7 @@ function contactFooterHtml() {
 }
 
 function formatMoney(amount) {
-  return `$${Number(amount || 0).toFixed(2)}`
+  return formatDollar(amount)
 }
 
 function formatDate(date) {
@@ -220,7 +221,7 @@ export function printInvoice(invoice) {
   const invoicedBy = (invoice.invoicedBy?.trim() || 'Admin').replace(/</g, '&lt;').replace(/&/g, '&amp;')
   const invoicedAt = formatInvoiceDateTime(invoice.invoicedAt).replace(/</g, '&lt;').replace(/&/g, '&amp;')
   const userNote = invoice.note?.trim()
-  const fmt = (n) => `$${n.toFixed(2)}`
+  const fmt = (n) => formatDollar(n)
   const date = formatDate(invoice.date)
   const billToNameHtml = billToName.replace(/</g, '&lt;').replace(/&/g, '&amp;')
   const billToIdHtml = billToStudentId.replace(/</g, '&lt;').replace(/&/g, '&amp;')

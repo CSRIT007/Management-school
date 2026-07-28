@@ -19,9 +19,10 @@ import {
   downloadExpenseCsv,
   filterSchoolExpenses,
 } from '../../lib/exports/expenseExport.js'
+import { formatMoney } from '../../lib/moneyFormat.js'
 
 function money(n) {
-  return `$${Number(n || 0).toFixed(2)}`
+  return formatMoney(n)
 }
 
 function currentPeriod() {

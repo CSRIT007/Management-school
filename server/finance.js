@@ -84,19 +84,19 @@ export async function getFinanceOverview({ dateFrom = '', dateTo = '' } = {}) {
 
   const recentPayments = [...filteredPayments]
     .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')))
-    .slice(0, 8)
+    .slice(0, 5)
 
   const recentOrders = [...filteredOrders]
     .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')))
-    .slice(0, 8)
+    .slice(0, 5)
 
   const recentSalary = [...filteredSalary]
     .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')))
-    .slice(0, 8)
+    .slice(0, 5)
 
   const recentExpenses = [...filteredExpenses]
     .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')))
-    .slice(0, 8)
+    .slice(0, 5)
 
   return {
     tuitionCollected,
@@ -112,6 +112,7 @@ export async function getFinanceOverview({ dateFrom = '', dateTo = '' } = {}) {
     expensesPending,
     expensesCount: filteredExpenses.length,
     expensesPaidCount: expensesPaidRows.length,
+    totalExpenses: money(salaryPaid + expensesPaid),
     netCash: money(totalRevenue - salaryPaid - expensesPaid),
     tuitionToday,
     posToday,

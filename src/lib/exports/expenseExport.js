@@ -1,6 +1,7 @@
 import { formatDisplayDate, inDateRange } from '../dateFormat.js'
 import { downloadCsv, reportFilename } from '../exportCsv.js'
 import { SCHOOL_NAME } from '../schoolBrand.js'
+import { formatMoneyAmount } from '../moneyFormat.js'
 
 export const EXPENSE_REPORT_TITLE = 'School Operating Expenses'
 
@@ -20,7 +21,7 @@ export const EXPENSE_EXPORT_COLUMNS = [
   { key: 'title', label: 'Title', getValue: (r) => r.title || '' },
   { key: 'period', label: 'Period', getValue: (r) => r.period || '' },
   { key: 'date', label: 'Expense Date', getValue: (r) => formatDisplayDate(r.date) },
-  { key: 'amount', label: 'Amount', getValue: (r) => Number(r.amount || 0).toFixed(2) },
+  { key: 'amount', label: 'Amount', getValue: (r) => formatMoneyAmount(r.amount) },
   { key: 'method', label: 'Method', getValue: (r) => r.method || '' },
   { key: 'status', label: 'Status', getValue: (r) => r.status || '' },
   { key: 'vendor', label: 'Vendor', getValue: (r) => r.vendor || '' },

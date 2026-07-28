@@ -2,6 +2,7 @@ import { formatDisplayDate, inDateRange } from '../dateFormat.js'
 import { formatInvNo } from '../invoiceId.js'
 import { downloadCsv, reportFilename } from '../exportCsv.js'
 import { SCHOOL_NAME } from '../schoolBrand.js'
+import { formatMoneyAmount } from '../moneyFormat.js'
 
 export const POS_REVENUE_REPORT_TITLE = 'POS Revenue Report'
 
@@ -11,7 +12,7 @@ export const POS_REVENUE_EXPORT_COLUMNS = [
   { key: 'customer', label: 'Customer', getValue: (r) => r.customer || '' },
   { key: 'paymentMethod', label: 'Payment Method', getValue: (r) => r.paymentMethod || '' },
   { key: 'items', label: 'Items', getValue: (r) => formatItems(r.items) },
-  { key: 'total', label: 'Total', getValue: (r) => Number(r.total || 0).toFixed(2) },
+  { key: 'total', label: 'Total', getValue: (r) => formatMoneyAmount(r.total) },
 ]
 
 export const POS_REVENUE_FILTER_INITIAL = {
