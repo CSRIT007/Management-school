@@ -32,9 +32,15 @@ export function verifyToken(token) {
 
 export function sanitizeUser(row) {
   if (!row) return null
+  const firstName = row.first_name || ''
+  const lastName = row.last_name || ''
+  const fullName = (row.name || [firstName, lastName].filter(Boolean).join(' ')).trim()
   return {
     id: row.id,
-    name: row.name,
+    name: fullName,
+    firstName,
+    lastName,
+    gender: row.gender || '',
     email: row.email,
     role: row.role,
     active: row.active,
@@ -42,6 +48,7 @@ export function sanitizeUser(row) {
     address: row.address || '',
     position: row.position || '',
     department: row.department || '',
+    dob: formatHireDate(row.dob),
     hireDate: formatHireDate(row.hire_date),
     note: row.note || '',
     employmentType: row.employment_type || '',

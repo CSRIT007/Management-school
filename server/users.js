@@ -35,12 +35,29 @@ function normalizeMoney(value) {
   return Math.round(n * 100) / 100
 }
 
+function normalizeGender(value) {
+  const v = String(value || '').trim()
+  if (v === 'Male' || v === 'Female' || v === 'Other') return v
+  return ''
+}
+
+function composeFullName(firstName, lastName, fallback = '') {
+  const composed = [firstName, lastName].map((s) => String(s || '').trim()).filter(Boolean).join(' ')
+  return composed || String(fallback || '').trim()
+}
+
 function profileFields(input = {}) {
+  const firstName = input.firstName !== undefined ? String(input.firstName).trim() : undefined
+  const lastName = input.lastName !== undefined ? String(input.lastName).trim() : undefined
   return {
+    firstName,
+    lastName,
+    gender: input.gender !== undefined ? normalizeGender(input.gender) : undefined,
     phone: input.phone != null ? String(input.phone).trim() : undefined,
     address: input.address != null ? String(input.address).trim() : undefined,
     position: input.position != null ? String(input.position).trim() : undefined,
     department: input.department != null ? String(input.department).trim() : undefined,
+    dob: input.dob !== undefined ? normalizeHireDate(input.dob) : undefined,
     hireDate: input.hireDate !== undefined ? normalizeHireDate(input.hireDate) : undefined,
     note: input.note != null ? String(input.note).trim() : undefined,
     employmentType: input.employmentType !== undefined
@@ -100,6 +117,9 @@ export async function getUserByEmail(email) {
 export async function createUser({
   id,
   name,
+  firstName = '',
+  lastName = '',
+  gender = '',
   email,
   password,
   role = 'teacher',
@@ -108,6 +128,7 @@ export async function createUser({
   address = '',
   position = '',
   department = '',
+  dob = '',
   hireDate = '',
   note = '',
   employmentType = '',
@@ -121,19 +142,26 @@ export async function createUser({
   }
   const userId = id || await nextUserId()
   const passwordHash = await hashPassword(password)
+  const first = String(firstName || '').trim()
+  const last = String(lastName || '').trim()
+  const fullName = composeFullName(first, last, name)
   const hire = normalizeHireDate(hireDate || null)
+  const birth = normalizeHireDate(dob || null)
   const empType = normalizeEmploymentType(employmentType)
   const sal = empType === 'full_time' ? normalizeMoney(salary) : 0
   const hourly = empType === 'part_time' ? normalizeMoney(hourlyRate) : 0
   await pool.query(
     `INSERT INTO users (
-       id, name, email, password_hash, role, active,
-       phone, address, position, department, hire_date, note,
+       id, name, first_name, last_name, gender, email, password_hash, role, active,
+       phone, address, position, department, dob, hire_date, note,
        employment_type, salary, hourly_rate, education_degree, major_skill
-     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)`,
     [
       userId,
-      name.trim(),
+      fullName,
+      first,
+      last,
+      normalizeGender(gender),
       email.trim().toLowerCase(),
       passwordHash,
       role,
@@ -142,6 +170,7 @@ export async function createUser({
       String(address || '').trim(),
       String(position || '').trim(),
       String(department || '').trim(),
+      birth,
       hire,
       String(note || '').trim(),
       empType,
@@ -184,6 +213,8 @@ export async function updateUser(id, fields = {}) {
     hourlyRate = 0
   }
 
+  const fullName = composeFullName(profile.firstName, profile.lastName, name)
+
   // Build explicit SET list so empty strings (clear fields) still save.
   const sets = []
   const params = [id]
@@ -192,7 +223,11 @@ export async function updateUser(id, fields = {}) {
     sets.push(sql.replace('?', `$${params.length}`))
   }
 
-  if (name != null && String(name).trim() !== '') add('name = ?', String(name).trim())
+  if (profile.firstName !== undefined) add('first_name = ?', profile.firstName)
+  if (profile.lastName !== undefined) add('last_name = ?', profile.lastName)
+  if (fullName) add('name = ?', fullName)
+  else if (name != null && String(name).trim() !== '') add('name = ?', String(name).trim())
+  if (profile.gender !== undefined) add('gender = ?', profile.gender)
   if (email != null && String(email).trim() !== '') add('email = ?', String(email).trim().toLowerCase())
   if (role) add('role = ?', role)
   if (typeof active === 'boolean') add('active = ?', active)
@@ -200,6 +235,10 @@ export async function updateUser(id, fields = {}) {
   if (profile.address !== undefined) add('address = ?', profile.address)
   if (profile.position !== undefined) add('position = ?', profile.position)
   if (profile.department !== undefined) add('department = ?', profile.department)
+  if (fields.dob !== undefined) {
+    if (fields.dob === '' || fields.dob == null) add('dob = ?', null)
+    else add('dob = ?::date', profile.dob)
+  }
   // Only change hire_date when a real date is provided (empty keeps previous)
   if (fields.hireDate !== undefined && fields.hireDate !== '' && fields.hireDate != null) {
     add('hire_date = ?::date', profile.hireDate)

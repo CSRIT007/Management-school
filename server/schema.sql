@@ -168,6 +168,9 @@ CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL DEFAULT '',
+  first_name TEXT NOT NULL DEFAULT '',
+  last_name TEXT NOT NULL DEFAULT '',
+  gender TEXT NOT NULL DEFAULT '',
   email TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL DEFAULT '',
   role TEXT NOT NULL DEFAULT 'teacher'
@@ -177,6 +180,7 @@ CREATE TABLE IF NOT EXISTS users (
   address TEXT NOT NULL DEFAULT '',
   position TEXT NOT NULL DEFAULT '',
   department TEXT NOT NULL DEFAULT '',
+  dob DATE,
   hire_date DATE,
   note TEXT NOT NULL DEFAULT '',
   employment_type TEXT NOT NULL DEFAULT '',

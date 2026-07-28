@@ -5,6 +5,7 @@ import { formatDisplayDate } from '../../lib/dateFormat.js'
 import PageHeader from '../../components/ui/PageHeader.jsx'
 import DataTable from '../../components/ui/DataTable.jsx'
 import Badge from '../../components/ui/Badge.jsx'
+import Button from '../../components/ui/Button.jsx'
 import DateField from '../../components/ui/DateField.jsx'
 import StatCard from '../../components/ui/StatCard.jsx'
 import ExportReportButton from '../../components/ui/ExportReportButton.jsx'
@@ -21,13 +22,85 @@ function withStudentId(payment, students) {
   return { ...payment, studentId }
 }
 
+function HistoryModal({ ledger, onClose }) {
+  if (!ledger) return null
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ledger-history-title"
+    >
+      <div
+        className="panel flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-6 py-4 dark:border-slate-800">
+          <div className="min-w-0">
+            <h3 id="ledger-history-title" className="text-lg font-bold text-slate-900 dark:text-slate-100">
+              Payment history
+            </h3>
+            <p className="mt-1 truncate text-sm text-slate-500 dark:text-slate-400">
+              <span className="font-semibold text-slate-700 dark:text-slate-300">{ledger.studentName}</span>
+              <span className="mx-2 text-slate-300 dark:text-slate-600">·</span>
+              <span className="font-mono">{ledger.studentId}</span>
+            </p>
+          </div>
+          <Button type="button" size="sm" variant="secondary" onClick={onClose}>
+            Close
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3 border-b border-slate-100 px-6 py-4 dark:border-slate-800">
+          <div className="rounded-xl bg-emerald-50 px-3 py-2 dark:bg-emerald-950/40">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Paid</p>
+            <p className="mt-0.5 text-sm font-bold text-emerald-800 dark:text-emerald-300">{formatMoney(ledger.paid)}</p>
+          </div>
+          <div className="rounded-xl bg-amber-50 px-3 py-2 dark:bg-amber-950/40">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">Pending</p>
+            <p className="mt-0.5 text-sm font-bold text-amber-800 dark:text-amber-300">{formatMoney(ledger.pending)}</p>
+          </div>
+          <div className="rounded-xl bg-slate-50 px-3 py-2 dark:bg-slate-800/60">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Total</p>
+            <p className="mt-0.5 text-sm font-bold text-slate-800 dark:text-slate-100">{formatMoney(ledger.total)}</p>
+          </div>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
+          <DataTable
+            columns={[
+              { key: 'id', label: 'INV No', className: 'whitespace-nowrap font-mono', render: (r) => formatInvNo(r.id) },
+              { key: 'date', label: 'Date', className: 'whitespace-nowrap', render: (r) => formatDisplayDate(r.date) },
+              { key: 'purpose', label: 'Purpose', render: (r) => r.purpose || '—' },
+              { key: 'amount', label: 'Amount', className: 'whitespace-nowrap', render: (r) => formatMoney(r.amount) },
+              { key: 'method', label: 'Method', className: 'whitespace-nowrap' },
+              {
+                key: 'status',
+                label: 'Status',
+                className: 'whitespace-nowrap',
+                render: (r) => (
+                  <Badge variant={r.status === 'Paid' ? 'success' : 'warning'}>{r.status}</Badge>
+                ),
+              },
+            ]}
+            rows={ledger.payments}
+            emptyMessage="No invoices for this student."
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function StudentLedger() {
   const [payments, setPayments] = useState([])
   const [students, setStudents] = useState([])
   const [studentId, setStudentId] = useState('all')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
-  const [selectedKey, setSelectedKey] = useState('')
+  const [historyLedger, setHistoryLedger] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -49,22 +122,27 @@ export default function StudentLedger() {
     return () => { active = false }
   }, [])
 
+  useEffect(() => {
+    if (!historyLedger) return undefined
+    const onKey = (e) => {
+      if (e.key === 'Escape') setHistoryLedger(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [historyLedger])
+
   const ledgers = useMemo(
     () => buildStudentLedgers(payments, students, { dateFrom, dateTo, studentId }),
     [payments, students, dateFrom, dateTo, studentId]
   )
 
-  const selected = useMemo(() => {
-    if (!ledgers.length) return null
-    if (selectedKey) {
-      const match = ledgers.find((l) => `${l.studentId}|${l.studentName}` === selectedKey)
-      if (match) return match
-    }
-    return ledgers[0]
-  }, [ledgers, selectedKey])
-
   const unpaidStudents = useMemo(
     () => ledgers.filter((l) => l.pending > 0).length,
+    [ledgers]
+  )
+
+  const totalPending = useMemo(
+    () => ledgers.reduce((sum, l) => sum + (Number(l.pending) || 0), 0),
     [ledgers]
   )
 
@@ -85,8 +163,8 @@ export default function StudentLedger() {
         <StatCard label="Students" value={loading ? '…' : ledgers.length} accent="indigo" />
         <StatCard label="With Pending" value={loading ? '…' : unpaidStudents} accent="amber" />
         <StatCard
-          label="Selected Balance"
-          value={loading || !selected ? '…' : formatMoney(selected.pending)}
+          label="Total Pending"
+          value={loading ? '…' : formatMoney(totalPending)}
           accent="rose"
         />
       </div>
@@ -97,10 +175,7 @@ export default function StudentLedger() {
           <select
             className="input"
             value={studentId}
-            onChange={(e) => {
-              setStudentId(e.target.value)
-              setSelectedKey('')
-            }}
+            onChange={(e) => setStudentId(e.target.value)}
           >
             <option value="all">All students</option>
             {students.map((s) => (
@@ -126,21 +201,21 @@ export default function StudentLedger() {
         </TableExportHeader>
         <DataTable
           columns={[
-            { key: 'studentId', label: 'Student ID', className: 'font-mono' },
-            { key: 'studentName', label: 'Name', className: 'font-semibold' },
-            { key: 'paid', label: 'Paid', render: (r) => formatMoney(r.paid) },
-            { key: 'pending', label: 'Pending', render: (r) => formatMoney(r.pending) },
-            { key: 'total', label: 'Total', render: (r) => formatMoney(r.total) },
-            { key: 'count', label: 'Invoices' },
+            { key: 'studentId', label: 'Student ID', className: 'whitespace-nowrap font-mono' },
+            { key: 'studentName', label: 'Name', className: 'whitespace-nowrap font-semibold' },
+            { key: 'paid', label: 'Paid', className: 'whitespace-nowrap', render: (r) => formatMoney(r.paid) },
+            { key: 'pending', label: 'Pending', className: 'whitespace-nowrap', render: (r) => formatMoney(r.pending) },
+            { key: 'total', label: 'Total', className: 'whitespace-nowrap', render: (r) => formatMoney(r.total) },
+            { key: 'count', label: 'Invoices', className: 'whitespace-nowrap' },
             {
               key: 'actions',
               label: '',
-              className: 'text-right',
+              className: 'whitespace-nowrap text-right',
               render: (row) => (
                 <button
                   type="button"
                   className="text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
-                  onClick={() => setSelectedKey(`${row.studentId}|${row.studentName}`)}
+                  onClick={() => setHistoryLedger(row)}
                 >
                   View history
                 </button>
@@ -152,32 +227,7 @@ export default function StudentLedger() {
         />
       </div>
 
-      {selected && (
-        <div>
-          <h3 className="mb-4 text-lg font-bold text-slate-900 dark:text-slate-100">
-            History — {selected.studentName}
-            <span className="ml-2 font-mono text-sm font-normal text-slate-500">{selected.studentId}</span>
-          </h3>
-          <DataTable
-            columns={[
-              { key: 'id', label: 'INV No', className: 'font-mono', render: (r) => formatInvNo(r.id) },
-              { key: 'date', label: 'Date', render: (r) => formatDisplayDate(r.date) },
-              { key: 'purpose', label: 'Purpose', render: (r) => r.purpose || '—' },
-              { key: 'amount', label: 'Amount', render: (r) => formatMoney(r.amount) },
-              { key: 'method', label: 'Method' },
-              {
-                key: 'status',
-                label: 'Status',
-                render: (r) => (
-                  <Badge variant={r.status === 'Paid' ? 'success' : 'warning'}>{r.status}</Badge>
-                ),
-              },
-            ]}
-            rows={selected.payments}
-            emptyMessage="No invoices for this student."
-          />
-        </div>
-      )}
+      <HistoryModal ledger={historyLedger} onClose={() => setHistoryLedger(null)} />
     </div>
   )
 }

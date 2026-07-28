@@ -15,11 +15,22 @@ const EMPLOYMENT_LABELS = {
   part_time: 'Part time',
 }
 
+const GENDER_OPTIONS = [
+  { value: 'Male', label: 'Male' },
+  { value: 'Female', label: 'Female' },
+  { value: 'Other', label: 'Other' },
+]
+
+const PHONE_PREFIX = '+855'
+
 const emptyProfile = {
-  name: '',
+  firstName: '',
+  lastName: '',
+  gender: '',
   email: '',
   password: '',
-  phone: '',
+  phoneLocal: '',
+  dob: '',
   address: '',
   position: '',
   department: '',
@@ -38,6 +49,29 @@ function formatMoney(n) {
   const v = Number(n)
   if (!Number.isFinite(v) || v <= 0) return '—'
   return `$${v.toFixed(2)}`
+}
+
+function fullName(firstName, lastName) {
+  return [firstName, lastName].map((s) => String(s || '').trim()).filter(Boolean).join(' ')
+}
+
+function toPhoneLocal(value) {
+  let digits = String(value || '').replace(/\D/g, '')
+  if (digits.startsWith('855')) digits = digits.slice(3)
+  return digits.replace(/^0+/, '')
+}
+
+function formatPhoneSave(local) {
+  const digits = toPhoneLocal(local)
+  return digits ? `${PHONE_PREFIX}${digits}` : ''
+}
+
+function splitLegacyName(name) {
+  const trimmed = String(name || '').trim()
+  if (!trimmed) return { firstName: '', lastName: '' }
+  const i = trimmed.indexOf(' ')
+  if (i < 0) return { firstName: trimmed, lastName: '' }
+  return { firstName: trimmed.slice(0, i), lastName: trimmed.slice(i + 1).trim() }
 }
 
 /**
@@ -102,12 +136,22 @@ export default function PeopleDirectory({
       showMsg('Only Admin can edit Admin accounts.', true)
       return
     }
+    const fromParts = {
+      firstName: row.firstName || '',
+      lastName: row.lastName || '',
+    }
+    if (!fromParts.firstName && !fromParts.lastName) {
+      Object.assign(fromParts, splitLegacyName(row.name))
+    }
     setEditingId(row.id)
     setForm({
-      name: row.name || '',
+      firstName: fromParts.firstName,
+      lastName: fromParts.lastName,
+      gender: row.gender || '',
       email: row.email || '',
       password: '',
-      phone: row.phone || '',
+      phoneLocal: toPhoneLocal(row.phone),
+      dob: row.dob || '',
       address: row.address || '',
       position: row.position || '',
       department: row.department || '',
@@ -129,8 +173,21 @@ export default function PeopleDirectory({
 
   const submit = async (e) => {
     e.preventDefault()
-    if (!form.name.trim() || !form.email.trim()) {
-      showMsg('Name and email are required.', true)
+    if (!form.firstName.trim() || !form.lastName.trim() || !form.email.trim()) {
+      showMsg('First name, last name, and email are required.', true)
+      return
+    }
+    if (!form.gender) {
+      showMsg('Gender is required.', true)
+      return
+    }
+    if (!form.email.includes('@')) {
+      showMsg('Email must include @.', true)
+      return
+    }
+    const phoneLocal = toPhoneLocal(form.phoneLocal)
+    if (phoneLocal && !/^\d{7,10}$/.test(phoneLocal)) {
+      showMsg('Phone: enter 7–10 digits after +855 (no leading 0).', true)
       return
     }
 
@@ -139,10 +196,16 @@ export default function PeopleDirectory({
     setError(false)
 
     const empType = form.employmentType || ''
+    const firstName = form.firstName.trim()
+    const lastName = form.lastName.trim()
     const profile = {
-      name: form.name.trim(),
+      firstName,
+      lastName,
+      name: fullName(firstName, lastName),
+      gender: form.gender,
       email: form.email.trim(),
-      phone: form.phone.trim(),
+      phone: formatPhoneSave(form.phoneLocal),
+      dob: form.dob || '',
       address: form.address.trim(),
       position: form.position.trim(),
       department: form.department.trim(),
@@ -184,19 +247,33 @@ export default function PeopleDirectory({
   }
 
   const columns = [
-    { key: 'id', label: 'ID', className: 'font-mono font-semibold text-slate-900 dark:text-slate-100' },
-    { key: 'name', label: 'Name' },
-    { key: 'email', label: 'Email' },
-    { key: 'phone', label: 'Phone', render: (r) => r.phone || '—' },
-    { key: 'position', label: 'Position', render: (r) => r.position || '—' },
+    { key: 'id', label: 'ID', className: 'whitespace-nowrap font-mono font-semibold text-slate-900 dark:text-slate-100' },
+    {
+      key: 'name',
+      label: 'Full Name',
+      className: 'whitespace-nowrap',
+      render: (r) => r.name || fullName(r.firstName, r.lastName) || '—',
+    },
+    { key: 'gender', label: 'Gender', className: 'whitespace-nowrap', render: (r) => r.gender || '—' },
+    { key: 'email', label: 'Email', className: 'whitespace-nowrap' },
+    { key: 'phone', label: 'Phone', className: 'whitespace-nowrap', render: (r) => r.phone || '—' },
+    {
+      key: 'dob',
+      label: 'Date of Birth',
+      className: 'whitespace-nowrap',
+      render: (r) => (r.dob ? formatDisplayDate(r.dob) : '—'),
+    },
+    { key: 'position', label: 'Position', className: 'whitespace-nowrap', render: (r) => r.position || '—' },
     {
       key: 'employmentType',
       label: 'Type',
+      className: 'whitespace-nowrap',
       render: (r) => EMPLOYMENT_LABELS[r.employmentType] || '—',
     },
     {
       key: 'pay',
       label: 'Pay',
+      className: 'whitespace-nowrap',
       render: (r) => {
         if (r.employmentType === 'full_time') return formatMoney(r.salary)
         if (r.employmentType === 'part_time') {
@@ -209,28 +286,33 @@ export default function PeopleDirectory({
     {
       key: 'educationDegree',
       label: 'Degree',
+      className: 'whitespace-nowrap',
       render: (r) => r.educationDegree || '—',
     },
     {
       key: 'majorSkill',
       label: 'Major / Skill',
+      cellClassName: 'max-w-[10rem] break-words line-clamp-2',
       render: (r) => r.majorSkill || '—',
     },
     ...(isStaff
       ? [{
           key: 'role',
           label: 'Role',
+          className: 'whitespace-nowrap',
           render: (r) => ROLE_LABELS[r.role] || r.role,
         }]
       : []),
     {
       key: 'hireDate',
       label: 'Hire Date',
+      className: 'whitespace-nowrap',
       render: (r) => (r.hireDate ? formatDisplayDate(r.hireDate) : '—'),
     },
     {
       key: 'active',
       label: 'Status',
+      className: 'whitespace-nowrap',
       render: (r) => (
         <Badge variant={r.active !== false ? 'success' : 'danger'}>
           {r.active !== false ? 'Active' : 'Inactive'}
@@ -240,7 +322,7 @@ export default function PeopleDirectory({
     {
       key: 'actions',
       label: '',
-      className: 'text-right',
+      className: 'whitespace-nowrap text-right',
       render: (row) => (
         <Button
           size="sm"
@@ -265,31 +347,72 @@ export default function PeopleDirectory({
         </h3>
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <div>
-            <label className="label">Full Name</label>
+            <label className="label">First Name <span className="text-rose-500">*</span></label>
             <input
               className="input"
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              value={form.firstName}
+              onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
+              placeholder="Jane"
               required
             />
           </div>
           <div>
-            <label className="label">Email (login)</label>
+            <label className="label">Last Name <span className="text-rose-500">*</span></label>
+            <input
+              className="input"
+              value={form.lastName}
+              onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
+              placeholder="Doe"
+              required
+            />
+          </div>
+          <div>
+            <label className="label">Gender <span className="text-rose-500">*</span></label>
+            <select
+              className="input"
+              value={form.gender}
+              onChange={(e) => setForm((f) => ({ ...f, gender: e.target.value }))}
+              required
+            >
+              <option value="">Select gender</option>
+              {GENDER_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="label">Email (login) <span className="text-rose-500">*</span></label>
             <input
               className="input"
               type="email"
               value={form.email}
               onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+              placeholder="name@example.com"
               required
             />
           </div>
           <div>
             <label className="label">Phone</label>
-            <input
-              className="input"
-              value={form.phone}
-              onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-              placeholder="012 345 678"
+            <div className="flex overflow-hidden rounded-xl border border-slate-200 bg-white focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-900">
+              <span className="flex items-center border-r border-slate-200 bg-slate-50 px-3 text-sm font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                {PHONE_PREFIX}
+              </span>
+              <input
+                value={form.phoneLocal}
+                onChange={(e) => setForm((f) => ({ ...f, phoneLocal: toPhoneLocal(e.target.value) }))}
+                className="min-w-0 flex-1 border-0 bg-transparent px-3 py-2.5 text-sm text-slate-800 outline-none dark:text-slate-100"
+                placeholder="12 345 678"
+                inputMode="numeric"
+                autoComplete="tel-national"
+              />
+            </div>
+            <p className="mt-1 text-xs text-slate-400">Cambodia (+855). Do not type a leading 0.</p>
+          </div>
+          <div>
+            <DateField
+              label="Date of Birth"
+              value={form.dob}
+              onChange={(dob) => setForm((f) => ({ ...f, dob }))}
             />
           </div>
           <div>

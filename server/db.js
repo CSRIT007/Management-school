@@ -352,6 +352,25 @@ async function migrateUsersTable() {
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS hourly_rate NUMERIC NOT NULL DEFAULT 0`)
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS education_degree TEXT NOT NULL DEFAULT ''`)
   await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS major_skill TEXT NOT NULL DEFAULT ''`)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name TEXT NOT NULL DEFAULT ''`)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_name TEXT NOT NULL DEFAULT ''`)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS gender TEXT NOT NULL DEFAULT ''`)
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS dob DATE`)
+  await pool.query(`
+    UPDATE users
+    SET
+      first_name = CASE
+        WHEN TRIM(name) = '' THEN ''
+        WHEN POSITION(' ' IN TRIM(name)) = 0 THEN TRIM(name)
+        ELSE SPLIT_PART(TRIM(name), ' ', 1)
+      END,
+      last_name = CASE
+        WHEN POSITION(' ' IN TRIM(name)) = 0 THEN ''
+        ELSE TRIM(SUBSTRING(TRIM(name) FROM POSITION(' ' IN TRIM(name)) + 1))
+      END
+    WHERE COALESCE(TRIM(first_name), '') = '' AND COALESCE(TRIM(last_name), '') = ''
+      AND COALESCE(TRIM(name), '') <> ''
+  `)
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`)
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)`)
 }
