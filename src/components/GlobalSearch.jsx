@@ -26,6 +26,8 @@ const PAGE_KEYWORDS = {
   '/finance/purpose': ['finance', 'purpose', 'fee', 'tuition'],
   '/finance/monthly': ['finance', 'monthly', 'summary', 'report', 'month'],
   '/finance/student-ledger': ['finance', 'ledger', 'student', 'history', 'account'],
+  '/finance/salary': ['finance', 'salary', 'payroll', 'teacher', 'staff', 'wage', 'pay'],
+  '/finance/expenses': ['finance', 'expense', 'expenses', 'rental', 'utility', 'commission', 'operating', 'cost'],
   '/admin/teachers': ['admin', 'teacher', 'teachers', 'staff', 'people'],
   '/admin/staff': ['admin', 'staff', 'employee', 'people'],
   '/admin/users': ['admin', 'user', 'users', 'account', 'role', 'login'],

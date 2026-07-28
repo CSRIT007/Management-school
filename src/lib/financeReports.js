@@ -32,8 +32,12 @@ export function formatMonthLabel(ym) {
   return date.toLocaleString('en-GB', { month: 'long', year: 'numeric' })
 }
 
-/** Daily cash flow: tuition (paid) + POS total per day */
-export function buildDailyCashFlow(payments = [], orders = [], { dateFrom = '', dateTo = '' } = {}) {
+/** Daily cash flow: tuition (paid) + POS inflows, salary/expense outflows, net */
+export function buildDailyCashFlow(
+  payments = [],
+  orders = [],
+  { dateFrom = '', dateTo = '', salaryPayments = [], expenses = [] } = {}
+) {
   const map = new Map()
 
   const touch = (day) => {
@@ -47,7 +51,14 @@ export function buildDailyCashFlow(payments = [], orders = [], { dateFrom = '', 
         pendingCount: 0,
         pos: 0,
         posCount: 0,
+        salary: 0,
+        salaryCount: 0,
+        salaryPending: 0,
+        expenses: 0,
+        expensesCount: 0,
+        expensesPending: 0,
         total: 0,
+        net: 0,
       })
     }
     return map.get(day)
@@ -75,8 +86,37 @@ export function buildDailyCashFlow(payments = [], orders = [], { dateFrom = '', 
     row.posCount += 1
   }
 
+  for (const s of salaryPayments) {
+    if (!inDateRange(s.date, dateFrom, dateTo)) continue
+    const row = touch(dayKey(s.date))
+    if (!row) continue
+    const amount = Number(s.amount) || 0
+    if (s.status === 'Paid') {
+      row.salary = money(row.salary + amount)
+      row.salaryCount += 1
+    } else if (s.status === 'Pending') {
+      row.salaryPending = money(row.salaryPending + amount)
+    }
+  }
+
+  for (const e of expenses) {
+    if (!inDateRange(e.date, dateFrom, dateTo)) continue
+    const row = touch(dayKey(e.date))
+    if (!row) continue
+    const amount = Number(e.amount) || 0
+    if (e.status === 'Paid') {
+      row.expenses = money(row.expenses + amount)
+      row.expensesCount += 1
+    } else if (e.status === 'Pending') {
+      row.expensesPending = money(row.expensesPending + amount)
+    }
+  }
+
   return [...map.values()]
-    .map((r) => ({ ...r, total: money(r.tuition + r.pos) }))
+    .map((r) => {
+      const total = money(r.tuition + r.pos)
+      return { ...r, total, net: money(total - r.salary - r.expenses) }
+    })
     .sort((a, b) => b.date.localeCompare(a.date))
 }
 
@@ -143,8 +183,12 @@ export function buildPurposeBreakdown(payments = [], { dateFrom = '', dateTo = '
   return [...map.values()].sort((a, b) => b.total - a.total)
 }
 
-/** Monthly summary */
-export function buildMonthlySummary(payments = [], orders = [], { dateFrom = '', dateTo = '' } = {}) {
+/** Monthly summary: revenue inflows, salary/expense outflows, net */
+export function buildMonthlySummary(
+  payments = [],
+  orders = [],
+  { dateFrom = '', dateTo = '', salaryPayments = [], expenses = [] } = {}
+) {
   const map = new Map()
 
   const touch = (month) => {
@@ -155,9 +199,16 @@ export function buildMonthlySummary(payments = [], orders = [], { dateFrom = '',
         tuition: 0,
         pending: 0,
         pos: 0,
+        salary: 0,
+        salaryPending: 0,
+        expenses: 0,
+        expensesPending: 0,
         total: 0,
+        net: 0,
         paymentCount: 0,
         orderCount: 0,
+        salaryCount: 0,
+        expensesCount: 0,
       })
     }
     return map.get(month)
@@ -181,8 +232,37 @@ export function buildMonthlySummary(payments = [], orders = [], { dateFrom = '',
     row.orderCount += 1
   }
 
+  for (const s of salaryPayments) {
+    if (!inDateRange(s.date, dateFrom, dateTo)) continue
+    const row = touch(monthKey(s.date))
+    if (!row) continue
+    const amount = Number(s.amount) || 0
+    if (s.status === 'Paid') {
+      row.salary = money(row.salary + amount)
+      row.salaryCount += 1
+    } else if (s.status === 'Pending') {
+      row.salaryPending = money(row.salaryPending + amount)
+    }
+  }
+
+  for (const e of expenses) {
+    if (!inDateRange(e.date, dateFrom, dateTo)) continue
+    const row = touch(monthKey(e.date))
+    if (!row) continue
+    const amount = Number(e.amount) || 0
+    if (e.status === 'Paid') {
+      row.expenses = money(row.expenses + amount)
+      row.expensesCount += 1
+    } else if (e.status === 'Pending') {
+      row.expensesPending = money(row.expensesPending + amount)
+    }
+  }
+
   return [...map.values()]
-    .map((r) => ({ ...r, total: money(r.tuition + r.pos) }))
+    .map((r) => {
+      const total = money(r.tuition + r.pos)
+      return { ...r, total, net: money(total - r.salary - r.expenses) }
+    })
     .sort((a, b) => b.month.localeCompare(a.month))
 }
 

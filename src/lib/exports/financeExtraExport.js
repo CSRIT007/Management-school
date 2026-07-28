@@ -15,8 +15,13 @@ export const CASH_FLOW_COLUMNS = [
   { key: 'tuitionCount', label: 'Tuition Invoices', getValue: (r) => r.tuitionCount },
   { key: 'pos', label: 'POS Revenue', getValue: (r) => Number(r.pos || 0).toFixed(2) },
   { key: 'posCount', label: 'POS Orders', getValue: (r) => r.posCount },
+  { key: 'salary', label: 'Salary Paid', getValue: (r) => Number(r.salary || 0).toFixed(2) },
+  { key: 'salaryCount', label: 'Salary Payouts', getValue: (r) => r.salaryCount },
+  { key: 'expenses', label: 'Expenses Paid', getValue: (r) => Number(r.expenses || 0).toFixed(2) },
+  { key: 'expensesCount', label: 'Expense Records', getValue: (r) => r.expensesCount },
   { key: 'pending', label: 'Pending Tuition', getValue: (r) => Number(r.pending || 0).toFixed(2) },
   { key: 'total', label: 'Total Collected', getValue: (r) => Number(r.total || 0).toFixed(2) },
+  { key: 'net', label: 'Net Cash', getValue: (r) => Number(r.net || 0).toFixed(2) },
 ]
 
 export const METHOD_COLUMNS = [
@@ -41,9 +46,14 @@ export const MONTHLY_COLUMNS = [
   { key: 'tuition', label: 'Tuition Collected', getValue: (r) => Number(r.tuition || 0).toFixed(2) },
   { key: 'pending', label: 'Pending', getValue: (r) => Number(r.pending || 0).toFixed(2) },
   { key: 'pos', label: 'POS Revenue', getValue: (r) => Number(r.pos || 0).toFixed(2) },
+  { key: 'salary', label: 'Salary Paid', getValue: (r) => Number(r.salary || 0).toFixed(2) },
+  { key: 'expenses', label: 'Expenses Paid', getValue: (r) => Number(r.expenses || 0).toFixed(2) },
   { key: 'total', label: 'Total Revenue', getValue: (r) => Number(r.total || 0).toFixed(2) },
+  { key: 'net', label: 'Net Cash', getValue: (r) => Number(r.net || 0).toFixed(2) },
   { key: 'paymentCount', label: 'Payment Records', getValue: (r) => r.paymentCount },
   { key: 'orderCount', label: 'POS Orders', getValue: (r) => r.orderCount },
+  { key: 'salaryCount', label: 'Salary Payouts', getValue: (r) => r.salaryCount },
+  { key: 'expensesCount', label: 'Expense Records', getValue: (r) => r.expensesCount },
 ]
 
 export const LEDGER_SUMMARY_COLUMNS = [

@@ -196,6 +196,49 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 
+-- Staff / teacher salary payouts (payroll)
+CREATE TABLE IF NOT EXISTS salary_payments (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+  user_name TEXT NOT NULL DEFAULT '',
+  person_kind TEXT NOT NULL DEFAULT '',
+  period TEXT NOT NULL DEFAULT '',
+  payment_date DATE,
+  amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  hours NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  method TEXT NOT NULL DEFAULT 'Cash',
+  status TEXT NOT NULL DEFAULT 'Pending',
+  note TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_salary_payments_user ON salary_payments(user_id);
+CREATE INDEX IF NOT EXISTS idx_salary_payments_date ON salary_payments(payment_date);
+CREATE INDEX IF NOT EXISTS idx_salary_payments_period ON salary_payments(period);
+CREATE INDEX IF NOT EXISTS idx_salary_payments_status ON salary_payments(status);
+
+-- School operating expenses (rental, utility, commission, etc.)
+CREATE TABLE IF NOT EXISTS school_expenses (
+  id TEXT PRIMARY KEY,
+  category TEXT NOT NULL DEFAULT 'Other Expense',
+  title TEXT NOT NULL DEFAULT '',
+  period TEXT NOT NULL DEFAULT '',
+  expense_date DATE,
+  amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  method TEXT NOT NULL DEFAULT 'Cash',
+  status TEXT NOT NULL DEFAULT 'Pending',
+  vendor TEXT NOT NULL DEFAULT '',
+  note TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_school_expenses_category ON school_expenses(category);
+CREATE INDEX IF NOT EXISTS idx_school_expenses_date ON school_expenses(expense_date);
+CREATE INDEX IF NOT EXISTS idx_school_expenses_period ON school_expenses(period);
+CREATE INDEX IF NOT EXISTS idx_school_expenses_status ON school_expenses(status);
+
 -- Teacher (user) ↔ class assignments
 CREATE TABLE IF NOT EXISTS user_classes (
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -239,7 +282,7 @@ DECLARE
 BEGIN
   FOREACH t IN ARRAY ARRAY[
     'students', 'classes', 'deadlines', 'payments', 'book_issues',
-    'alumni', 'categories', 'programs', 'products', 'orders', 'users'
+    'alumni', 'categories', 'programs', 'products', 'orders', 'users', 'salary_payments', 'school_expenses'
   ]
   LOOP
     EXECUTE format('DROP TRIGGER IF EXISTS trg_%s_updated_at ON %I', t, t);

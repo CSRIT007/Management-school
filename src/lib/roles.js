@@ -33,6 +33,8 @@ const ROUTE_ACCESS = {
   '/finance/purpose': [ROLES.ADMIN, ROLES.SCHOOL_ADMIN, ROLES.FINANCE],
   '/finance/monthly': [ROLES.ADMIN, ROLES.SCHOOL_ADMIN, ROLES.FINANCE],
   '/finance/student-ledger': [ROLES.ADMIN, ROLES.SCHOOL_ADMIN, ROLES.FINANCE],
+  '/finance/salary': [ROLES.ADMIN, ROLES.SCHOOL_ADMIN, ROLES.FINANCE],
+  '/finance/expenses': [ROLES.ADMIN, ROLES.SCHOOL_ADMIN, ROLES.FINANCE],
   '/admin/users': [ROLES.ADMIN],
   '/admin/teachers': [ROLES.ADMIN, ROLES.SCHOOL_ADMIN],
   '/admin/staff': [ROLES.ADMIN, ROLES.SCHOOL_ADMIN],
@@ -80,6 +82,8 @@ export const NAV_ITEMS = [
       { to: '/finance/purpose', label: 'Fee Purpose Report', icon: 'purpose' },
       { to: '/finance/monthly', label: 'Monthly Summary', icon: 'monthly' },
       { to: '/finance/student-ledger', label: 'Student Ledger', icon: 'ledger' },
+      { to: '/finance/salary', label: 'Staff & Teacher Salary', icon: 'salary' },
+      { to: '/finance/expenses', label: 'School Expenses', icon: 'expenses' },
     ],
   },
   {

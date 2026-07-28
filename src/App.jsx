@@ -27,6 +27,8 @@ import PaymentMethodReport from './pages/finance/PaymentMethodReport.jsx'
 import FeePurposeReport from './pages/finance/FeePurposeReport.jsx'
 import MonthlySummary from './pages/finance/MonthlySummary.jsx'
 import StudentLedger from './pages/finance/StudentLedger.jsx'
+import SalaryPayroll from './pages/finance/SalaryPayroll.jsx'
+import SchoolExpenses from './pages/finance/SchoolExpenses.jsx'
 
 export default function App() {
   return (
@@ -57,6 +59,8 @@ export default function App() {
               <Route path="/finance/purpose" element={<FeePurposeReport />} />
               <Route path="/finance/monthly" element={<MonthlySummary />} />
               <Route path="/finance/student-ledger" element={<StudentLedger />} />
+              <Route path="/finance/salary" element={<SalaryPayroll />} />
+              <Route path="/finance/expenses" element={<SchoolExpenses />} />
               <Route path="/admin/teachers" element={<TeacherInfo />} />
               <Route path="/admin/staff" element={<StaffInfo />} />
               <Route path="/admin/users" element={<UserManagement />} />

@@ -19,6 +19,19 @@ import {
 } from './users.js'
 import { getFinanceOverview } from './finance.js'
 import { writeAuditLog, listAuditLogs } from './auditLog.js'
+import {
+  listSalaryRoster,
+  listSalaryPayments,
+  createSalaryPayment,
+  updateSalaryPayment,
+  getSalaryPayment,
+} from './salaryPayments.js'
+import {
+  listSchoolExpenses,
+  createSchoolExpense,
+  updateSchoolExpense,
+  getSchoolExpense,
+} from './schoolExpenses.js'
 import { calendarDate, todayCalendarDate } from './calendarDate.js'
 import {
   getClassIdsForUser,
@@ -465,6 +478,116 @@ app.get('/api/finance/overview', requireRole(...FINANCE_VIEW), async (req, res) 
   try {
     const { dateFrom = '', dateTo = '' } = req.query || {}
     res.json(await getFinanceOverview({ dateFrom, dateTo }))
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.get('/api/finance/salary-roster', requireRole(...FINANCE_VIEW), async (req, res) => {
+  try {
+    res.json(await listSalaryRoster())
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.get('/api/finance/salary-payments', requireRole(...FINANCE_VIEW), async (req, res) => {
+  try {
+    res.json(await listSalaryPayments())
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.post('/api/finance/salary-payments', requireRole(...FINANCE_EDIT), async (req, res) => {
+  try {
+    const row = await createSalaryPayment(req.body || {})
+    await writeAuditLog(req, {
+      action: 'create',
+      resourceType: 'salary_payments',
+      resourceId: row.id,
+      summary: `Recorded salary payout ${row.id} for ${row.userName} (${row.period}) · $${Number(row.amount).toFixed(2)}`,
+      meta: { userId: row.userId, period: row.period, status: row.status, amount: row.amount },
+    })
+    res.status(201).json(row)
+  } catch (e) {
+    res.status(e.status || 500).json({ error: e.message })
+  }
+})
+
+app.put('/api/finance/salary-payments/:id', requireRole(...FINANCE_EDIT), async (req, res) => {
+  try {
+    const row = await updateSalaryPayment(req.params.id, req.body || {})
+    if (!row) return res.status(404).json({ error: 'Salary payment not found' })
+    await writeAuditLog(req, {
+      action: 'update',
+      resourceType: 'salary_payments',
+      resourceId: row.id,
+      summary: `Updated salary payout ${row.id} for ${row.userName} · ${row.status}`,
+      meta: { status: row.status, amount: row.amount, period: row.period },
+    })
+    res.json(row)
+  } catch (e) {
+    res.status(e.status || 500).json({ error: e.message })
+  }
+})
+
+app.get('/api/finance/salary-payments/:id', requireRole(...FINANCE_VIEW), async (req, res) => {
+  try {
+    const row = await getSalaryPayment(req.params.id)
+    if (!row) return res.status(404).json({ error: 'Salary payment not found' })
+    res.json(row)
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.get('/api/finance/expenses', requireRole(...FINANCE_VIEW), async (req, res) => {
+  try {
+    res.json(await listSchoolExpenses())
+  } catch (e) {
+    res.status(500).json({ error: e.message })
+  }
+})
+
+app.post('/api/finance/expenses', requireRole(...FINANCE_EDIT), async (req, res) => {
+  try {
+    const row = await createSchoolExpense(req.body || {})
+    await writeAuditLog(req, {
+      action: 'create',
+      resourceType: 'school_expenses',
+      resourceId: row.id,
+      summary: `Recorded expense ${row.id} · ${row.category} · ${row.title} · $${Number(row.amount).toFixed(2)}`,
+      meta: { category: row.category, period: row.period, status: row.status, amount: row.amount },
+    })
+    res.status(201).json(row)
+  } catch (e) {
+    res.status(e.status || 500).json({ error: e.message })
+  }
+})
+
+app.put('/api/finance/expenses/:id', requireRole(...FINANCE_EDIT), async (req, res) => {
+  try {
+    const row = await updateSchoolExpense(req.params.id, req.body || {})
+    if (!row) return res.status(404).json({ error: 'Expense not found' })
+    await writeAuditLog(req, {
+      action: 'update',
+      resourceType: 'school_expenses',
+      resourceId: row.id,
+      summary: `Updated expense ${row.id} · ${row.category} · ${row.status}`,
+      meta: { category: row.category, status: row.status, amount: row.amount, period: row.period },
+    })
+    res.json(row)
+  } catch (e) {
+    res.status(e.status || 500).json({ error: e.message })
+  }
+})
+
+app.get('/api/finance/expenses/:id', requireRole(...FINANCE_VIEW), async (req, res) => {
+  try {
+    const row = await getSchoolExpense(req.params.id)
+    if (!row) return res.status(404).json({ error: 'Expense not found' })
+    res.json(row)
   } catch (e) {
     res.status(500).json({ error: e.message })
   }

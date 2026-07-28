@@ -1237,6 +1237,16 @@ async function migrateAuditLogs() {
   await ensureAuditLogsTable()
 }
 
+async function migrateSalaryPayments() {
+  const { ensureSalaryPaymentsTable } = await import('./salaryPayments.js')
+  await ensureSalaryPaymentsTable()
+}
+
+async function migrateSchoolExpenses() {
+  const { ensureSchoolExpensesTable } = await import('./schoolExpenses.js')
+  await ensureSchoolExpensesTable()
+}
+
 async function seedIfEmpty() {
   await waitForDb()
   // Audit column migrations must run before initSchema indexes that reference them
@@ -1248,6 +1258,8 @@ async function seedIfEmpty() {
   await migrateFromLegacyRecords()
   await migratePaymentColumns()
   await migratePaymentInvoiceColumns()
+  await migrateSalaryPayments()
+  await migrateSchoolExpenses()
   await migrateDascPrefixToInv()
   await migrateOrderInvoiceIds()
   await migrateDeadlineColumns()

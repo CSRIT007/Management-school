@@ -16,6 +16,8 @@ import {
 export default function MonthlySummary() {
   const [payments, setPayments] = useState([])
   const [orders, setOrders] = useState([])
+  const [salaryPayments, setSalaryPayments] = useState([])
+  const [expenses, setExpenses] = useState([])
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [loading, setLoading] = useState(true)
@@ -25,13 +27,20 @@ export default function MonthlySummary() {
     let active = true
     ;(async () => {
       try {
-        const [p, o] = await Promise.all([get('/api/payments'), get('/api/orders')])
+        const [p, o, s, e] = await Promise.all([
+          get('/api/payments'),
+          get('/api/orders'),
+          get('/api/finance/salary-payments'),
+          get('/api/finance/expenses'),
+        ])
         if (active) {
           setPayments(p)
           setOrders(o)
+          setSalaryPayments(s)
+          setExpenses(e)
         }
-      } catch (e) {
-        if (active) setError(e.message)
+      } catch (err) {
+        if (active) setError(err.message)
       } finally {
         if (active) setLoading(false)
       }
@@ -40,21 +49,24 @@ export default function MonthlySummary() {
   }, [])
 
   const rows = useMemo(
-    () => buildMonthlySummary(payments, orders, { dateFrom, dateTo }),
-    [payments, orders, dateFrom, dateTo]
+    () => buildMonthlySummary(payments, orders, { dateFrom, dateTo, salaryPayments, expenses }),
+    [payments, orders, salaryPayments, expenses, dateFrom, dateTo]
   )
 
   const totals = useMemo(() => ({
     tuition: rows.reduce((s, r) => s + r.tuition, 0),
     pos: rows.reduce((s, r) => s + r.pos, 0),
+    salary: rows.reduce((s, r) => s + r.salary, 0),
+    expenses: rows.reduce((s, r) => s + r.expenses, 0),
     total: rows.reduce((s, r) => s + r.total, 0),
+    net: rows.reduce((s, r) => s + r.net, 0),
   }), [rows])
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Monthly Summary"
-        subtitle="Tuition and POS revenue rolled up by month"
+        subtitle="Tuition and POS revenue minus salary and school expenses by month"
       />
 
       {error && (
@@ -63,11 +75,13 @@ export default function MonthlySummary() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         <StatCard label="Months" value={loading ? '…' : rows.length} accent="indigo" />
         <StatCard label="Tuition" value={loading ? '…' : formatMoney(totals.tuition)} accent="emerald" />
         <StatCard label="POS" value={loading ? '…' : formatMoney(totals.pos)} accent="amber" />
-        <StatCard label="Total Revenue" value={loading ? '…' : formatMoney(totals.total)} accent="rose" />
+        <StatCard label="Salary Paid" value={loading ? '…' : formatMoney(totals.salary)} accent="rose" />
+        <StatCard label="Expenses Paid" value={loading ? '…' : formatMoney(totals.expenses)} accent="rose" />
+        <StatCard label="Net Cash" value={loading ? '…' : formatMoney(totals.net)} accent="indigo" />
       </div>
 
       <div className="panel grid grid-cols-1 gap-4 p-5 md:grid-cols-2">
@@ -93,9 +107,10 @@ export default function MonthlySummary() {
             { key: 'tuition', label: 'Tuition', render: (r) => formatMoney(r.tuition) },
             { key: 'pending', label: 'Pending', render: (r) => formatMoney(r.pending) },
             { key: 'pos', label: 'POS', render: (r) => formatMoney(r.pos) },
-            { key: 'total', label: 'Total', render: (r) => formatMoney(r.total) },
-            { key: 'paymentCount', label: 'Payments #' },
-            { key: 'orderCount', label: 'Orders #' },
+            { key: 'salary', label: 'Salary', render: (r) => formatMoney(r.salary) },
+            { key: 'expenses', label: 'Expenses', render: (r) => formatMoney(r.expenses) },
+            { key: 'total', label: 'Revenue', render: (r) => formatMoney(r.total) },
+            { key: 'net', label: 'Net', className: 'font-semibold', render: (r) => formatMoney(r.net) },
           ]}
           rows={rows}
           emptyMessage={loading ? 'Loading…' : 'No monthly data in this period.'}
