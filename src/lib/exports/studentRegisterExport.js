@@ -6,7 +6,8 @@ export const STUDENT_REPORT_TITLE = 'Register Students'
 
 export const STUDENT_EXPORT_COLUMNS = [
   { key: 'id', label: 'Student ID', getValue: (r) => r.id || '' },
-  { key: 'name', label: 'Full Name', getValue: (r) => r.name || '' },
+  { key: 'name', label: 'Full Name', getValue: (r) => r.name || [r.firstName, r.lastName].filter(Boolean).join(' ') },
+  { key: 'gender', label: 'Gender', getValue: (r) => r.gender || '' },
   { key: 'email', label: 'Email', getValue: (r) => r.email || '' },
   { key: 'phone', label: 'Phone', getValue: (r) => r.phone || '' },
   { key: 'address', label: 'Address', getValue: (r) => r.address || '' },

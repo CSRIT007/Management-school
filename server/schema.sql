@@ -12,6 +12,9 @@ $$ LANGUAGE plpgsql;
 CREATE TABLE IF NOT EXISTS students (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL DEFAULT '',
+  first_name TEXT NOT NULL DEFAULT '',
+  last_name TEXT NOT NULL DEFAULT '',
+  gender TEXT NOT NULL DEFAULT '',
   email TEXT DEFAULT '',
   phone TEXT DEFAULT '',
   address TEXT DEFAULT '',

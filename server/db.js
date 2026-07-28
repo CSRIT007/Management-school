@@ -37,29 +37,46 @@ const collections = [
 const TABLE_CONFIG = {
   students: {
     table: 'students',
-    toApi: (r) => ({
-      id: r.id,
-      name: r.name,
-      email: r.email,
-      phone: r.phone,
-      address: r.address,
-      dob: fmtDate(r.dob),
-      emergency: r.emergency,
-      program: r.program,
-      createdAt: r.created_at ?? null,
-    }),
-    toDb: (o) => ({
-      id: o.id,
-      name: o.name ?? '',
-      email: o.email ?? '',
-      phone: o.phone ?? '',
-      address: o.address ?? '',
-      dob: o.dob || null,
-      emergency: o.emergency ?? '',
-      program: o.program ?? '',
-    }),
-    insertCols: ['id', 'name', 'email', 'phone', 'address', 'dob', 'emergency', 'program'],
-    updateCols: ['name', 'email', 'phone', 'address', 'dob', 'emergency', 'program'],
+    toApi: (r) => {
+      const firstName = r.first_name || ''
+      const lastName = r.last_name || ''
+      const fullName = (r.name || [firstName, lastName].filter(Boolean).join(' ')).trim()
+      return {
+        id: r.id,
+        name: fullName,
+        firstName,
+        lastName,
+        gender: r.gender || '',
+        email: r.email,
+        phone: r.phone,
+        address: r.address,
+        dob: fmtDate(r.dob),
+        emergency: r.emergency,
+        program: r.program,
+        createdAt: r.created_at ?? null,
+      }
+    },
+    toDb: (o) => {
+      const firstName = String(o.firstName ?? '').trim()
+      const lastName = String(o.lastName ?? '').trim()
+      const composed = [firstName, lastName].filter(Boolean).join(' ')
+      const name = composed || String(o.name ?? '').trim()
+      return {
+        id: o.id,
+        name,
+        first_name: firstName,
+        last_name: lastName,
+        gender: String(o.gender ?? '').trim(),
+        email: o.email ?? '',
+        phone: o.phone ?? '',
+        address: o.address ?? '',
+        dob: o.dob || null,
+        emergency: o.emergency ?? '',
+        program: o.program ?? '',
+      }
+    },
+    insertCols: ['id', 'name', 'first_name', 'last_name', 'gender', 'email', 'phone', 'address', 'dob', 'emergency', 'program'],
+    updateCols: ['name', 'first_name', 'last_name', 'gender', 'email', 'phone', 'address', 'dob', 'emergency', 'program'],
   },
   classes: {
     table: 'classes',
@@ -357,6 +374,29 @@ async function initSchema() {
   for (const statement of splitSqlStatements(sql)) {
     await pool.query(statement)
   }
+}
+
+async function migrateStudentProfileColumns() {
+  if (!(await tableExists('students'))) return
+  await pool.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS first_name TEXT NOT NULL DEFAULT ''`)
+  await pool.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS last_name TEXT NOT NULL DEFAULT ''`)
+  await pool.query(`ALTER TABLE students ADD COLUMN IF NOT EXISTS gender TEXT NOT NULL DEFAULT ''`)
+  // Backfill first/last from legacy full name when empty
+  await pool.query(`
+    UPDATE students
+    SET
+      first_name = CASE
+        WHEN TRIM(name) = '' THEN ''
+        WHEN POSITION(' ' IN TRIM(name)) = 0 THEN TRIM(name)
+        ELSE SPLIT_PART(TRIM(name), ' ', 1)
+      END,
+      last_name = CASE
+        WHEN POSITION(' ' IN TRIM(name)) = 0 THEN ''
+        ELSE TRIM(SUBSTRING(TRIM(name) FROM POSITION(' ' IN TRIM(name)) + 1))
+      END
+    WHERE COALESCE(TRIM(first_name), '') = '' AND COALESCE(TRIM(last_name), '') = ''
+      AND COALESCE(TRIM(name), '') <> ''
+  `)
 }
 
 async function migratePaymentColumns() {
@@ -1185,6 +1225,7 @@ async function seedIfEmpty() {
   await initSchema()
   await migrateUsersTable()
   await migrateTimestampColumns()
+  await migrateStudentProfileColumns()
   await migrateFromLegacyRecords()
   await migratePaymentColumns()
   await migratePaymentInvoiceColumns()

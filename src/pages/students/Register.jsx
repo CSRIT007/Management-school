@@ -16,17 +16,69 @@ import {
   downloadStudentRegisterCsv,
 } from '../../lib/exports/studentRegisterExport.js'
 
-const emptyForm = { id: '', name: '', email: '', phone: '', address: '', dob: '', emergency: '', program: '' }
+const GENDER_OPTIONS = [
+  { value: 'Male', label: 'Male' },
+  { value: 'Female', label: 'Female' },
+  { value: 'Other', label: 'Other' },
+]
+
+const PHONE_PREFIX = '+855'
+
+const emptyForm = {
+  id: '',
+  firstName: '',
+  lastName: '',
+  gender: '',
+  email: '',
+  phoneLocal: '',
+  address: '',
+  dob: '',
+  emergency: '',
+  program: '',
+}
+
+function fullName(firstName, lastName) {
+  return [firstName, lastName].map((s) => String(s || '').trim()).filter(Boolean).join(' ')
+}
+
+/** Digits after +855; strip country code and leading zeros. */
+function toPhoneLocal(value) {
+  let digits = String(value || '').replace(/\D/g, '')
+  if (digits.startsWith('855')) digits = digits.slice(3)
+  return digits.replace(/^0+/, '')
+}
+
+function formatPhoneSave(local) {
+  const digits = toPhoneLocal(local)
+  return digits ? `${PHONE_PREFIX}${digits}` : ''
+}
+
+function splitLegacyName(name) {
+  const trimmed = String(name || '').trim()
+  if (!trimmed) return { firstName: '', lastName: '' }
+  const i = trimmed.indexOf(' ')
+  if (i < 0) return { firstName: trimmed, lastName: '' }
+  return { firstName: trimmed.slice(0, i), lastName: trimmed.slice(i + 1).trim() }
+}
 
 function validateForm(form) {
   const errors = {}
-  const name = form.name.trim()
+  const firstName = form.firstName.trim()
+  const lastName = form.lastName.trim()
   const email = form.email.trim()
   const dob = form.dob.trim()
+  const gender = form.gender.trim()
+  const phoneLocal = toPhoneLocal(form.phoneLocal)
 
-  if (!name) errors.name = 'Full name is required.'
+  if (!firstName) errors.firstName = 'First name is required.'
+  if (!lastName) errors.lastName = 'Last name is required.'
+  if (!gender) errors.gender = 'Gender is required.'
   if (!email) errors.email = 'Email is required.'
+  else if (!email.includes('@')) errors.email = 'Email must include @.'
   else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = 'Enter a valid email address.'
+  if (phoneLocal && !/^\d{7,10}$/.test(phoneLocal)) {
+    errors.phoneLocal = 'Enter 7–10 digits after +855 (no leading 0).'
+  }
   if (!dob) errors.dob = 'Date of birth is required.'
   else if (!isValidIsoDate(dob)) errors.dob = 'Use date format dd-mm-yyyy.'
 
@@ -101,12 +153,21 @@ export default function StudentRegister() {
   }
 
   const startEdit = (student) => {
+    const fromParts = {
+      firstName: student.firstName || '',
+      lastName: student.lastName || '',
+    }
+    if (!fromParts.firstName && !fromParts.lastName) {
+      Object.assign(fromParts, splitLegacyName(student.name))
+    }
     setEditingId(student.id)
     setForm({
       id: student.id,
-      name: student.name || '',
+      firstName: fromParts.firstName,
+      lastName: fromParts.lastName,
+      gender: student.gender || '',
       email: student.email || '',
-      phone: student.phone || '',
+      phoneLocal: toPhoneLocal(student.phone),
       address: student.address || '',
       dob: student.dob || '',
       emergency: student.emergency || '',
@@ -127,6 +188,12 @@ export default function StudentRegister() {
     })
   }
 
+  const onPhoneLocalChange = (raw) => {
+    const cleaned = toPhoneLocal(raw)
+    setForm((f) => ({ ...f, phoneLocal: cleaned }))
+    clearFieldError('phoneLocal')
+  }
+
   const submit = async (e) => {
     e.preventDefault()
     const errors = validateForm(form)
@@ -141,10 +208,15 @@ export default function StudentRegister() {
     setError(false)
     setFieldErrors({})
     try {
+      const firstName = form.firstName.trim()
+      const lastName = form.lastName.trim()
       const payload = {
-        name: form.name.trim(),
-        email: form.email.trim(),
-        phone: form.phone,
+        firstName,
+        lastName,
+        name: fullName(firstName, lastName),
+        gender: form.gender.trim(),
+        email: form.email.trim().toLowerCase(),
+        phone: formatPhoneSave(form.phoneLocal),
         address: form.address,
         dob: form.dob,
         emergency: form.emergency,
@@ -213,13 +285,18 @@ export default function StudentRegister() {
       label: 'Student ID',
       className: 'whitespace-nowrap font-semibold text-slate-900 dark:text-slate-100',
     },
-    { key: 'name', label: 'Full Name', className: 'whitespace-nowrap' },
+    {
+      key: 'name',
+      label: 'Full Name',
+      className: 'whitespace-nowrap',
+      render: (r) => r.name || fullName(r.firstName, r.lastName) || '—',
+    },
+    { key: 'gender', label: 'Gender', className: 'whitespace-nowrap', render: (r) => r.gender || '—' },
     { key: 'email', label: 'Email', className: 'whitespace-nowrap' },
-    { key: 'phone', label: 'Phone', className: 'whitespace-nowrap' },
+    { key: 'phone', label: 'Phone', className: 'whitespace-nowrap', render: (r) => r.phone || '—' },
     {
       key: 'program',
       label: 'Program',
-      // Header stays 1 line via DataTable; cell may wrap up to 2 lines
       cellClassName: 'max-w-[11rem] break-words line-clamp-2',
     },
     {
@@ -285,19 +362,55 @@ export default function StudentRegister() {
           </div>
           <div>
             <label className="label">
-              Full Name <span className="text-rose-500">*</span>
+              Gender <span className="text-rose-500">*</span>
+            </label>
+            <select
+              className={`input ${fieldErrors.gender ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/20' : ''}`}
+              value={form.gender}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, gender: e.target.value }))
+                clearFieldError('gender')
+              }}
+              required
+            >
+              <option value="">Select gender</option>
+              {GENDER_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+            {fieldErrors.gender && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{fieldErrors.gender}</p>}
+          </div>
+          <div>
+            <label className="label">
+              First Name <span className="text-rose-500">*</span>
             </label>
             <input
-              value={form.name}
+              value={form.firstName}
               onChange={(e) => {
-                setForm((f) => ({ ...f, name: e.target.value }))
-                clearFieldError('name')
+                setForm((f) => ({ ...f, firstName: e.target.value }))
+                clearFieldError('firstName')
               }}
-              className={`input ${fieldErrors.name ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/20' : ''}`}
-              placeholder="Jane Doe"
+              className={`input ${fieldErrors.firstName ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/20' : ''}`}
+              placeholder="Jane"
               required
             />
-            {fieldErrors.name && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{fieldErrors.name}</p>}
+            {fieldErrors.firstName && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{fieldErrors.firstName}</p>}
+          </div>
+          <div>
+            <label className="label">
+              Last Name <span className="text-rose-500">*</span>
+            </label>
+            <input
+              value={form.lastName}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, lastName: e.target.value }))
+                clearFieldError('lastName')
+              }}
+              className={`input ${fieldErrors.lastName ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/20' : ''}`}
+              placeholder="Doe"
+              required
+            />
+            {fieldErrors.lastName && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{fieldErrors.lastName}</p>}
           </div>
           <div>
             <label className="label">
@@ -311,14 +424,28 @@ export default function StudentRegister() {
                 clearFieldError('email')
               }}
               className={`input ${fieldErrors.email ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/20' : ''}`}
-              placeholder="jane@example.com"
+              placeholder="name@example.com"
               required
             />
             {fieldErrors.email && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{fieldErrors.email}</p>}
           </div>
           <div>
             <label className="label">Phone Number</label>
-            <input value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} className="input" placeholder="+855…" />
+            <div className="flex overflow-hidden rounded-xl border border-slate-200 bg-white focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/20 dark:border-slate-700 dark:bg-slate-900">
+              <span className="flex items-center border-r border-slate-200 bg-slate-50 px-3 text-sm font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                {PHONE_PREFIX}
+              </span>
+              <input
+                value={form.phoneLocal}
+                onChange={(e) => onPhoneLocalChange(e.target.value)}
+                className="min-w-0 flex-1 border-0 bg-transparent px-3 py-2.5 text-sm text-slate-800 outline-none dark:text-slate-100"
+                placeholder="12 345 678"
+                inputMode="numeric"
+                autoComplete="tel-national"
+              />
+            </div>
+            <p className="mt-1 text-xs text-slate-400">Cambodia (+855). Do not type a leading 0.</p>
+            {fieldErrors.phoneLocal && <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{fieldErrors.phoneLocal}</p>}
           </div>
           <div className="md:col-span-2">
             <label className="label">Address</label>
