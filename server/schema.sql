@@ -47,6 +47,27 @@ CREATE TABLE IF NOT EXISTS class_students (
 CREATE INDEX IF NOT EXISTS idx_class_students_class ON class_students(class_id);
 CREATE INDEX IF NOT EXISTS idx_class_students_student ON class_students(student_id);
 
+-- Daily class attendance (roll call)
+CREATE TABLE IF NOT EXISTS class_attendance (
+  id TEXT PRIMARY KEY,
+  class_id TEXT NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+  student_id TEXT NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  student_name TEXT NOT NULL DEFAULT '',
+  attendance_date DATE NOT NULL,
+  status TEXT NOT NULL DEFAULT 'Present',
+  note TEXT NOT NULL DEFAULT '',
+  recorded_by TEXT NOT NULL DEFAULT '',
+  recorded_by_name TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (class_id, student_id, attendance_date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_class_attendance_class ON class_attendance(class_id);
+CREATE INDEX IF NOT EXISTS idx_class_attendance_date ON class_attendance(attendance_date);
+CREATE INDEX IF NOT EXISTS idx_class_attendance_student ON class_attendance(student_id);
+CREATE INDEX IF NOT EXISTS idx_class_attendance_status ON class_attendance(status);
+
 -- Student deadlines / assignments
 CREATE TABLE IF NOT EXISTS deadlines (
   id TEXT PRIMARY KEY,
@@ -282,7 +303,7 @@ DECLARE
 BEGIN
   FOREACH t IN ARRAY ARRAY[
     'students', 'classes', 'deadlines', 'payments', 'book_issues',
-    'alumni', 'categories', 'programs', 'products', 'orders', 'users', 'salary_payments', 'school_expenses'
+    'alumni', 'categories', 'programs', 'products', 'orders', 'users', 'salary_payments', 'school_expenses', 'class_attendance'
   ]
   LOOP
     EXECUTE format('DROP TRIGGER IF EXISTS trg_%s_updated_at ON %I', t, t);

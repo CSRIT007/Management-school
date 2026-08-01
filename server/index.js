@@ -32,6 +32,11 @@ import {
   updateSchoolExpense,
   getSchoolExpense,
 } from './schoolExpenses.js'
+import {
+  getAttendanceSheet,
+  upsertAttendanceSheet,
+  getAttendanceSummary,
+} from './classAttendance.js'
 import { calendarDate, todayCalendarDate } from './calendarDate.js'
 import {
   getClassIdsForUser,
@@ -707,6 +712,60 @@ app.get('/api/classes/next-id', requireRole(...STUDENT_MANAGE), async (req, res)
     res.json({ id })
   } catch (e) {
     res.status(500).json({ error: e.message })
+  }
+})
+
+// Class attendance (register before generic /api/:col routes)
+app.get('/api/attendance/summary', requireRole(...CLASS_OPS), async (req, res) => {
+  try {
+    const { classId = '', dateFrom = '', dateTo = '' } = req.query || {}
+    if (!classId) return res.status(400).json({ error: 'classId is required' })
+    await assertTeacherClassAccess(req, classId)
+    res.json(await getAttendanceSummary({ classId, dateFrom, dateTo }))
+  } catch (e) {
+    res.status(e.status || 500).json({ error: e.message })
+  }
+})
+
+app.get('/api/attendance', requireRole(...CLASS_OPS), async (req, res) => {
+  try {
+    const { classId = '', date = '' } = req.query || {}
+    if (!classId) return res.status(400).json({ error: 'classId is required' })
+    await assertTeacherClassAccess(req, classId)
+    res.json(await getAttendanceSheet(classId, date))
+  } catch (e) {
+    res.status(e.status || 500).json({ error: e.message })
+  }
+})
+
+app.put('/api/attendance', requireRole(...CLASS_OPS), async (req, res) => {
+  try {
+    const { classId, date, rows } = req.body || {}
+    if (!classId) return res.status(400).json({ error: 'classId is required' })
+    await assertTeacherClassAccess(req, classId)
+    const sheet = await upsertAttendanceSheet({
+      classId,
+      date,
+      rows: Array.isArray(rows) ? rows : [],
+      actor: {
+        id: req.user.id,
+        name: req.user.name || req.user.email || '',
+      },
+    })
+    await writeAuditLog(req, {
+      action: 'update',
+      resourceType: 'class_attendance',
+      resourceId: `${classId}:${sheet.date}`,
+      summary: `Saved attendance for ${sheet.className || classId} on ${sheet.date} (${sheet.rows.length} students)`,
+      meta: {
+        classId,
+        date: sheet.date,
+        counts: sheet.counts,
+      },
+    })
+    res.json(sheet)
+  } catch (e) {
+    res.status(e.status || 500).json({ error: e.message })
   }
 })
 

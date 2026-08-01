@@ -1247,6 +1247,11 @@ async function migrateSchoolExpenses() {
   await ensureSchoolExpensesTable()
 }
 
+async function migrateClassAttendance() {
+  const { ensureClassAttendanceTable } = await import('./classAttendance.js')
+  await ensureClassAttendanceTable()
+}
+
 async function seedIfEmpty() {
   await waitForDb()
   // Audit column migrations must run before initSchema indexes that reference them
@@ -1260,6 +1265,7 @@ async function seedIfEmpty() {
   await migratePaymentInvoiceColumns()
   await migrateSalaryPayments()
   await migrateSchoolExpenses()
+  await migrateClassAttendance()
   await migrateDascPrefixToInv()
   await migrateOrderInvoiceIds()
   await migrateDeadlineColumns()

@@ -6,6 +6,7 @@ import Login from './pages/Login.jsx'
 import DashboardHome from './pages/DashboardHome.jsx'
 import StudentRegister from './pages/students/Register.jsx'
 import ClassManagement from './pages/students/ClassManagement.jsx'
+import ClassAttendance from './pages/students/ClassAttendance.jsx'
 import StudentDateline from './pages/students/Dateline.jsx'
 import StudentPayment from './pages/students/Payment.jsx'
 import StudentBook from './pages/students/Book.jsx'
@@ -42,6 +43,7 @@ export default function App() {
               <Route index element={<DashboardHome />} />
               <Route path="/students/register" element={<StudentRegister />} />
               <Route path="/students/classes" element={<ClassManagement />} />
+              <Route path="/students/attendance" element={<ClassAttendance />} />
               <Route path="/students/dateline" element={<StudentDateline />} />
               <Route path="/students/payment" element={<StudentPayment />} />
               <Route path="/students/book" element={<StudentBook />} />

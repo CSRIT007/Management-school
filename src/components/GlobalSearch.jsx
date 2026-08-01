@@ -9,6 +9,7 @@ const PAGE_KEYWORDS = {
   '/': ['home', 'dashboard', 'overview', 'main'],
   '/students/register': ['student', 'students', 'register', 'enrollment', 'admit'],
   '/students/classes': ['class', 'classes', 'course', 'schedule', 'teacher'],
+  '/students/attendance': ['attendance', 'attend', 'roll', 'present', 'absent', 'class', 'check-in'],
   '/students/dateline': ['deadline', 'dateline', 'due', 'task'],
   '/students/payment': ['payment', 'payments', 'invoice', 'fee', 'tuition', 'finance'],
   '/students/book': ['book', 'library', 'issue'],

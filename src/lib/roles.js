@@ -16,6 +16,7 @@ const ROUTE_ACCESS = {
   '/': [ROLES.ADMIN, ROLES.SCHOOL_ADMIN, ROLES.FINANCE, ROLES.TEACHER],
   '/students/register': [ROLES.ADMIN, ROLES.SCHOOL_ADMIN, ROLES.FINANCE, ROLES.TEACHER],
   '/students/classes': [ROLES.ADMIN, ROLES.SCHOOL_ADMIN, ROLES.TEACHER],
+  '/students/attendance': [ROLES.ADMIN, ROLES.SCHOOL_ADMIN, ROLES.TEACHER],
   '/students/dateline': [ROLES.ADMIN, ROLES.SCHOOL_ADMIN, ROLES.TEACHER],
   '/students/payment': [ROLES.ADMIN, ROLES.SCHOOL_ADMIN, ROLES.FINANCE],
   '/students/book': [ROLES.ADMIN, ROLES.SCHOOL_ADMIN, ROLES.TEACHER],
@@ -53,6 +54,7 @@ export const NAV_ITEMS = [
     items: [
       { to: '/students/register', label: 'Student Register', icon: 'user' },
       { to: '/students/classes', label: 'Class Management', icon: 'class' },
+      { to: '/students/attendance', label: 'Class Attendance', icon: 'attendance' },
       { to: '/students/dateline', label: 'Student & Dateline', icon: 'calendar' },
       { to: '/students/payment', label: 'Student & Payment', icon: 'payment' },
       { to: '/students/book', label: 'Student & Book', icon: 'book' },
