@@ -26,6 +26,7 @@ const PAGE_KEYWORDS = {
   '/finance/methods': ['finance', 'method', 'methods', 'cash', 'card', 'qr', 'payment'],
   '/finance/purpose': ['finance', 'purpose', 'fee', 'tuition'],
   '/finance/monthly': ['finance', 'monthly', 'summary', 'report', 'month'],
+  '/finance/profit-loss': ['finance', 'profit', 'loss', 'pnl', 'p&l', 'p and l', 'income', 'statement'],
   '/finance/student-ledger': ['finance', 'ledger', 'student', 'history', 'account'],
   '/finance/salary': ['finance', 'salary', 'payroll', 'teacher', 'staff', 'wage', 'pay'],
   '/finance/expenses': ['finance', 'expense', 'expenses', 'rental', 'utility', 'commission', 'operating', 'cost'],

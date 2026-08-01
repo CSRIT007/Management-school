@@ -9,6 +9,7 @@ export const METHOD_REPORT_TITLE = 'Payment Method Report'
 export const PURPOSE_REPORT_TITLE = 'Fee Purpose Report'
 export const MONTHLY_SUMMARY_TITLE = 'Monthly Financial Summary'
 export const STUDENT_LEDGER_TITLE = 'Student Payment Ledger'
+export const PROFIT_LOSS_TITLE = 'Profit and Loss'
 
 export const CASH_FLOW_COLUMNS = [
   { key: 'date', label: 'Date', getValue: (r) => formatDisplayDate(r.date) },
@@ -64,6 +65,13 @@ export const LEDGER_SUMMARY_COLUMNS = [
   { key: 'pending', label: 'Pending', getValue: (r) => formatMoneyAmount(r.pending) },
   { key: 'total', label: 'Total', getValue: (r) => formatMoneyAmount(r.total) },
   { key: 'count', label: 'Invoices', getValue: (r) => r.count },
+]
+
+export const PROFIT_LOSS_COLUMNS = [
+  { key: 'section', label: 'Section', getValue: (r) => r.section },
+  { key: 'account', label: 'Account', getValue: (r) => r.account },
+  { key: 'amount', label: 'Amount', getValue: (r) => formatMoneyAmount(r.amount) },
+  { key: 'count', label: 'Count', getValue: (r) => (r.count === '' || r.count == null ? '' : r.count) },
 ]
 
 export function downloadFinanceReport(reportTitle, columns, rows) {

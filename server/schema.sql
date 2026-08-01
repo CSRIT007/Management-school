@@ -113,6 +113,7 @@ CREATE TABLE IF NOT EXISTS book_issues (
 -- Alumni / graduation
 CREATE TABLE IF NOT EXISTS alumni (
   id TEXT PRIMARY KEY,
+  student_id TEXT NOT NULL DEFAULT '',
   name TEXT NOT NULL DEFAULT '',
   program TEXT DEFAULT '',
   completion_date DATE,

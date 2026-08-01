@@ -176,6 +176,7 @@ const TABLE_CONFIG = {
     table: 'alumni',
     toApi: (r) => ({
       id: r.id,
+      studentId: r.student_id || '',
       name: r.name,
       program: r.program,
       date: fmtDate(r.completion_date),
@@ -184,14 +185,15 @@ const TABLE_CONFIG = {
     }),
     toDb: (o) => ({
       id: o.id,
+      student_id: o.studentId ?? o.student_id ?? '',
       name: o.name ?? '',
       program: o.program ?? '',
       completion_date: o.date || null,
       grade: o.grade ?? '',
       cert: o.cert === true || o.cert === 'true',
     }),
-    insertCols: ['id', 'name', 'program', 'completion_date', 'grade', 'cert'],
-    updateCols: ['name', 'program', 'completion_date', 'grade', 'cert'],
+    insertCols: ['id', 'student_id', 'name', 'program', 'completion_date', 'grade', 'cert'],
+    updateCols: ['student_id', 'name', 'program', 'completion_date', 'grade', 'cert'],
   },
   categories: {
     table: 'categories',
@@ -955,7 +957,7 @@ function orderToApi(row, items) {
 }
 
 async function listOrders() {
-  const { rows } = await pool.query('SELECT * FROM orders ORDER BY created_at ASC')
+  const { rows } = await pool.query('SELECT * FROM orders ORDER BY created_at DESC')
   const result = []
   for (const row of rows) {
     result.push(orderToApi(row, await fetchOrderItems(row.id)))
@@ -1015,7 +1017,7 @@ async function list(name) {
   if (!cfg) throw new Error(`Unknown collection: ${name}`)
 
   const { rows } = await pool.query(
-    `SELECT * FROM ${cfg.table} ORDER BY created_at ASC`
+    `SELECT * FROM ${cfg.table} ORDER BY created_at DESC`
   )
   return rows.map(cfg.toApi)
 }
@@ -1031,8 +1033,73 @@ async function get(name, itemId) {
   return rows[0] ? cfg.toApi(rows[0]) : null
 }
 
+async function migrateAlumniStudentId() {
+  await pool.query(`ALTER TABLE alumni ADD COLUMN IF NOT EXISTS student_id TEXT NOT NULL DEFAULT ''`)
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_alumni_student ON alumni(student_id)`)
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_alumni_program ON alumni(program)`)
+}
+
+/**
+ * Same student ID + same program:
+ * - Names may duplicate; uniqueness is by Student ID only
+ * - If certificate already issued → re-issue / new finish record not allowed
+ * - If a graduation record already exists → create blocked (edit existing instead)
+ */
+async function assertAlumniCertificateNotReissued(record, { excludeId = null, isCreate = false } = {}) {
+  const studentId = String(record.studentId || record.student_id || '').trim()
+  const program = String(record.program || '').trim()
+  if (!studentId || !program) {
+    if (isCreate && !studentId) {
+      const err = new Error('Student ID is required for graduation records')
+      err.status = 400
+      throw err
+    }
+    return
+  }
+
+  const params = [studentId, program.toLowerCase()]
+  let where = `TRIM(student_id) = $1 AND LOWER(TRIM(program)) = $2`
+  if (excludeId) {
+    params.push(excludeId)
+    where += ` AND id <> $${params.length}`
+  }
+
+  const { rows } = await pool.query(
+    `SELECT id, name, program, student_id, cert
+     FROM alumni
+     WHERE ${where}
+     ORDER BY cert DESC, updated_at DESC NULLS LAST
+     LIMIT 1`,
+    params
+  )
+  if (!rows[0]) return
+
+  const existing = rows[0]
+  const label = `${existing.name} · ${existing.program} (${existing.student_id})`
+
+  if (existing.cert) {
+    const err = new Error(
+      `Certificate already issued for ${label}. Re-issue is not allowed.`
+    )
+    err.status = 409
+    throw err
+  }
+
+  if (isCreate) {
+    const err = new Error(
+      `A graduation record already exists for ${label}. Edit that record instead of creating another.`
+    )
+    err.status = 409
+    throw err
+  }
+}
+
 async function add(name, obj, { upsert = true } = {}) {
   if (name === 'orders') return addOrder(obj)
+
+  if (name === 'alumni') {
+    await assertAlumniCertificateNotReissued(obj, { isCreate: true })
+  }
 
   const cfg = TABLE_CONFIG[name]
   let record = { ...obj }
@@ -1111,6 +1178,11 @@ async function update(name, itemId, obj) {
   if (!existing) return null
 
   const merged = { ...existing, ...obj, id: itemId }
+
+  if (name === 'alumni') {
+    await assertAlumniCertificateNotReissued(merged, { excludeId: itemId, isCreate: false })
+  }
+
   if (name === 'classes' && obj.capacity != null) {
     const current = parseCapacity(existing.capacity)
     const next = parseCapacity(obj.capacity)
@@ -1257,6 +1329,8 @@ async function seedIfEmpty() {
   // Audit column migrations must run before initSchema indexes that reference them
   await migrateAuditLogs()
   await initSchema()
+  // Existing DBs may lack alumni.student_id — add before any query using it
+  await migrateAlumniStudentId()
   await migrateUsersTable()
   await migrateTimestampColumns()
   await migrateStudentProfileColumns()

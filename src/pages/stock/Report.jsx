@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext.jsx'
 import { orderToInvoice } from '../../lib/posInvoice.js'
 import { formatInvNo } from '../../lib/invoiceId.js'
 import { formatDisplayDate, todayIso, toIsoDate } from '../../lib/dateFormat.js'
+import DateField from '../../components/ui/DateField.jsx'
 import PageHeader from '../../components/ui/PageHeader.jsx'
 import StatCard from '../../components/ui/StatCard.jsx'
 import DataTable from '../../components/ui/DataTable.jsx'
@@ -210,24 +211,16 @@ export default function StockReport() {
             initialState: STOCK_FILTER_INITIAL,
             render: (state, setState) => (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="label">POS sales — date from</label>
-                  <input
-                    type="date"
-                    className="input"
-                    value={state.dateFrom}
-                    onChange={(e) => setState((s) => ({ ...s, dateFrom: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <label className="label">POS sales — date to</label>
-                  <input
-                    type="date"
-                    className="input"
-                    value={state.dateTo}
-                    onChange={(e) => setState((s) => ({ ...s, dateTo: e.target.value }))}
-                  />
-                </div>
+                <DateField
+                  label="POS sales — date from"
+                  value={state.dateFrom}
+                  onChange={(dateFrom) => setState((s) => ({ ...s, dateFrom }))}
+                />
+                <DateField
+                  label="POS sales — date to"
+                  value={state.dateTo}
+                  onChange={(dateTo) => setState((s) => ({ ...s, dateTo }))}
+                />
                 <div className="sm:col-span-2">
                   <label className="label">POS sales — payment method</label>
                   <select

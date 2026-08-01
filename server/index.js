@@ -974,11 +974,11 @@ app.post('/api/:col', requireCollectionAccess('write'), async (req, res) => {
     }
     res.status(201).json(created)
   } catch (e) {
-    if (e.code === '23505') {
+    if (e.code === '23505' || e.status === 409) {
       return res.status(409).json({ error: e.message || 'Duplicate ID' })
     }
     console.error(e)
-    res.status(500).json({ error: e.message })
+    res.status(e.status || 500).json({ error: e.message })
   }
 })
 

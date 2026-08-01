@@ -267,6 +267,138 @@ export function buildMonthlySummary(
     .sort((a, b) => b.month.localeCompare(a.month))
 }
 
+/**
+ * Cash-based Profit & Loss for a period.
+ * Revenue = Paid tuition (by purpose) + POS; Expenses = Paid salary + Paid school expenses (by category).
+ * Pending amounts are memo-only and do not affect net profit.
+ */
+export function buildProfitAndLoss(
+  payments = [],
+  orders = [],
+  { dateFrom = '', dateTo = '', salaryPayments = [], expenses = [] } = {}
+) {
+  const purposeMap = new Map()
+  let posAmount = 0
+  let posCount = 0
+  let pendingTuition = 0
+  let salaryPaid = 0
+  let salaryCount = 0
+  let pendingSalary = 0
+  const categoryMap = new Map()
+  let pendingExpenses = 0
+
+  for (const p of payments) {
+    if (!inDateRange(p.date, dateFrom, dateTo)) continue
+    const amount = Number(p.amount) || 0
+    if (p.status === 'Paid') {
+      const label = p.purpose || 'Unspecified'
+      if (!purposeMap.has(label)) purposeMap.set(label, { label, amount: 0, count: 0 })
+      const row = purposeMap.get(label)
+      row.amount = money(row.amount + amount)
+      row.count += 1
+    } else if (p.status === 'Pending') {
+      pendingTuition = money(pendingTuition + amount)
+    }
+  }
+
+  for (const o of orders) {
+    if (!inDateRange(o.date, dateFrom, dateTo)) continue
+    posAmount = money(posAmount + (Number(o.total) || 0))
+    posCount += 1
+  }
+
+  for (const s of salaryPayments) {
+    if (!inDateRange(s.date, dateFrom, dateTo)) continue
+    const amount = Number(s.amount) || 0
+    if (s.status === 'Paid') {
+      salaryPaid = money(salaryPaid + amount)
+      salaryCount += 1
+    } else if (s.status === 'Pending') {
+      pendingSalary = money(pendingSalary + amount)
+    }
+  }
+
+  for (const e of expenses) {
+    if (!inDateRange(e.date, dateFrom, dateTo)) continue
+    const amount = Number(e.amount) || 0
+    if (e.status === 'Paid') {
+      const label = e.category || 'Other Expense'
+      if (!categoryMap.has(label)) categoryMap.set(label, { label, amount: 0, count: 0 })
+      const row = categoryMap.get(label)
+      row.amount = money(row.amount + amount)
+      row.count += 1
+    } else if (e.status === 'Pending') {
+      pendingExpenses = money(pendingExpenses + amount)
+    }
+  }
+
+  const revenueLines = [...purposeMap.values()]
+    .filter((r) => r.amount !== 0 || r.count > 0)
+
+  if (posAmount !== 0 || posCount > 0) {
+    revenueLines.push({ label: 'POS Sales', amount: posAmount, count: posCount })
+  }
+
+  revenueLines.sort((a, b) => b.amount - a.amount)
+
+  const expenseLines = []
+  if (salaryPaid !== 0 || salaryCount > 0) {
+    expenseLines.push({ label: 'Staff & Teacher Salary', amount: salaryPaid, count: salaryCount })
+  }
+  for (const row of [...categoryMap.values()]
+    .filter((r) => r.amount !== 0 || r.count > 0)
+    .sort((a, b) => b.amount - a.amount)) {
+    expenseLines.push(row)
+  }
+
+  const totalRevenue = money(revenueLines.reduce((s, r) => s + r.amount, 0))
+  const totalExpenses = money(expenseLines.reduce((s, r) => s + r.amount, 0))
+  const netProfit = money(totalRevenue - totalExpenses)
+  const marginPct = totalRevenue > 0
+    ? Math.round((netProfit / totalRevenue) * 1000) / 10
+    : 0
+
+  return {
+    revenueLines,
+    expenseLines,
+    totalRevenue,
+    totalExpenses,
+    netProfit,
+    marginPct,
+    memo: {
+      pendingTuition,
+      pendingSalary,
+      pendingExpenses,
+    },
+  }
+}
+
+/** Flatten P&L into exportable rows (section / account / amount / count). */
+export function flattenProfitAndLoss(pl) {
+  if (!pl) return []
+  const rows = []
+  for (const line of pl.revenueLines || []) {
+    rows.push({ section: 'Revenue', account: line.label, amount: line.amount, count: line.count })
+  }
+  rows.push({ section: 'Revenue', account: 'Total Revenue', amount: pl.totalRevenue, count: '' })
+  for (const line of pl.expenseLines || []) {
+    rows.push({ section: 'Expenses', account: line.label, amount: line.amount, count: line.count })
+  }
+  rows.push({ section: 'Expenses', account: 'Total Expenses', amount: pl.totalExpenses, count: '' })
+  rows.push({
+    section: 'Result',
+    account: pl.netProfit >= 0 ? 'Net Profit' : 'Net Loss',
+    amount: pl.netProfit,
+    count: '',
+  })
+  if (pl.memo) {
+    rows.push({ section: 'Memo', account: 'Pending Tuition', amount: pl.memo.pendingTuition, count: '' })
+    rows.push({ section: 'Memo', account: 'Pending Salary', amount: pl.memo.pendingSalary, count: '' })
+    rows.push({ section: 'Memo', account: 'Pending Expenses', amount: pl.memo.pendingExpenses, count: '' })
+  }
+  return rows
+}
+
 /** Student ledger entries (payments only) */
 export function buildStudentLedgers(payments = [], students = [], { dateFrom = '', dateTo = '', studentId = 'all' } = {}) {
   const byStudent = new Map()

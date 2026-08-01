@@ -27,6 +27,7 @@ import CashFlowReport from './pages/finance/CashFlowReport.jsx'
 import PaymentMethodReport from './pages/finance/PaymentMethodReport.jsx'
 import FeePurposeReport from './pages/finance/FeePurposeReport.jsx'
 import MonthlySummary from './pages/finance/MonthlySummary.jsx'
+import ProfitLossReport from './pages/finance/ProfitLossReport.jsx'
 import StudentLedger from './pages/finance/StudentLedger.jsx'
 import SalaryPayroll from './pages/finance/SalaryPayroll.jsx'
 import SchoolExpenses from './pages/finance/SchoolExpenses.jsx'
@@ -60,6 +61,7 @@ export default function App() {
               <Route path="/finance/methods" element={<PaymentMethodReport />} />
               <Route path="/finance/purpose" element={<FeePurposeReport />} />
               <Route path="/finance/monthly" element={<MonthlySummary />} />
+              <Route path="/finance/profit-loss" element={<ProfitLossReport />} />
               <Route path="/finance/student-ledger" element={<StudentLedger />} />
               <Route path="/finance/salary" element={<SalaryPayroll />} />
               <Route path="/finance/expenses" element={<SchoolExpenses />} />

@@ -403,24 +403,16 @@ export default function StudentPayment() {
                       ))}
                     </select>
                   </div>
-                  <div>
-                    <label className="label">Date from</label>
-                    <input
-                      type="date"
-                      className="input"
-                      value={state.dateFrom}
-                      onChange={(e) => setState((s) => ({ ...s, dateFrom: e.target.value }))}
-                    />
-                  </div>
-                  <div>
-                    <label className="label">Date to</label>
-                    <input
-                      type="date"
-                      className="input"
-                      value={state.dateTo}
-                      onChange={(e) => setState((s) => ({ ...s, dateTo: e.target.value }))}
-                    />
-                  </div>
+                  <DateField
+                    label="Date from"
+                    value={state.dateFrom}
+                    onChange={(dateFrom) => setState((s) => ({ ...s, dateFrom }))}
+                  />
+                  <DateField
+                    label="Date to"
+                    value={state.dateTo}
+                    onChange={(dateTo) => setState((s) => ({ ...s, dateTo }))}
+                  />
                 </div>
               ),
             }}

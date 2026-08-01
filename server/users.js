@@ -88,7 +88,7 @@ export async function listUsers({ roles } = {}) {
     return rows.map(toApi)
   }
   const { rows } = await pool.query(
-    'SELECT * FROM users ORDER BY created_at ASC'
+    'SELECT * FROM users ORDER BY created_at DESC'
   )
   return rows.map(toApi)
 }

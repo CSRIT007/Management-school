@@ -313,6 +313,7 @@ export default function FinanceOverview() {
             { to: '/finance/methods', label: 'Payment Methods', desc: 'Cash, Card, QR totals' },
             { to: '/finance/purpose', label: 'Fee Purpose', desc: 'Tuition vs other fees' },
             { to: '/finance/monthly', label: 'Monthly Summary', desc: 'Revenue, salary, expenses by month' },
+            { to: '/finance/profit-loss', label: 'Profit & Loss', desc: 'Cash-based P&L statement for a period' },
             { to: '/finance/student-ledger', label: 'Student Ledger', desc: 'Balance per student' },
             { to: '/finance/salary', label: 'Staff & Teacher Salary', desc: 'Pay roster and salary payouts' },
             { to: '/finance/expenses', label: 'School Expenses', desc: 'Rental, utility, commission, and more' },
