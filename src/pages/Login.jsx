@@ -53,13 +53,13 @@ export default function Login() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-slate-100 px-4 dark:bg-slate-950">
+    <div className="relative flex min-h-[100dvh] items-center justify-center bg-slate-100 px-4 safe-pt safe-pb dark:bg-slate-950">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-indigo-400/20 blur-3xl dark:bg-indigo-600/10" />
         <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-violet-400/20 blur-3xl dark:bg-violet-600/10" />
       </div>
 
-      <div className="absolute right-6 top-6 flex items-center gap-2">
+      <div className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top,0px))] flex items-center gap-2 sm:right-6 sm:top-6">
         <LanguageSwitcher />
         <button
           onClick={toggleTheme}
@@ -90,7 +90,7 @@ export default function Login() {
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{t('login.subtitle')}</p>
         </div>
 
-        <form onSubmit={submit} className="panel p-8 shadow-xl shadow-slate-200/50 dark:shadow-none">
+        <form onSubmit={submit} className="panel p-5 shadow-xl shadow-slate-200/50 sm:p-8 dark:shadow-none">
           {idleNotice && (
             <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-300">
               {t('login.idleNotice')}

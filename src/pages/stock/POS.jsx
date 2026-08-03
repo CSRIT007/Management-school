@@ -169,7 +169,7 @@ export default function POS() {
         </div>
 
         <div className="space-y-4">
-          <div className="panel p-5">
+          <div className="panel p-4 sm:p-5">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="font-bold text-slate-900 dark:text-slate-100">Shopping Cart</h3>
               <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-semibold text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400">{cart.length} items</span>
@@ -222,7 +222,7 @@ export default function POS() {
             </div>
           </div>
 
-          <div className="panel p-5">
+          <div className="panel p-4 sm:p-5">
             <h3 className="mb-4 font-bold text-slate-900 dark:text-slate-100">Checkout</h3>
             <div className="space-y-3">
               <div>

@@ -399,7 +399,7 @@ export default function PeopleDirectory({
 
       <form
         onSubmit={submit}
-        className="panel p-6"
+        className="panel p-4 sm:p-6"
         onKeyDown={(e) => {
           if (e.key === 'Enter' && step < FORM_STEPS.length - 1) {
             e.preventDefault()

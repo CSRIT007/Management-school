@@ -124,7 +124,7 @@ export default function StudentBook() {
 
       <FormAlert message={message} error={error} />
 
-      <form onSubmit={submit} className="panel p-6">
+      <form onSubmit={submit} className="panel p-4 sm:p-6">
         <h3 className="mb-4 text-base font-bold text-slate-900 dark:text-slate-100">
           {editingId ? 'Edit Book Issue' : 'Issue Book'}
         </h3>

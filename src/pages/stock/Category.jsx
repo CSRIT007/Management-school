@@ -92,7 +92,7 @@ export default function CategoryManagement() {
       <FormAlert message={message} error={error} />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <form onSubmit={submit} className="panel p-6 lg:col-span-1">
+        <form onSubmit={submit} className="panel p-4 sm:p-6 lg:col-span-1">
           <h3 className="mb-5 text-base font-bold text-slate-900 dark:text-slate-100">
             {editingId ? `Edit Category` : 'Add New Category'}
           </h3>

@@ -139,7 +139,7 @@ export default function PendingPayments() {
         <StatCard label="Amount Due" value={loading ? '…' : money(totalPending)} accent="rose" />
       </div>
 
-      <div className="panel p-5">
+      <div className="panel p-4 sm:p-5">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
           <div>
             <label className="label">{t('common.method')}</label>

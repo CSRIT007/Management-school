@@ -358,7 +358,7 @@ export default function StudentRegister() {
 
       <form
         onSubmit={submit}
-        className="panel p-6"
+        className="panel p-4 sm:p-6"
         onKeyDown={(e) => {
           if (e.key === 'Enter' && step === 0) {
             e.preventDefault()

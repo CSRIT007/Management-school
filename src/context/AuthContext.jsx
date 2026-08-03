@@ -1,5 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { get, post, getToken, setToken } from '../lib/api.js'
+import { useLanguage } from './LanguageContext.jsx'
+import { LANGS } from '../i18n/index.js'
 
 const AUTH_KEY = 'management_auth'
 export const LOGOUT_REASON_KEY = 'logout_reason'
@@ -24,6 +26,7 @@ function saveSession(user) {
 }
 
 export function AuthProvider({ children }) {
+  const { setLang } = useLanguage()
   const [user, setUser] = useState(() => readSession())
   const [loading, setLoading] = useState(true)
 
@@ -49,6 +52,7 @@ export function AuthProvider({ children }) {
       } catch {
         setToken('')
         saveSession(null)
+        setLang(LANGS.EN)
         if (active) setUser(null)
       } finally {
         if (active) setLoading(false)
@@ -56,7 +60,7 @@ export function AuthProvider({ children }) {
     })()
 
     return () => { active = false }
-  }, [])
+  }, [setLang])
 
   const login = async (email, password) => {
     const result = await post('/api/auth/login', { email, password })
@@ -73,7 +77,9 @@ export function AuthProvider({ children }) {
     setToken('')
     saveSession(null)
     setUser(null)
-  }, [])
+    // After logout, login screen and next session start in English.
+    setLang(LANGS.EN)
+  }, [setLang])
 
   useEffect(() => {
     if (!user) return undefined

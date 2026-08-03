@@ -252,7 +252,7 @@ export default function SchoolExpenses() {
         />
       </div>
 
-      <div className="panel grid grid-cols-1 gap-4 p-5 md:grid-cols-2 lg:grid-cols-5">
+      <div className="panel grid grid-cols-1 gap-4 p-4 sm:p-5 md:grid-cols-2 lg:grid-cols-5">
         <div>
           <label className="label">{t('common.category')}</label>
           <select
@@ -292,7 +292,7 @@ export default function SchoolExpenses() {
       </div>
 
       {canEdit && (
-        <form onSubmit={submit} className="panel p-6">
+        <form onSubmit={submit} className="panel p-4 sm:p-6">
           <h3 className="mb-4 text-base font-bold text-slate-900 dark:text-slate-100">
             {editingId ? `Edit expense — ${editingId}` : 'Record expense'}
           </h3>

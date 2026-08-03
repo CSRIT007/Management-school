@@ -252,7 +252,7 @@ export default function ClassAttendance() {
         <StatCard label={t('common.excused')} value={sheetLoading ? '…' : counts.Excused} accent="indigo" />
       </div>
 
-      <div className="panel grid grid-cols-1 gap-4 p-5 md:grid-cols-3">
+      <div className="panel grid grid-cols-1 gap-4 p-4 sm:p-5 md:grid-cols-3">
         <div>
           <label className="label">Class</label>
           <select

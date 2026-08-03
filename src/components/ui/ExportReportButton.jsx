@@ -75,7 +75,7 @@ export default function ExportReportButton({
           onClick={() => setOpen(false)}
         >
           <div
-            className="panel max-h-[90vh] w-full max-w-lg overflow-y-auto p-6 shadow-2xl"
+            className="panel max-h-[90vh] w-full max-w-lg overflow-y-auto p-4 sm:p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-5">

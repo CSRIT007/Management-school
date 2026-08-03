@@ -17,7 +17,7 @@ export default function LanguageSwitcher({ className = '' }) {
         type="button"
         onClick={() => setLang(LANGS.EN)}
         className={[
-          'rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors',
+          'rounded-lg px-2 py-1 text-[11px] font-semibold transition-colors sm:px-2.5 sm:py-1.5 sm:text-xs',
           lang === LANGS.EN
             ? 'bg-indigo-600 text-white shadow-sm'
             : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100',
@@ -29,7 +29,7 @@ export default function LanguageSwitcher({ className = '' }) {
         type="button"
         onClick={() => setLang(LANGS.KM)}
         className={[
-          'rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors',
+          'rounded-lg px-2 py-1 text-[11px] font-semibold transition-colors sm:px-2.5 sm:py-1.5 sm:text-xs',
           lang === LANGS.KM
             ? 'bg-indigo-600 text-white shadow-sm'
             : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100',

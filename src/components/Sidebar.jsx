@@ -102,11 +102,12 @@ function pathMatches(pathname, to) {
   return pathname === to || pathname.startsWith(`${to}/`)
 }
 
-function NavItem({ to, label, icon, collapsed, nested = false }) {
+function NavItem({ to, label, icon, compact, nested = false, onNavigate }) {
   return (
     <NavLink
       to={to}
       end={to === '/'}
+      onClick={() => onNavigate?.()}
       className={({ isActive }) =>
         [
           'group flex items-center gap-3 rounded-xl text-sm font-medium transition-all duration-200',
@@ -116,13 +117,13 @@ function NavItem({ to, label, icon, collapsed, nested = false }) {
             : nested
               ? 'text-slate-400 hover:bg-slate-800/80 hover:text-white'
               : 'text-slate-300 hover:bg-slate-800 hover:text-white',
-          collapsed ? 'justify-center px-2' : '',
+          compact ? 'justify-center px-2' : '',
         ].join(' ')
       }
-      title={collapsed ? label : undefined}
+      title={compact ? label : undefined}
     >
       <Icon name={icon} />
-      {!collapsed && <span className="truncate">{label}</span>}
+      {!compact && <span className="truncate">{label}</span>}
     </NavLink>
   )
 }
@@ -132,25 +133,25 @@ function SectionButton({
   icon,
   open,
   active,
-  collapsed,
+  compact,
   onToggle,
 }) {
   return (
     <button
       type="button"
       onClick={onToggle}
-      title={collapsed ? section : undefined}
+      title={compact ? section : undefined}
       className={[
         'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-200',
         active || open
           ? 'bg-slate-800 text-white'
           : 'text-slate-300 hover:bg-slate-800/70 hover:text-white',
-        collapsed ? 'justify-center px-2' : '',
+        compact ? 'justify-center px-2' : '',
       ].join(' ')}
       aria-expanded={open}
     >
       <Icon name={icon || 'box'} />
-      {!collapsed && (
+      {!compact && (
         <>
           <span className="min-w-0 flex-1 truncate text-left">{section}</span>
           <span
@@ -167,11 +168,14 @@ function SectionButton({
   )
 }
 
-export default function Sidebar({ collapsed }) {
+export default function Sidebar({ collapsed = false, mobileOpen = false, onCloseMobile }) {
   const location = useLocation()
   const { role } = useAuth()
   const { t } = useLanguage()
   const visibleNav = useMemo(() => getNavItemsForRole(role), [role])
+
+  // Icon-only rail on desktop only; mobile drawer always shows labels.
+  const compact = Boolean(collapsed && !mobileOpen)
 
   const sectionLabel = (section) => t(SECTION_LABEL_KEYS[section] || section)
   const itemLabel = (item) => t(NAV_LABEL_KEYS[item.to] || item.label)
@@ -200,7 +204,6 @@ export default function Sidebar({ collapsed }) {
   const toggleSection = (section) => {
     setOpenSection((prev) => {
       if (prev === section) {
-        // Keep the section that owns the current page open.
         if (activeSection === section) return section
         return null
       }
@@ -211,26 +214,44 @@ export default function Sidebar({ collapsed }) {
   return (
     <aside
       className={[
-        'fixed left-0 top-0 z-30 flex h-screen flex-col bg-slate-900 transition-all duration-300',
-        collapsed ? 'w-[72px]' : 'w-64',
+        'fixed left-0 top-0 z-40 flex h-[100dvh] flex-col bg-slate-900 shadow-2xl transition-transform duration-300 ease-out',
+        'w-[min(18rem,85vw)] safe-pt',
+        'pb-[env(safe-area-inset-bottom,0px)]',
+        mobileOpen ? 'translate-x-0' : '-translate-x-full',
+        'lg:translate-x-0 lg:shadow-none',
+        compact ? 'lg:w-[72px]' : 'lg:w-64',
       ].join(' ')}
+      aria-modal={mobileOpen ? true : undefined}
+      role={mobileOpen ? 'dialog' : undefined}
     >
-      <div className={['flex h-16 items-center border-b border-slate-800', collapsed ? 'justify-center px-2' : 'gap-3 px-5'].join(' ')}>
+      <div className={['flex h-14 items-center border-b border-slate-800 sm:h-16', compact ? 'justify-center px-2' : 'gap-3 px-5'].join(' ')}>
         <img
           src="/school-logo.png?v=3"
           alt="Smile International School"
           className="h-10 w-10 shrink-0 object-contain"
           draggable={false}
         />
-        {!collapsed && (
-          <div className="min-w-0">
+        {!compact && (
+          <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-bold text-white">Smile International</div>
             <div className="text-[10px] font-medium uppercase tracking-widest text-slate-500">School</div>
           </div>
         )}
+        {!compact && (
+          <button
+            type="button"
+            onClick={() => onCloseMobile?.()}
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white lg:hidden"
+            aria-label="Close menu"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
+              <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+            </svg>
+          </button>
+        )}
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+      <nav className="flex-1 space-y-1 overflow-y-auto overscroll-contain px-3 py-4">
         {visibleNav.map((group) => {
           const isSingle = group.items.length === 1 && group.items[0].to === '/'
           const isOpen = openSection === group.section
@@ -244,7 +265,8 @@ export default function Sidebar({ collapsed }) {
                 to={item.to}
                 label={sectionLabel(group.section)}
                 icon={group.icon || item.icon}
-                collapsed={collapsed}
+                compact={compact}
+                onNavigate={onCloseMobile}
               />
             )
           }
@@ -256,14 +278,14 @@ export default function Sidebar({ collapsed }) {
                 icon={group.icon}
                 open={isOpen}
                 active={isActive}
-                collapsed={collapsed}
+                compact={compact}
                 onToggle={() => toggleSection(group.section)}
               />
               {isOpen && (
                 <div
                   className={[
                     'space-y-0.5',
-                    collapsed ? '' : 'ml-2 border-l border-slate-800 pl-2',
+                    compact ? '' : 'ml-2 border-l border-slate-800 pl-2',
                   ].join(' ')}
                 >
                   {group.items.map((item) => (
@@ -272,8 +294,9 @@ export default function Sidebar({ collapsed }) {
                       to={item.to}
                       label={itemLabel(item)}
                       icon={item.icon}
-                      collapsed={collapsed}
+                      compact={compact}
                       nested
+                      onNavigate={onCloseMobile}
                     />
                   ))}
                 </div>
@@ -283,7 +306,7 @@ export default function Sidebar({ collapsed }) {
         })}
       </nav>
 
-      {!collapsed && (
+      {!compact && (
         <div className="border-t border-slate-800 p-4">
           <div className="rounded-xl bg-slate-800/50 p-3">
             <div className="text-xs text-slate-500">{t('nav.currentPage')}</div>
@@ -301,3 +324,4 @@ export default function Sidebar({ collapsed }) {
     </aside>
   )
 }
+

@@ -223,8 +223,19 @@ export default function GlobalSearch() {
   const inputRef = useRef(null)
   const cacheRef = useRef(null)
   const navigate = useNavigate()
+  const [wideSearch, setWideSearch] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(min-width: 640px)').matches
+  )
 
   const pages = useMemo(() => buildPageCatalog(role, t), [role, t])
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 640px)')
+    const sync = () => setWideSearch(mq.matches)
+    sync()
+    mq.addEventListener('change', sync)
+    return () => mq.removeEventListener('change', sync)
+  }, [])
 
   useEffect(() => {
     const q = query.trim()
@@ -323,9 +334,9 @@ export default function GlobalSearch() {
   const shortcutLabel = isMac ? '⌘K' : 'Ctrl K'
 
   return (
-    <div ref={wrapRef} className="relative w-44 sm:w-56 lg:w-72">
+    <div ref={wrapRef} className="relative w-24 sm:w-52 lg:w-72">
       <div className="relative">
-        <span className="pointer-events-none absolute inset-y-0 left-0 z-10 flex w-10 items-center justify-center text-slate-400">
+        <span className="pointer-events-none absolute inset-y-0 left-0 z-10 flex w-9 items-center justify-center text-slate-400 sm:w-10">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
             <path fillRule="evenodd" d="M10.5 3.75a6.75 6.75 0 015.132 11.205l4.206 4.207-1.061 1.06-4.206-4.206A6.75 6.75 0 1110.5 3.75zm0 1.5a5.25 5.25 0 100 10.5 5.25 5.25 0 000-10.5z" clipRule="evenodd" />
           </svg>
@@ -339,8 +350,8 @@ export default function GlobalSearch() {
             setOpen(true)
           }}
           onFocus={() => setOpen(true)}
-          placeholder={t('search.placeholder')}
-          className={`input w-full py-2 !pl-10 ${query ? '!pr-9' : '!pr-[3.25rem]'}`}
+          placeholder={wideSearch ? t('search.placeholder') : t('search.placeholderShort')}
+          className={`input w-full py-2 !pl-9 sm:!pl-10 ${query ? '!pr-9' : '!pr-2 sm:!pr-[3.25rem]'}`}
           aria-label={t('search.aria')}
           title={t('search.aria')}
           autoComplete="off"
@@ -371,7 +382,7 @@ export default function GlobalSearch() {
       </div>
 
       {showPanel && (
-        <div className="absolute right-0 z-50 mt-2 w-full min-w-[20rem] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900">
+        <div className="absolute right-0 z-50 mt-2 w-[min(100vw-1.5rem,24rem)] min-w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900">
           {loading && results.length === 0 && (
             <div className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">{t('search.searching')}</div>
           )}

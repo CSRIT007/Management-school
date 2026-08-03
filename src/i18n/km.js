@@ -125,6 +125,7 @@ export default {
   'login.darkMode': 'របៀបងងឹត',
 
   'search.placeholder': 'ស្វែងរកទំព័រ សិស្ស…',
+  'search.placeholderShort': 'ស្វែងរក…',
   'search.pages': 'ទំព័រ',
   'search.students': 'សិស្ស',
   'search.products': 'ផលិតផល',

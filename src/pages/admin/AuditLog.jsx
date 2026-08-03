@@ -216,7 +216,7 @@ export default function AuditLog() {
 
       <FormAlert message={error} error />
 
-      <form onSubmit={applyFilters} className="panel grid grid-cols-1 gap-4 p-5 md:grid-cols-2 lg:grid-cols-6">
+      <form onSubmit={applyFilters} className="panel grid grid-cols-1 gap-4 p-4 sm:p-5 md:grid-cols-2 lg:grid-cols-6">
         <div className="lg:col-span-2">
           <label className="label">{t('common.search')}</label>
           <input

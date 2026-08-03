@@ -432,7 +432,7 @@ function SalesChart({ data, loading, t }) {
   const maxVal = Math.max(...data.map((d) => d.total || 0), 1)
 
   return (
-    <div className="panel p-6">
+    <div className="panel p-4 sm:p-6">
       <div className="mb-5">
         <h3 className="font-bold text-slate-900 dark:text-slate-100">Sales Over Time</h3>
         <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Daily revenue from POS orders (last 7 days)</p>
@@ -471,7 +471,7 @@ function TopProductsCard({ data, loading, t }) {
   const maxQty = Math.max(...data.map((d) => d.qty || 0), 1)
 
   return (
-    <div className="panel p-6">
+    <div className="panel p-4 sm:p-6">
       <div className="mb-5">
         <h3 className="font-bold text-slate-900 dark:text-slate-100">Top Selling Products</h3>
         <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Most sold items from POS checkout</p>

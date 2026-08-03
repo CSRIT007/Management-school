@@ -153,7 +153,7 @@ export default function ProductManagement() {
 
       <FormAlert message={message} error={error} />
 
-      <form onSubmit={submit} className="panel p-6">
+      <form onSubmit={submit} className="panel p-4 sm:p-6">
         <h3 className="mb-5 text-base font-bold text-slate-900 dark:text-slate-100">
           {editingId ? `Edit Product — ${editingId}` : 'Add New Product'}
         </h3>

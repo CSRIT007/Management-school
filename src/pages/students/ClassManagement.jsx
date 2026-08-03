@@ -36,7 +36,7 @@ function ScheduleConflictModal({ conflicts, onClose }) {
       aria-labelledby="schedule-conflict-title"
     >
       <div
-        className="panel w-full max-w-lg p-6 shadow-2xl"
+        className="panel w-full max-w-lg p-4 sm:p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 id="schedule-conflict-title" className="text-lg font-bold text-rose-700 dark:text-rose-400">
@@ -76,7 +76,7 @@ function DuplicateStudentModal({ info, onClose }) {
       aria-modal="true"
       aria-labelledby="duplicate-student-title"
     >
-      <div className="panel w-full max-w-md p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="panel w-full max-w-md p-4 sm:p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <h3 id="duplicate-student-title" className="text-lg font-bold text-rose-700 dark:text-rose-400">
           Student already in class
         </h3>
@@ -108,7 +108,7 @@ function StudentScheduleConflictModal({ conflicts, onClose }) {
       aria-modal="true"
       aria-labelledby="student-schedule-conflict-title"
     >
-      <div className="panel w-full max-w-lg p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="panel w-full max-w-lg p-4 sm:p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <h3 id="student-schedule-conflict-title" className="text-lg font-bold text-rose-700 dark:text-rose-400">
           Student double time
         </h3>
@@ -144,7 +144,7 @@ function ClassDetailModal({ detail, students, isFull, busy, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-900/50 dark:bg-black/60 p-4 backdrop-blur-sm" onClick={onClose}>
-      <div className="panel max-h-[90vh] w-full max-w-2xl overflow-y-auto p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="panel max-h-[90vh] w-full max-w-2xl overflow-y-auto p-4 sm:p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-5 flex items-start justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-indigo-600">Class Detail (view only)</p>
@@ -596,7 +596,7 @@ export default function ClassManagement() {
       <FormAlert message={message} error={error} />
 
       {canManage && (
-        <form onSubmit={submit} className="panel p-6">
+        <form onSubmit={submit} className="panel p-4 sm:p-6">
           <h3 className="mb-4 text-base font-bold text-slate-900 dark:text-slate-100">
             {editingId ? `Edit Class — ${editingId}` : 'Add New Class'}
           </h3>
@@ -734,7 +734,7 @@ export default function ClassManagement() {
       )}
 
       {!canManage && rows.length === 0 && (
-        <div className="panel p-6 text-sm text-slate-500">
+        <div className="panel p-4 sm:p-6 text-sm text-slate-500">
           No classes are assigned to your account yet. Ask an Admin or School Admin to assign you in Class Management.
         </div>
       )}

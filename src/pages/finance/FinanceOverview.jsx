@@ -130,7 +130,7 @@ export default function FinanceOverview() {
         subtitle={t('finance.overview.subtitle')}
       />
 
-      <div className="panel flex flex-col gap-4 p-5 sm:flex-row sm:items-end sm:justify-between">
+      <div className="panel flex flex-col gap-4 p-4 sm:p-5 sm:flex-row sm:items-end sm:justify-between">
         <div className="grid flex-1 grid-cols-1 gap-4 sm:grid-cols-2">
           <DateField label={t('common.from')} value={dateFrom} onChange={setDateFrom} />
           <DateField label={t('common.to')} value={dateTo} onChange={setDateTo} />
@@ -180,29 +180,29 @@ export default function FinanceOverview() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <div className="panel p-5">
+        <div className="panel p-4 sm:p-5">
           <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Today · Tuition</p>
           <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">{loading ? '…' : money(data.tuitionToday)}</p>
         </div>
-        <div className="panel p-5">
+        <div className="panel p-4 sm:p-5">
           <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Today · POS</p>
           <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">{loading ? '…' : money(data.posToday)}</p>
         </div>
-        <div className="panel p-5">
+        <div className="panel p-4 sm:p-5">
           <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Today · Salary</p>
           <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">{loading ? '…' : money(data.salaryToday)}</p>
           <Link to="/finance/salary" className="mt-2 inline-block text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">
             View salary →
           </Link>
         </div>
-        <div className="panel p-5">
+        <div className="panel p-4 sm:p-5">
           <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Today · Expenses</p>
           <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">{loading ? '…' : money(data.expensesToday)}</p>
           <Link to="/finance/expenses" className="mt-2 inline-block text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">
             View expenses →
           </Link>
         </div>
-        <div className="panel p-5">
+        <div className="panel p-4 sm:p-5">
           <p className="text-xs font-medium uppercase tracking-wider text-slate-500">Pending Invoices</p>
           <p className="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">{loading ? '…' : data.pendingCount}</p>
           <Link to="/finance/pending" className="mt-2 inline-block text-sm font-medium text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">

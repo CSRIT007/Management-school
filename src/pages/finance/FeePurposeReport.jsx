@@ -65,7 +65,7 @@ export default function FeePurposeReport() {
         <StatCard label={t('common.pending')} value={loading ? '…' : formatMoney(pending)} accent="amber" />
       </div>
 
-      <div className="panel grid grid-cols-1 gap-4 p-5 md:grid-cols-3">
+      <div className="panel grid grid-cols-1 gap-4 p-4 sm:p-5 md:grid-cols-3">
         <div>
           <label className="label">{t('common.status')}</label>
           <select className="input" value={status} onChange={(e) => setStatus(e.target.value)}>

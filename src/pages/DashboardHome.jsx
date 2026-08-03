@@ -76,14 +76,14 @@ export default function DashboardHome() {
   const display = (n) => (loading ? '…' : Number(n).toLocaleString())
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5 sm:space-y-8">
       {/* Hero */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 p-8 text-white shadow-xl shadow-indigo-600/20">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 p-5 text-white shadow-xl shadow-indigo-600/20 sm:rounded-3xl sm:p-8">
         <div className="absolute -right-8 -top-8 h-48 w-48 rounded-full bg-white/10 blur-2xl" />
         <div className="relative">
           <p className="text-sm font-semibold text-indigo-200">{t('dashboard.welcome')}</p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight">{t('dashboard.title')}</h1>
-          <p className="mt-2 max-w-lg text-base text-indigo-100/80">
+          <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">{t('dashboard.title')}</h1>
+          <p className="mt-2 max-w-lg text-sm text-indigo-100/80 sm:text-base">
             {t('dashboard.subtitle')}
           </p>
         </div>
@@ -147,7 +147,7 @@ export default function DashboardHome() {
             <Link
               key={item.to}
               to={item.to}
-              className="group panel flex items-start gap-4 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
+              className="group panel flex items-start gap-3 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md sm:gap-4 sm:p-5"
             >
               <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${item.color} text-white shadow-lg transition-transform group-hover:scale-105`}>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5">

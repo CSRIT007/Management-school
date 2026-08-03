@@ -20,7 +20,7 @@ function LogoutConfirmModal({ open, userName, onCancel, onConfirm, t }) {
       aria-labelledby="logout-confirm-title"
     >
       <div
-        className="panel w-full max-w-md p-6 shadow-2xl"
+        className="panel w-full max-w-md p-5 sm:p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start gap-3">
@@ -56,7 +56,7 @@ function LogoutConfirmModal({ open, userName, onCancel, onConfirm, t }) {
   )
 }
 
-export default function Header({ onToggleSidebar, collapsed }) {
+export default function Header({ onToggleSidebar, collapsed, mobileOpen = false }) {
   const { isDark, toggleTheme } = useTheme()
   const { user, logout } = useAuth()
   const { t } = useLanguage()
@@ -78,33 +78,34 @@ export default function Header({ onToggleSidebar, collapsed }) {
 
   return (
     <>
-      <header className="sticky top-0 z-20 h-16 border-b border-slate-200/80 bg-white/80 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/80">
-        <div className="flex h-full items-center gap-4 px-6 lg:px-8">
+      <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/80 backdrop-blur-xl safe-pt dark:border-slate-800 dark:bg-slate-900/80">
+        <div className="flex h-14 items-center gap-1.5 px-2.5 sm:h-16 sm:gap-3 sm:px-6 lg:px-8">
           <button
             onClick={onToggleSidebar}
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
             aria-label={t('header.toggleSidebar')}
+            aria-expanded={mobileOpen || !collapsed}
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
               <path fillRule="evenodd" d="M3 6.75A.75.75 0 013.75 6h16.5a.75.75 0 010 1.5H3.75A.75.75 0 013 6.75zM3 12a.75.75 0 01.75-.75h16.5a.75.75 0 010 1.5H3.75A.75.75 0 013 12zm0 5.25a.75.75 0 01.75-.75h16.5a.75.75 0 010 1.5H3.75a.75.75 0 01-.75-.75z" clipRule="evenodd" />
             </svg>
           </button>
 
-          <div className="hidden sm:block">
-            <div className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t('header.appTitle')}</div>
-            <div className="text-xs text-slate-400 dark:text-slate-500">{t('header.appSubtitle')}</div>
+          <div className="hidden min-w-0 md:block">
+            <div className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{t('header.appTitle')}</div>
+            <div className="truncate text-xs text-slate-400 dark:text-slate-500">{t('header.appSubtitle')}</div>
           </div>
 
-          <div className="flex-1" />
+          <div className="min-w-0 flex-1" />
 
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-1 sm:gap-2.5">
             <GlobalSearch />
 
             <LanguageSwitcher />
 
             <button
               onClick={toggleTheme}
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-amber-400"
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-amber-400"
               title={isDark ? t('header.lightMode') : t('header.darkMode')}
               aria-label={isDark ? t('header.lightMode') : t('header.darkMode')}
             >
@@ -119,33 +120,38 @@ export default function Header({ onToggleSidebar, collapsed }) {
               )}
             </button>
 
-            <button className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100" title={t('header.notifications')}>
+            <button
+              type="button"
+              className="relative hidden h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 sm:flex dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
+              title={t('header.notifications')}
+            >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
                 <path fillRule="evenodd" d="M5.25 9a6.75 6.75 0 0113.5 0v.75c0 2.123.8 4.017 2.085 5.455a.75.75 0 01-.297 1.206h-9.168a.75.75 0 01-.297-1.206A6.749 6.749 0 0112 9.75v-.75zm-2.25 0v.75a8.25 8.25 0 0016.5 0v-.75a.75.75 0 011.5 0v.75a9.75 9.75 0 01-8.985 9.75 9.75 9.75 0 01-8.985-9.75v-.75a.75.75 0 011.5 0zm9.75 4.5a.75.75 0 00-1.5 0v2.25a.75.75 0 001.5 0v-2.25z" clipRule="evenodd" />
               </svg>
               <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900" />
             </button>
 
-            <div className="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white py-1.5 pl-1.5 pr-3 dark:border-slate-700 dark:bg-slate-800">
+            <div className="hidden items-center gap-2 rounded-xl border border-slate-200 bg-white py-1 pl-1 pr-1 sm:flex sm:pr-3 dark:border-slate-700 dark:bg-slate-800">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-xs font-bold text-white">
                 {initials}
               </div>
-              {!collapsed && (
-                <div className="hidden lg:block">
-                  <div className="text-xs font-semibold text-slate-800 dark:text-slate-100">{user?.name || t('common.user')}</div>
-                  <div className="text-[10px] text-slate-400">
-                    {roleLabel} · {user?.email || ''}
-                  </div>
+              <div className="hidden min-w-0 lg:block">
+                <div className="truncate text-xs font-semibold text-slate-800 dark:text-slate-100">{user?.name || t('common.user')}</div>
+                <div className="truncate text-[10px] text-slate-400">
+                  {roleLabel} · {user?.email || ''}
                 </div>
-              )}
+              </div>
             </div>
 
             <button
               onClick={requestLogout}
-              className="hidden sm:flex h-9 items-center rounded-xl border border-slate-200 px-3 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-rose-600 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-rose-400"
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-600 transition-colors hover:bg-slate-50 hover:text-rose-600 sm:h-9 sm:w-auto sm:px-3 sm:text-xs sm:font-medium dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-rose-400"
               title={t('header.logout')}
             >
-              {t('header.logout')}
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5 sm:hidden">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+              </svg>
+              <span className="hidden sm:inline">{t('header.logout')}</span>
             </button>
           </div>
         </div>

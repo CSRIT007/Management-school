@@ -68,7 +68,7 @@ export default function PaymentMethodReport() {
         <StatCard label={t('common.total')} value={loading ? '…' : formatMoney(grandTotal)} accent="emerald" />
       </div>
 
-      <div className="panel grid grid-cols-1 gap-4 p-5 md:grid-cols-3">
+      <div className="panel grid grid-cols-1 gap-4 p-4 sm:p-5 md:grid-cols-3">
         <div>
           <label className="label">Tuition Status</label>
           <select className="input" value={status} onChange={(e) => setStatus(e.target.value)}>

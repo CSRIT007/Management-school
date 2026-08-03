@@ -105,7 +105,7 @@ export default function TuitionReport() {
         <StatCard label={t('common.pending')} value={loading ? '…' : money(pending)} accent="amber" />
       </div>
 
-      <div className="panel p-5">
+      <div className="panel p-4 sm:p-5">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-5">
           <div>
             <label className="label">{t('common.status')}</label>

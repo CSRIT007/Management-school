@@ -127,7 +127,7 @@ export default function ProfitLossReport() {
         />
       </div>
 
-      <div className="panel grid grid-cols-1 gap-4 p-5 md:grid-cols-2">
+      <div className="panel grid grid-cols-1 gap-4 p-4 sm:p-5 md:grid-cols-2">
         <DateField label={t('common.from')} value={dateFrom} onChange={setDateFrom} />
         <DateField label={t('common.to')} value={dateTo} onChange={setDateTo} />
       </div>

@@ -132,6 +132,7 @@ export default {
 
   // Search
   'search.placeholder': 'Search pages, students…',
+  'search.placeholderShort': 'Search…',
   'search.pages': 'Pages',
   'search.students': 'Students',
   'search.products': 'Products',
