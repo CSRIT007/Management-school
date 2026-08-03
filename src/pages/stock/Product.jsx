@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { get, post, put, del } from '../../lib/api.js'
+import { useLanguage } from '../../context/LanguageContext.jsx'
 import PageHeader from '../../components/ui/PageHeader.jsx'
 import Button from '../../components/ui/Button.jsx'
 import DataTable from '../../components/ui/DataTable.jsx'
@@ -19,6 +20,7 @@ function nextProductId(products) {
 }
 
 export default function ProductManagement() {
+  const { t } = useLanguage()
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState([])
   const [form, setForm] = useState(emptyForm)
@@ -116,10 +118,10 @@ export default function ProductManagement() {
     }
   }
 
-  const columns = [
+  const columns = useMemo(() => [
     { key: 'id', label: 'ID', className: 'font-semibold text-slate-900 dark:text-slate-100' },
-    { key: 'name', label: 'Name' },
-    { key: 'category', label: 'Category' },
+    { key: 'name', label: t('common.name') },
+    { key: 'category', label: t('common.category') },
     { key: 'sku', label: 'SKU' },
     {
       key: 'stock',
@@ -135,18 +137,18 @@ export default function ProductManagement() {
       className: 'text-right',
       render: (row) => (
         <div className="flex justify-end gap-2">
-          <Button size="sm" variant="secondary" onClick={() => startEdit(row)}>Edit</Button>
-          <Button size="sm" variant="danger" onClick={() => remove(row.id)}>Delete</Button>
+          <Button size="sm" variant="secondary" onClick={() => startEdit(row)}>{t('common.edit')}</Button>
+          <Button size="sm" variant="danger" onClick={() => remove(row.id)}>{t('common.delete')}</Button>
         </div>
       ),
     },
-  ]
+  ], [t])
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Product Management"
-        subtitle="Manage inventory, pricing, and stock levels"
+        title={t('stock.product.title')}
+        subtitle={t('stock.product.subtitle')}
       />
 
       <FormAlert message={message} error={error} />
@@ -172,7 +174,7 @@ export default function ProductManagement() {
             <input placeholder="Product name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} className="input" required />
           </div>
           <div>
-            <label className="label">Category</label>
+            <label className="label">{t('common.category')}</label>
             <select value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))} className="input">
               <option value="">Select category</option>
               {categories.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
@@ -200,9 +202,9 @@ export default function ProductManagement() {
           </div>
         </div>
         <div className="mt-5 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800 pt-5">
-          <Button type="button" variant="secondary" onClick={reset}>Cancel</Button>
+          <Button type="button" variant="secondary" onClick={reset}>{t('common.cancel')}</Button>
           <Button type="submit" disabled={saving}>
-            {saving ? 'Saving…' : editingId ? 'Update Product' : 'Save Product'}
+            {saving ? t('common.saving') : editingId ? t('common.update') : t('common.save')}
           </Button>
         </div>
       </form>

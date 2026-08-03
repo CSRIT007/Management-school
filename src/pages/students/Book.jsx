@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { get, post, put, del } from '../../lib/api.js'
+import { useLanguage } from '../../context/LanguageContext.jsx'
 import PageHeader from '../../components/ui/PageHeader.jsx'
 import Button from '../../components/ui/Button.jsx'
 import DataTable from '../../components/ui/DataTable.jsx'
@@ -11,6 +12,7 @@ import DateField from '../../components/ui/DateField.jsx'
 const emptyForm = { name: '', title: '', isbn: '', issued: '', due: '', status: 'Issued' }
 
 export default function StudentBook() {
+  const { t } = useLanguage()
   const [rows, setRows] = useState([])
   const [students, setStudents] = useState([])
   const [form, setForm] = useState(emptyForm)
@@ -99,15 +101,15 @@ export default function StudentBook() {
     { key: 'isbn', label: 'ISBN' },
     { key: 'issued', label: 'Date Issued', render: (r) => formatDisplayDate(r.issued) },
     { key: 'due', label: 'Date Due', render: (r) => formatDisplayDate(r.due) },
-    { key: 'status', label: 'Status', render: (r) => <Badge status={r.status} /> },
+    { key: 'status', label: t('common.status'), render: (r) => <Badge status={r.status} /> },
     {
       key: 'actions',
       label: '',
       className: 'text-right',
       render: (row) => (
         <div className="flex justify-end gap-2">
-          <Button size="sm" variant="secondary" onClick={() => startEdit(row)}>Edit</Button>
-          <Button size="sm" variant="danger" onClick={() => remove(row.id)}>Delete</Button>
+          <Button size="sm" variant="secondary" onClick={() => startEdit(row)}>{t('common.edit')}</Button>
+          <Button size="sm" variant="danger" onClick={() => remove(row.id)}>{t('common.delete')}</Button>
         </div>
       ),
     },
@@ -116,8 +118,8 @@ export default function StudentBook() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Student & Book"
-        subtitle="Track book issues, returns, and overdue items"
+        title={t('students.book.title')}
+        subtitle={t('students.book.subtitle')}
       />
 
       <FormAlert message={message} error={error} />
@@ -145,7 +147,7 @@ export default function StudentBook() {
           <DateField label="Date Issued" value={form.issued} onChange={(issued) => setForm((f) => ({ ...f, issued }))} required />
           <DateField label="Date Due" value={form.due} onChange={(due) => setForm((f) => ({ ...f, due }))} required />
           <div>
-            <label className="label">Status</label>
+            <label className="label">{t('common.status')}</label>
             <select className="input" value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}>
               <option>Issued</option>
               <option>Overdue</option>
@@ -154,9 +156,9 @@ export default function StudentBook() {
           </div>
         </div>
         <div className="mt-6 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800 pt-6">
-          <Button type="button" variant="secondary" onClick={reset}>Cancel</Button>
+          <Button type="button" variant="secondary" onClick={reset}>{t('common.cancel')}</Button>
           <Button type="submit" disabled={saving}>
-            {saving ? 'Saving…' : editingId ? 'Update Record' : 'Issue Book'}
+            {saving ? t('common.saving') : editingId ? 'Update Record' : 'Issue Book'}
           </Button>
         </div>
       </form>

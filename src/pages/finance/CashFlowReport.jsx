@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { get } from '../../lib/api.js'
+import { useLanguage } from '../../context/LanguageContext.jsx'
 import { formatDisplayDate } from '../../lib/dateFormat.js'
 import PageHeader from '../../components/ui/PageHeader.jsx'
 import DataTable from '../../components/ui/DataTable.jsx'
@@ -15,6 +16,7 @@ import {
 } from '../../lib/exports/financeExtraExport.js'
 
 export default function CashFlowReport() {
+  const { t } = useLanguage()
   const [payments, setPayments] = useState([])
   const [orders, setOrders] = useState([])
   const [salaryPayments, setSalaryPayments] = useState([])
@@ -67,8 +69,8 @@ export default function CashFlowReport() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Daily Cash Flow"
-        subtitle="Tuition and POS inflows minus salary and school expenses by day"
+        title={t('finance.cashFlow.title')}
+        subtitle={t('finance.cashFlow.subtitle')}
       />
 
       {error && (
@@ -79,21 +81,22 @@ export default function CashFlowReport() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         <StatCard label="Days" value={loading ? '…' : rows.length} accent="indigo" />
-        <StatCard label="Tuition Collected" value={loading ? '…' : formatMoney(totals.tuition)} accent="emerald" />
-        <StatCard label="POS Revenue" value={loading ? '…' : formatMoney(totals.pos)} accent="amber" />
-        <StatCard label="Salary Paid" value={loading ? '…' : formatMoney(totals.salary)} accent="rose" />
-        <StatCard label="Expenses Paid" value={loading ? '…' : formatMoney(totals.expenses)} accent="rose" />
-        <StatCard label="Net Cash" value={loading ? '…' : formatMoney(totals.net)} accent="indigo" />
+        <StatCard label={t('finance.tuitionCollected')} value={loading ? '…' : formatMoney(totals.tuition)} accent="emerald" />
+        <StatCard label={t('finance.posRevenueLabel')} value={loading ? '…' : formatMoney(totals.pos)} accent="amber" />
+        <StatCard label={t('finance.salaryPaid')} value={loading ? '…' : formatMoney(totals.salary)} accent="rose" />
+        <StatCard label={t('finance.expensesPaid')} value={loading ? '…' : formatMoney(totals.expenses)} accent="rose" />
+        <StatCard label={t('finance.netCash')} value={loading ? '…' : formatMoney(totals.net)} accent="indigo" />
       </div>
 
       <div className="panel grid grid-cols-1 gap-4 p-5 md:grid-cols-2">
-        <DateField label="From" value={dateFrom} onChange={setDateFrom} />
-        <DateField label="To" value={dateTo} onChange={setDateTo} />
+        <DateField label={t('common.from')} value={dateFrom} onChange={setDateFrom} />
+        <DateField label={t('common.to')} value={dateTo} onChange={setDateTo} />
       </div>
 
       <div>
         <TableExportHeader title="Daily Breakdown" count={rows.length}>
           <ExportReportButton
+            label={t('common.downloadCsv')}
             reportTitle={CASH_FLOW_TITLE}
             columnDefs={CASH_FLOW_COLUMNS}
             getRows={() => rows}
@@ -105,17 +108,17 @@ export default function CashFlowReport() {
         </TableExportHeader>
         <DataTable
           columns={[
-            { key: 'date', label: 'Date', render: (r) => formatDisplayDate(r.date) },
-            { key: 'tuition', label: 'Tuition', render: (r) => formatMoney(r.tuition) },
-            { key: 'pos', label: 'POS', render: (r) => formatMoney(r.pos) },
-            { key: 'salary', label: 'Salary', render: (r) => formatMoney(r.salary) },
-            { key: 'expenses', label: 'Expenses', render: (r) => formatMoney(r.expenses) },
-            { key: 'pending', label: 'Pending', render: (r) => formatMoney(r.pending) },
-            { key: 'total', label: 'Collected', render: (r) => formatMoney(r.total) },
-            { key: 'net', label: 'Net', className: 'font-semibold', render: (r) => formatMoney(r.net) },
+            { key: 'date', label: t('common.date'), render: (r) => formatDisplayDate(r.date) },
+            { key: 'tuition', label: t('nav.tuition'), render: (r) => formatMoney(r.tuition) },
+            { key: 'pos', label: t('nav.posRevenue'), render: (r) => formatMoney(r.pos) },
+            { key: 'salary', label: t('nav.salary'), render: (r) => formatMoney(r.salary) },
+            { key: 'expenses', label: t('nav.expenses'), render: (r) => formatMoney(r.expenses) },
+            { key: 'pending', label: t('common.pending'), render: (r) => formatMoney(r.pending) },
+            { key: 'total', label: t('common.total'), render: (r) => formatMoney(r.total) },
+            { key: 'net', label: t('finance.netCash'), className: 'font-semibold', render: (r) => formatMoney(r.net) },
           ]}
           rows={rows}
-          emptyMessage={loading ? 'Loading…' : 'No cash flow in this period.'}
+          emptyMessage={loading ? t('common.loading') : t('common.noData')}
         />
       </div>
     </div>

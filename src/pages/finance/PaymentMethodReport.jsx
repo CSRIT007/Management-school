@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { get } from '../../lib/api.js'
+import { useLanguage } from '../../context/LanguageContext.jsx'
 import PageHeader from '../../components/ui/PageHeader.jsx'
 import DataTable from '../../components/ui/DataTable.jsx'
 import DateField from '../../components/ui/DateField.jsx'
@@ -14,6 +15,7 @@ import {
 } from '../../lib/exports/financeExtraExport.js'
 
 export default function PaymentMethodReport() {
+  const { t } = useLanguage()
   const [payments, setPayments] = useState([])
   const [orders, setOrders] = useState([])
   const [dateFrom, setDateFrom] = useState('')
@@ -50,8 +52,8 @@ export default function PaymentMethodReport() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Payment Methods"
-        subtitle="Cash, Card, QR and other methods across tuition and POS"
+        title={t('finance.methods.title')}
+        subtitle={t('finance.methods.subtitle')}
       />
 
       {error && (
@@ -63,7 +65,7 @@ export default function PaymentMethodReport() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label="Methods Used" value={loading ? '…' : rows.length} accent="indigo" />
         <StatCard label="Transactions" value={loading ? '…' : rows.reduce((s, r) => s + r.count, 0)} accent="amber" />
-        <StatCard label="Total" value={loading ? '…' : formatMoney(grandTotal)} accent="emerald" />
+        <StatCard label={t('common.total')} value={loading ? '…' : formatMoney(grandTotal)} accent="emerald" />
       </div>
 
       <div className="panel grid grid-cols-1 gap-4 p-5 md:grid-cols-3">
@@ -75,13 +77,14 @@ export default function PaymentMethodReport() {
             <option value="Pending">Pending only</option>
           </select>
         </div>
-        <DateField label="From" value={dateFrom} onChange={setDateFrom} />
-        <DateField label="To" value={dateTo} onChange={setDateTo} />
+        <DateField label={t('common.from')} value={dateFrom} onChange={setDateFrom} />
+        <DateField label={t('common.to')} value={dateTo} onChange={setDateTo} />
       </div>
 
       <div>
         <TableExportHeader title="Breakdown by Method" count={rows.length}>
           <ExportReportButton
+            label={t('common.downloadCsv')}
             reportTitle={METHOD_REPORT_TITLE}
             columnDefs={METHOD_COLUMNS}
             getRows={() => rows}
@@ -93,11 +96,11 @@ export default function PaymentMethodReport() {
         </TableExportHeader>
         <DataTable
           columns={[
-            { key: 'method', label: 'Method', className: 'font-semibold' },
-            { key: 'tuition', label: 'Tuition', render: (r) => formatMoney(r.tuition) },
-            { key: 'pos', label: 'POS', render: (r) => formatMoney(r.pos) },
-            { key: 'total', label: 'Total', render: (r) => formatMoney(r.total) },
-            { key: 'count', label: 'Txns' },
+            { key: 'method', label: t('common.method'), className: 'font-semibold' },
+            { key: 'tuition', label: t('nav.tuition'), render: (r) => formatMoney(r.tuition) },
+            { key: 'pos', label: t('nav.posRevenue'), render: (r) => formatMoney(r.pos) },
+            { key: 'total', label: t('common.total'), render: (r) => formatMoney(r.total) },
+            { key: 'count', label: t('common.count') },
             {
               key: 'share',
               label: 'Share',
@@ -105,7 +108,7 @@ export default function PaymentMethodReport() {
             },
           ]}
           rows={rows}
-          emptyMessage={loading ? 'Loading…' : 'No payments in this period.'}
+          emptyMessage={loading ? t('common.loading') : t('common.noData')}
         />
       </div>
     </div>

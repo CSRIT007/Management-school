@@ -2,12 +2,15 @@ import { useEffect, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { LOGOUT_REASON_KEY, useAuth } from '../context/AuthContext.jsx'
 import { useTheme } from '../context/ThemeContext.jsx'
+import { useLanguage } from '../context/LanguageContext.jsx'
 import { getDefaultRouteForRole } from '../lib/roles.js'
 import Button from '../components/ui/Button.jsx'
+import LanguageSwitcher from '../components/LanguageSwitcher.jsx'
 
 export default function Login() {
   const { login, isAuthenticated, loading: authLoading, role } = useAuth()
   const { isDark, toggleTheme } = useTheme()
+  const { t } = useLanguage()
   const navigate = useNavigate()
 
   const [email, setEmail] = useState('')
@@ -27,7 +30,7 @@ export default function Login() {
   if (authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-100 text-sm text-slate-500 dark:bg-slate-950">
-        Loading…
+        {t('login.loading')}
       </div>
     )
   }
@@ -43,7 +46,7 @@ export default function Login() {
       const user = await login(email, password)
       navigate(getDefaultRouteForRole(user.role), { replace: true })
     } catch (err) {
-      setError(err.message || 'Invalid email or password')
+      setError(err.message || t('login.invalid'))
     } finally {
       setLoading(false)
     }
@@ -56,21 +59,24 @@ export default function Login() {
         <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-violet-400/20 blur-3xl dark:bg-violet-600/10" />
       </div>
 
-      <button
-        onClick={toggleTheme}
-        className="absolute right-6 top-6 flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
-        title={isDark ? 'Light mode' : 'Dark mode'}
-      >
-        {isDark ? (
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
-            <path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z" />
-          </svg>
-        ) : (
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
-            <path fillRule="evenodd" d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 003.463-.69.75.75 0 01.981.98 10.503 10.503 0 01-9.694 6.46c-5.799 0-10.5-4.701-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 01.818.162z" clipRule="evenodd" />
-          </svg>
-        )}
-      </button>
+      <div className="absolute right-6 top-6 flex items-center gap-2">
+        <LanguageSwitcher />
+        <button
+          onClick={toggleTheme}
+          className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 shadow-sm transition-colors hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
+          title={isDark ? t('login.lightMode') : t('login.darkMode')}
+        >
+          {isDark ? (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
+              <path d="M12 2.25a.75.75 0 01.75.75v2.25a.75.75 0 01-1.5 0V3a.75.75 0 01.75-.75zM7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM18.894 6.166a.75.75 0 00-1.06-1.06l-1.591 1.59a.75.75 0 101.06 1.061l1.591-1.59zM21.75 12a.75.75 0 01-.75.75h-2.25a.75.75 0 010-1.5H21a.75.75 0 01.75.75zM17.834 18.894a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 10-1.061 1.06l1.59 1.591zM12 18a.75.75 0 01.75.75V21a.75.75 0 01-1.5 0v-2.25A.75.75 0 0112 18zM7.758 17.303a.75.75 0 00-1.061-1.06l-1.591 1.59a.75.75 0 001.06 1.061l1.591-1.59zM6 12a.75.75 0 01-.75.75H3a.75.75 0 010-1.5h2.25A.75.75 0 016 12zM6.697 7.757a.75.75 0 001.06-1.06l-1.59-1.591a.75.75 0 00-1.061 1.06l1.59 1.591z" />
+            </svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
+              <path fillRule="evenodd" d="M9.528 1.718a.75.75 0 01.162.819A8.97 8.97 0 009 6a9 9 0 009 9 8.97 8.97 0 003.463-.69.75.75 0 01.981.98 10.503 10.503 0 01-9.694 6.46c-5.799 0-10.5-4.701-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 01.818.162z" clipRule="evenodd" />
+            </svg>
+          )}
+        </button>
+      </div>
 
       <div className="relative w-full max-w-md">
         <div className="mb-8 text-center">
@@ -80,14 +86,14 @@ export default function Login() {
             className="mx-auto mb-4 h-20 w-20 object-contain"
             draggable={false}
           />
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Welcome back</h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Sign in to Smile International School</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{t('login.welcome')}</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{t('login.subtitle')}</p>
         </div>
 
         <form onSubmit={submit} className="panel p-8 shadow-xl shadow-slate-200/50 dark:shadow-none">
           {idleNotice && (
             <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/50 dark:text-amber-300">
-              You were signed out after 5 minutes of inactivity.
+              {t('login.idleNotice')}
             </div>
           )}
 
@@ -99,7 +105,7 @@ export default function Login() {
 
           <div className="space-y-5">
             <div>
-              <label className="label" htmlFor="email">Email</label>
+              <label className="label" htmlFor="email">{t('login.email')}</label>
               <input
                 id="email"
                 type="email"
@@ -113,7 +119,7 @@ export default function Login() {
             </div>
 
             <div>
-              <label className="label" htmlFor="password">Password</label>
+              <label className="label" htmlFor="password">{t('login.password')}</label>
               <div className="relative">
                 <input
                   id="password"
@@ -121,7 +127,7 @@ export default function Login() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="input pr-11"
-                  placeholder="Enter your password"
+                  placeholder={t('login.passwordPlaceholder')}
                   autoComplete="current-password"
                   required
                 />
@@ -147,12 +153,12 @@ export default function Login() {
           </div>
 
           <Button type="submit" className="mt-6 w-full" size="lg" disabled={loading}>
-            {loading ? 'Signing in…' : 'Sign in'}
+            {loading ? t('login.signingIn') : t('login.signIn')}
           </Button>
         </form>
 
         <p className="mt-6 text-center text-xs text-slate-400 dark:text-slate-500">
-         Management System · Admin Portal
+          {t('login.footer')}
         </p>
       </div>
     </div>

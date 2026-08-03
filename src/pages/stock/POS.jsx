@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { get, post } from '../../lib/api.js'
 import { useAuth } from '../../context/AuthContext.jsx'
+import { useLanguage } from '../../context/LanguageContext.jsx'
 import { orderToInvoice } from '../../lib/posInvoice.js'
 import { formatInvNo } from '../../lib/invoiceId.js'
 import PageHeader from '../../components/ui/PageHeader.jsx'
@@ -24,6 +25,7 @@ const WALK_IN = '__walkin__'
 
 export default function POS() {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [catalog, setCatalog] = useState([])
   const [students, setStudents] = useState([])
   const [cart, setCart] = useState([])
@@ -132,14 +134,14 @@ export default function POS() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Point of Sale"
-        subtitle="Select products and process checkout"
+        title={t('stock.pos.title')}
+        subtitle={t('stock.pos.subtitle')}
       />
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <div className="xl:col-span-2 space-y-4">
           <input
-            placeholder="Search products…"
+            placeholder={t('common.search')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="input"

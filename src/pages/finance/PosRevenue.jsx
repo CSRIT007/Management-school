@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { get } from '../../lib/api.js'
+import { useLanguage } from '../../context/LanguageContext.jsx'
 import { formatInvNo, sortInvoicesNewestFirst } from '../../lib/invoiceId.js'
 import { formatDisplayDate } from '../../lib/dateFormat.js'
 import PageHeader from '../../components/ui/PageHeader.jsx'
@@ -27,6 +28,7 @@ function formatItems(items = []) {
 }
 
 export default function PosRevenue() {
+  const { t } = useLanguage()
   const [orders, setOrders] = useState([])
   const [filters, setFilters] = useState(POS_REVENUE_FILTER_INITIAL)
   const [loading, setLoading] = useState(true)
@@ -62,20 +64,20 @@ export default function PosRevenue() {
     return [...set].sort()
   }, [orders])
 
-  const columns = [
+  const columns = useMemo(() => [
     { key: 'id', label: 'INV No', className: 'font-mono font-semibold', render: (r) => formatInvNo(r.id) },
-    { key: 'date', label: 'Date', render: (r) => formatDisplayDate(r.date) },
+    { key: 'date', label: t('common.date'), render: (r) => formatDisplayDate(r.date) },
     { key: 'customer', label: 'Customer' },
-    { key: 'paymentMethod', label: 'Method' },
+    { key: 'paymentMethod', label: t('common.method') },
     { key: 'items', label: 'Items', render: (r) => formatItems(r.items) },
-    { key: 'total', label: 'Total', render: (r) => money(r.total) },
-  ]
+    { key: 'total', label: t('common.total'), render: (r) => money(r.total) },
+  ], [t])
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="POS Revenue"
-        subtitle="Point-of-sale orders and shop revenue"
+        title={t('finance.posRevenue.title')}
+        subtitle={t('finance.posRevenue.subtitle')}
       />
 
       {error && (
@@ -92,24 +94,25 @@ export default function PosRevenue() {
       <div className="panel p-5">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <div>
-            <label className="label">Payment Method</label>
+            <label className="label">{t('common.method')}</label>
             <select
               className="input"
               value={filters.paymentMethod}
               onChange={(e) => setFilters((f) => ({ ...f, paymentMethod: e.target.value }))}
             >
-              <option value="all">All</option>
+              <option value="all">{t('common.all')}</option>
               {methods.map((m) => <option key={m} value={m}>{m}</option>)}
             </select>
           </div>
-          <DateField label="From" value={filters.dateFrom} onChange={(v) => setFilters((f) => ({ ...f, dateFrom: v }))} />
-          <DateField label="To" value={filters.dateTo} onChange={(v) => setFilters((f) => ({ ...f, dateTo: v }))} />
+          <DateField label={t('common.from')} value={filters.dateFrom} onChange={(v) => setFilters((f) => ({ ...f, dateFrom: v }))} />
+          <DateField label={t('common.to')} value={filters.dateTo} onChange={(v) => setFilters((f) => ({ ...f, dateTo: v }))} />
         </div>
       </div>
 
       <div>
         <TableExportHeader title="POS Sales" count={filtered.length}>
           <ExportReportButton
+            label={t('common.downloadCsv')}
             reportTitle={POS_REVENUE_REPORT_TITLE}
             columnDefs={POS_REVENUE_EXPORT_COLUMNS}
             getRows={(exportFilters) => filterPosOrders(orders, { ...filters, ...exportFilters })}
@@ -117,7 +120,7 @@ export default function PosRevenue() {
             disabled={loading || orders.length === 0}
           />
         </TableExportHeader>
-        <DataTable columns={columns} rows={filtered} emptyMessage={loading ? 'Loading…' : 'No POS sales found.'} />
+        <DataTable columns={columns} rows={filtered} emptyMessage={loading ? t('common.loading') : t('common.noData')} />
       </div>
     </div>
   )

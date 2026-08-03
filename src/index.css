@@ -20,8 +20,12 @@ body {
   margin: 0;
   background: #f1f5f9;
   color: #0f172a;
-  font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Noto Sans Khmer', ui-sans-serif, system-ui, -apple-system, sans-serif;
   transition: background-color 0.2s, color 0.2s;
+}
+
+html.lang-km body {
+  font-family: 'Noto Sans Khmer', 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
 }
 
 .dark body {

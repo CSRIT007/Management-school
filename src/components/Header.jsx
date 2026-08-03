@@ -2,11 +2,13 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../context/ThemeContext.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
-import { ROLE_LABELS } from '../lib/roles.js'
+import { useLanguage } from '../context/LanguageContext.jsx'
+import { getRoleLabelKey } from '../i18n/index.js'
 import GlobalSearch from './GlobalSearch.jsx'
+import LanguageSwitcher from './LanguageSwitcher.jsx'
 import Button from './ui/Button.jsx'
 
-function LogoutConfirmModal({ open, userName, onCancel, onConfirm }) {
+function LogoutConfirmModal({ open, userName, onCancel, onConfirm, t }) {
   if (!open) return null
 
   return (
@@ -29,24 +31,24 @@ function LogoutConfirmModal({ open, userName, onCancel, onConfirm }) {
           </div>
           <div className="min-w-0">
             <h3 id="logout-confirm-title" className="text-lg font-bold text-slate-900 dark:text-slate-100">
-              Confirm logout
+              {t('header.logoutConfirmTitle')}
             </h3>
             <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
               {userName
-                ? `Are you sure you want to log out, ${userName}?`
-                : 'Are you sure you want to log out?'}
+                ? t('header.logoutConfirmNamed', { name: userName })
+                : t('header.logoutConfirm')}
             </p>
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              You will need to sign in again to continue using the system.
+              {t('header.logoutHint')}
             </p>
           </div>
         </div>
         <div className="mt-6 flex flex-wrap justify-end gap-3">
           <Button type="button" variant="secondary" onClick={onCancel}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button type="button" variant="danger" onClick={onConfirm}>
-            Yes, log out
+            {t('header.logoutYes')}
           </Button>
         </div>
       </div>
@@ -57,13 +59,12 @@ function LogoutConfirmModal({ open, userName, onCancel, onConfirm }) {
 export default function Header({ onToggleSidebar, collapsed }) {
   const { isDark, toggleTheme } = useTheme()
   const { user, logout } = useAuth()
+  const { t } = useLanguage()
   const navigate = useNavigate()
   const [confirmLogout, setConfirmLogout] = useState(false)
 
   const requestLogout = () => setConfirmLogout(true)
-
   const cancelLogout = () => setConfirmLogout(false)
-
   const confirmAndLogout = () => {
     setConfirmLogout(false)
     logout()
@@ -71,6 +72,9 @@ export default function Header({ onToggleSidebar, collapsed }) {
   }
 
   const initials = user?.name?.slice(0, 2).toUpperCase() || 'AD'
+  const roleLabel = user?.role
+    ? t(getRoleLabelKey(user.role))
+    : t('common.staff')
 
   return (
     <>
@@ -79,7 +83,7 @@ export default function Header({ onToggleSidebar, collapsed }) {
           <button
             onClick={onToggleSidebar}
             className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
-            aria-label="Toggle sidebar"
+            aria-label={t('header.toggleSidebar')}
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
               <path fillRule="evenodd" d="M3 6.75A.75.75 0 013.75 6h16.5a.75.75 0 010 1.5H3.75A.75.75 0 013 6.75zM3 12a.75.75 0 01.75-.75h16.5a.75.75 0 010 1.5H3.75A.75.75 0 013 12zm0 5.25a.75.75 0 01.75-.75h16.5a.75.75 0 010 1.5H3.75a.75.75 0 01-.75-.75z" clipRule="evenodd" />
@@ -87,8 +91,8 @@ export default function Header({ onToggleSidebar, collapsed }) {
           </button>
 
           <div className="hidden sm:block">
-            <div className="text-sm font-semibold text-slate-800 dark:text-slate-100"> School Management System</div>
-            <div className="text-xs text-slate-400 dark:text-slate-500">School Admin Portal</div>
+            <div className="text-sm font-semibold text-slate-800 dark:text-slate-100">{t('header.appTitle')}</div>
+            <div className="text-xs text-slate-400 dark:text-slate-500">{t('header.appSubtitle')}</div>
           </div>
 
           <div className="flex-1" />
@@ -96,11 +100,13 @@ export default function Header({ onToggleSidebar, collapsed }) {
           <div className="flex items-center gap-3">
             <GlobalSearch />
 
+            <LanguageSwitcher />
+
             <button
               onClick={toggleTheme}
               className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-amber-400"
-              title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-              aria-label="Toggle dark mode"
+              title={isDark ? t('header.lightMode') : t('header.darkMode')}
+              aria-label={isDark ? t('header.lightMode') : t('header.darkMode')}
             >
               {isDark ? (
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
@@ -113,7 +119,7 @@ export default function Header({ onToggleSidebar, collapsed }) {
               )}
             </button>
 
-            <button className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100" title="Notifications">
+            <button className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100" title={t('header.notifications')}>
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
                 <path fillRule="evenodd" d="M5.25 9a6.75 6.75 0 0113.5 0v.75c0 2.123.8 4.017 2.085 5.455a.75.75 0 01-.297 1.206h-9.168a.75.75 0 01-.297-1.206A6.749 6.749 0 0112 9.75v-.75zm-2.25 0v.75a8.25 8.25 0 0016.5 0v-.75a.75.75 0 011.5 0v.75a9.75 9.75 0 01-8.985 9.75 9.75 9.75 0 01-8.985-9.75v-.75a.75.75 0 011.5 0zm9.75 4.5a.75.75 0 00-1.5 0v2.25a.75.75 0 001.5 0v-2.25z" clipRule="evenodd" />
               </svg>
@@ -126,9 +132,9 @@ export default function Header({ onToggleSidebar, collapsed }) {
               </div>
               {!collapsed && (
                 <div className="hidden lg:block">
-                  <div className="text-xs font-semibold text-slate-800 dark:text-slate-100">{user?.name || 'User'}</div>
+                  <div className="text-xs font-semibold text-slate-800 dark:text-slate-100">{user?.name || t('common.user')}</div>
                   <div className="text-[10px] text-slate-400">
-                    {ROLE_LABELS[user?.role] || user?.role || 'Staff'} · {user?.email || ''}
+                    {roleLabel} · {user?.email || ''}
                   </div>
                 </div>
               )}
@@ -137,9 +143,9 @@ export default function Header({ onToggleSidebar, collapsed }) {
             <button
               onClick={requestLogout}
               className="hidden sm:flex h-9 items-center rounded-xl border border-slate-200 px-3 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-rose-600 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-rose-400"
-              title="Logout"
+              title={t('header.logout')}
             >
-              Logout
+              {t('header.logout')}
             </button>
           </div>
         </div>
@@ -150,6 +156,7 @@ export default function Header({ onToggleSidebar, collapsed }) {
         userName={user?.name}
         onCancel={cancelLogout}
         onConfirm={confirmAndLogout}
+        t={t}
       />
     </>
   )

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { get } from '../../lib/api.js'
+import { useLanguage } from '../../context/LanguageContext.jsx'
 import { formatInvNo } from '../../lib/invoiceId.js'
 import { formatDisplayDate } from '../../lib/dateFormat.js'
 import PageHeader from '../../components/ui/PageHeader.jsx'
@@ -48,6 +49,7 @@ const emptyOverview = {
 }
 
 export default function FinanceOverview() {
+  const { t } = useLanguage()
   const [data, setData] = useState(emptyOverview)
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
@@ -107,17 +109,31 @@ export default function FinanceOverview() {
     })
   }
 
+  const reportLinks = useMemo(() => [
+    { to: '/finance/tuition', labelKey: 'nav.tuition', descKey: 'finance.tuition.subtitle' },
+    { to: '/finance/pos-revenue', labelKey: 'nav.posRevenue', descKey: 'finance.posRevenue.subtitle' },
+    { to: '/finance/pending', labelKey: 'nav.pendingPayments', descKey: 'finance.pending.subtitle' },
+    { to: '/finance/cash-flow', labelKey: 'nav.cashFlow', descKey: 'finance.cashFlow.subtitle' },
+    { to: '/finance/methods', labelKey: 'nav.paymentMethods', descKey: 'finance.methods.subtitle' },
+    { to: '/finance/purpose', labelKey: 'nav.feePurpose', descKey: 'finance.purpose.subtitle' },
+    { to: '/finance/monthly', labelKey: 'nav.monthlySummary', descKey: 'finance.monthly.subtitle' },
+    { to: '/finance/profit-loss', labelKey: 'nav.profitLoss', descKey: 'finance.profitLoss.subtitle' },
+    { to: '/finance/student-ledger', labelKey: 'nav.studentLedger', descKey: 'finance.ledger.subtitle' },
+    { to: '/finance/salary', labelKey: 'nav.salary', descKey: 'finance.salary.subtitle' },
+    { to: '/finance/expenses', labelKey: 'nav.expenses', descKey: 'finance.expenses.subtitle' },
+  ], [])
+
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Financial Overview"
-        subtitle="Tuition, POS, salary, school expenses, and net cash in one place"
+        title={t('finance.overview.title')}
+        subtitle={t('finance.overview.subtitle')}
       />
 
       <div className="panel flex flex-col gap-4 p-5 sm:flex-row sm:items-end sm:justify-between">
         <div className="grid flex-1 grid-cols-1 gap-4 sm:grid-cols-2">
-          <DateField label="From" value={dateFrom} onChange={setDateFrom} />
-          <DateField label="To" value={dateTo} onChange={setDateTo} />
+          <DateField label={t('common.from')} value={dateFrom} onChange={setDateFrom} />
+          <DateField label={t('common.to')} value={dateTo} onChange={setDateTo} />
         </div>
         <div className="flex flex-wrap gap-2">
           <Button
@@ -129,13 +145,13 @@ export default function FinanceOverview() {
               load('', '')
             }}
           >
-            Clear
+            {t('common.reset')}
           </Button>
           <Button type="button" variant="secondary" onClick={exportOverview} disabled={loading}>
-            Download
+            {t('common.downloadCsv')}
           </Button>
           <Button type="button" onClick={() => load()} disabled={loading}>
-            {loading ? 'Loading…' : 'Apply Filter'}
+            {loading ? t('common.loading') : t('common.applyFilters')}
           </Button>
         </div>
       </div>
@@ -147,20 +163,20 @@ export default function FinanceOverview() {
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard label="Total Revenue" value={loading ? '…' : money(data.totalRevenue)} accent="indigo" />
-        <StatCard label="Tuition Collected" value={loading ? '…' : money(data.tuitionCollected)} accent="emerald" />
-        <StatCard label="POS Revenue" value={loading ? '…' : money(data.posRevenue)} accent="amber" />
+        <StatCard label={t('finance.totalRevenue')} value={loading ? '…' : money(data.totalRevenue)} accent="indigo" />
+        <StatCard label={t('finance.tuitionCollected')} value={loading ? '…' : money(data.tuitionCollected)} accent="emerald" />
+        <StatCard label={t('finance.posRevenueLabel')} value={loading ? '…' : money(data.posRevenue)} accent="amber" />
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
-          label="Total Expense"
+          label={t('finance.totalExpenses')}
           value={loading ? '…' : money(data.totalExpenses ?? (Number(data.salaryPaid || 0) + Number(data.expensesPaid || 0)))}
           accent="amber"
         />
-        <StatCard label="Salary Paid" value={loading ? '…' : money(data.salaryPaid)} accent="rose" />
-        <StatCard label="Expenses Paid" value={loading ? '…' : money(data.expensesPaid)} accent="rose" />
-        <StatCard label="Net Cash" value={loading ? '…' : money(data.netCash)} accent="indigo" />
+        <StatCard label={t('finance.salaryPaid')} value={loading ? '…' : money(data.salaryPaid)} accent="rose" />
+        <StatCard label={t('finance.expensesPaid')} value={loading ? '…' : money(data.expensesPaid)} accent="rose" />
+        <StatCard label={t('finance.netCash')} value={loading ? '…' : money(data.netCash)} accent="indigo" />
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
@@ -200,8 +216,8 @@ export default function FinanceOverview() {
           <h3 className="mb-4 text-lg font-bold text-slate-900 dark:text-slate-100">By Payment Method</h3>
           <DataTable
             columns={[
-              { key: 'method', label: 'Method' },
-              { key: 'total', label: 'Total', render: (r) => money(r.total) },
+              { key: 'method', label: t('common.method') },
+              { key: 'total', label: t('common.total'), render: (r) => money(r.total) },
             ]}
             rows={methodRows}
             emptyMessage="No revenue in this period."
@@ -211,8 +227,8 @@ export default function FinanceOverview() {
           <h3 className="mb-4 text-lg font-bold text-slate-900 dark:text-slate-100">Tuition by Purpose</h3>
           <DataTable
             columns={[
-              { key: 'purpose', label: 'Purpose' },
-              { key: 'total', label: 'Total', render: (r) => money(r.total) },
+              { key: 'purpose', label: t('common.purpose') },
+              { key: 'total', label: t('common.total'), render: (r) => money(r.total) },
             ]}
             rows={purposeRows}
             emptyMessage="No tuition in this period."
@@ -230,11 +246,11 @@ export default function FinanceOverview() {
             columns={[
               { key: 'id', label: 'INV', className: 'font-mono', render: (r) => formatInvNo(r.id) },
               { key: 'studentName', label: 'Student' },
-              { key: 'date', label: 'Date', render: (r) => formatDisplayDate(r.date) },
-              { key: 'amount', label: 'Amount', render: (r) => money(r.amount) },
+              { key: 'date', label: t('common.date'), render: (r) => formatDisplayDate(r.date) },
+              { key: 'amount', label: t('common.amount'), render: (r) => money(r.amount) },
               {
                 key: 'status',
-                label: 'Status',
+                label: t('common.status'),
                 render: (r) => <Badge variant={r.status === 'Paid' ? 'success' : 'warning'}>{r.status}</Badge>,
               },
             ]}
@@ -251,8 +267,8 @@ export default function FinanceOverview() {
             columns={[
               { key: 'id', label: 'INV', className: 'font-mono', render: (r) => formatInvNo(r.id) },
               { key: 'customer', label: 'Customer' },
-              { key: 'date', label: 'Date', render: (r) => formatDisplayDate(r.date) },
-              { key: 'total', label: 'Total', render: (r) => money(r.total) },
+              { key: 'date', label: t('common.date'), render: (r) => formatDisplayDate(r.date) },
+              { key: 'total', label: t('common.total'), render: (r) => money(r.total) },
             ]}
             rows={data.recentOrders}
             emptyMessage="No recent POS sales."
@@ -267,11 +283,11 @@ export default function FinanceOverview() {
             columns={[
               { key: 'id', label: 'ID', className: 'font-mono' },
               { key: 'userName', label: 'Employee' },
-              { key: 'date', label: 'Date', render: (r) => formatDisplayDate(r.date) },
-              { key: 'amount', label: 'Amount', render: (r) => money(r.amount) },
+              { key: 'date', label: t('common.date'), render: (r) => formatDisplayDate(r.date) },
+              { key: 'amount', label: t('common.amount'), render: (r) => money(r.amount) },
               {
                 key: 'status',
-                label: 'Status',
+                label: t('common.status'),
                 render: (r) => <Badge variant={r.status === 'Paid' ? 'success' : 'warning'}>{r.status}</Badge>,
               },
             ]}
@@ -287,12 +303,12 @@ export default function FinanceOverview() {
           <DataTable
             columns={[
               { key: 'id', label: 'ID', className: 'font-mono' },
-              { key: 'category', label: 'Category' },
-              { key: 'date', label: 'Date', render: (r) => formatDisplayDate(r.date) },
-              { key: 'amount', label: 'Amount', render: (r) => money(r.amount) },
+              { key: 'category', label: t('common.category') },
+              { key: 'date', label: t('common.date'), render: (r) => formatDisplayDate(r.date) },
+              { key: 'amount', label: t('common.amount'), render: (r) => money(r.amount) },
               {
                 key: 'status',
-                label: 'Status',
+                label: t('common.status'),
                 render: (r) => <Badge variant={r.status === 'Paid' ? 'success' : 'warning'}>{r.status}</Badge>,
               },
             ]}
@@ -303,28 +319,16 @@ export default function FinanceOverview() {
       </div>
 
       <div>
-        <h3 className="mb-4 text-lg font-bold text-slate-900 dark:text-slate-100">Finance Reports</h3>
+        <h3 className="mb-4 text-lg font-bold text-slate-900 dark:text-slate-100">{t('finance.reports')}</h3>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {[
-            { to: '/finance/tuition', label: 'Tuition & Fees', desc: 'All student fee invoices' },
-            { to: '/finance/pos-revenue', label: 'POS Revenue', desc: 'Shop and counter sales' },
-            { to: '/finance/pending', label: 'Pending Payments', desc: 'Outstanding invoices' },
-            { to: '/finance/cash-flow', label: 'Daily Cash Flow', desc: 'Inflows, outflows, net by day' },
-            { to: '/finance/methods', label: 'Payment Methods', desc: 'Cash, Card, QR totals' },
-            { to: '/finance/purpose', label: 'Fee Purpose', desc: 'Tuition vs other fees' },
-            { to: '/finance/monthly', label: 'Monthly Summary', desc: 'Revenue, salary, expenses by month' },
-            { to: '/finance/profit-loss', label: 'Profit & Loss', desc: 'Cash-based P&L statement for a period' },
-            { to: '/finance/student-ledger', label: 'Student Ledger', desc: 'Balance per student' },
-            { to: '/finance/salary', label: 'Staff & Teacher Salary', desc: 'Pay roster and salary payouts' },
-            { to: '/finance/expenses', label: 'School Expenses', desc: 'Rental, utility, commission, and more' },
-          ].map((item) => (
+          {reportLinks.map((item) => (
             <Link
               key={item.to}
               to={item.to}
               className="panel block p-4 transition-all hover:-translate-y-0.5 hover:shadow-md"
             >
-              <div className="font-semibold text-slate-900 dark:text-slate-100">{item.label}</div>
-              <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">{item.desc}</div>
+              <div className="font-semibold text-slate-900 dark:text-slate-100">{t(item.labelKey)}</div>
+              <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">{t(item.descKey)}</div>
             </Link>
           ))}
         </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { get, post, put, del } from '../../lib/api.js'
 import { useAuth } from '../../context/AuthContext.jsx'
+import { useLanguage } from '../../context/LanguageContext.jsx'
 import { canManageClasses } from '../../lib/roles.js'
 import { findTeacherScheduleConflicts, findStudentScheduleConflicts } from '../../lib/scheduleConflict.js'
 import PageHeader from '../../components/ui/PageHeader.jsx'
@@ -138,6 +139,7 @@ function StudentScheduleConflictModal({ conflicts, onClose }) {
 }
 
 function ClassDetailModal({ detail, students, isFull, busy, onClose }) {
+  const { t } = useLanguage()
   if (!detail) return null
 
   return (
@@ -176,7 +178,7 @@ function ClassDetailModal({ detail, students, isFull, busy, onClose }) {
         </h4>
 
         {busy ? (
-          <p className="text-sm text-slate-500">Loading…</p>
+          <p className="text-sm text-slate-500">{t('common.loading')}</p>
         ) : students.length === 0 ? (
           <p className="rounded-xl bg-slate-50 px-4 py-6 text-center text-sm text-slate-500 dark:bg-slate-800">
             No students enrolled yet.
@@ -187,8 +189,8 @@ function ClassDetailModal({ detail, students, isFull, busy, onClose }) {
               <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-800">
                 <tr>
                   <th className="px-4 py-3">Student ID</th>
-                  <th className="px-4 py-3">Name</th>
-                  <th className="px-4 py-3">Email</th>
+                  <th className="px-4 py-3">{t('common.name')}</th>
+                  <th className="px-4 py-3">{t('common.email')}</th>
                   <th className="px-4 py-3">Program</th>
                 </tr>
               </thead>
@@ -212,6 +214,7 @@ function ClassDetailModal({ detail, students, isFull, busy, onClose }) {
 
 export default function ClassManagement() {
   const { role } = useAuth()
+  const { t } = useLanguage()
   const canManage = canManageClasses(role)
 
   const [rows, setRows] = useState([])
@@ -567,10 +570,10 @@ export default function ClassManagement() {
           {canManage && (
             <>
               <Button size="sm" variant="secondary" onClick={() => startEdit(row)}>
-                Edit
+                {t('common.edit')}
               </Button>
               <Button size="sm" variant="danger" onClick={() => remove(row.id)}>
-                Delete
+                {t('common.delete')}
               </Button>
             </>
           )}
@@ -582,10 +585,10 @@ export default function ClassManagement() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Class Management"
+        title={t('students.classes.title')}
         subtitle={
           canManage
-            ? 'Create classes, assign teachers, and manage student rosters'
+            ? t('students.classes.subtitle')
             : 'View your assigned classes and student rosters'
         }
       />
@@ -722,9 +725,9 @@ export default function ClassManagement() {
           )}
 
           <div className="mt-6 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800 pt-6">
-            <Button type="button" variant="secondary" onClick={reset}>Cancel</Button>
+            <Button type="button" variant="secondary" onClick={reset}>{t('common.cancel')}</Button>
             <Button type="submit" disabled={saving}>
-              {saving ? 'Saving…' : editingId ? 'Update Class' : 'Save Class'}
+              {saving ? t('common.saving') : editingId ? 'Update Class' : 'Save Class'}
             </Button>
           </div>
         </form>

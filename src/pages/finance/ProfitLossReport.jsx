@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { get } from '../../lib/api.js'
+import { useLanguage } from '../../context/LanguageContext.jsx'
 import PageHeader from '../../components/ui/PageHeader.jsx'
 import DateField from '../../components/ui/DateField.jsx'
 import StatCard from '../../components/ui/StatCard.jsx'
@@ -54,6 +55,7 @@ function SectionTitle({ children }) {
 }
 
 export default function ProfitLossReport() {
+  const { t } = useLanguage()
   const [payments, setPayments] = useState([])
   const [orders, setOrders] = useState([])
   const [salaryPayments, setSalaryPayments] = useState([])
@@ -100,8 +102,8 @@ export default function ProfitLossReport() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Profit & Loss"
-        subtitle="Cash-based profit and loss for the selected period"
+        title={t('finance.profitLoss.title')}
+        subtitle={t('finance.profitLoss.subtitle')}
       />
 
       {error && (
@@ -111,28 +113,29 @@ export default function ProfitLossReport() {
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Total Revenue" value={loading ? '…' : formatMoney(pl.totalRevenue)} accent="emerald" />
-        <StatCard label="Total Expenses" value={loading ? '…' : formatMoney(pl.totalExpenses)} accent="rose" />
+        <StatCard label={t('finance.totalRevenue')} value={loading ? '…' : formatMoney(pl.totalRevenue)} accent="emerald" />
+        <StatCard label={t('finance.totalExpenses')} value={loading ? '…' : formatMoney(pl.totalExpenses)} accent="rose" />
         <StatCard
-          label={pl.netProfit >= 0 ? 'Net Profit' : 'Net Loss'}
+          label={pl.netProfit >= 0 ? t('finance.netProfit') : t('finance.netLoss')}
           value={loading ? '…' : formatMoney(pl.netProfit)}
           accent="indigo"
         />
         <StatCard
-          label="Margin"
+          label={t('finance.margin')}
           value={loading ? '…' : `${pl.marginPct}%`}
           accent="amber"
         />
       </div>
 
       <div className="panel grid grid-cols-1 gap-4 p-5 md:grid-cols-2">
-        <DateField label="From" value={dateFrom} onChange={setDateFrom} />
-        <DateField label="To" value={dateTo} onChange={setDateTo} />
+        <DateField label={t('common.from')} value={dateFrom} onChange={setDateFrom} />
+        <DateField label={t('common.to')} value={dateTo} onChange={setDateTo} />
       </div>
 
       <div>
         <TableExportHeader title="Profit & Loss Statement" count={exportRows.length}>
           <ExportReportButton
+            label={t('common.downloadCsv')}
             reportTitle={PROFIT_LOSS_TITLE}
             columnDefs={PROFIT_LOSS_COLUMNS}
             getRows={() => exportRows}
@@ -145,18 +148,18 @@ export default function ProfitLossReport() {
 
         <div className="panel overflow-hidden p-0">
           {loading ? (
-            <p className="px-4 py-8 text-center text-sm text-slate-500">Loading…</p>
+            <p className="px-4 py-8 text-center text-sm text-slate-500">{t('common.loading')}</p>
           ) : !hasLines ? (
-            <p className="px-4 py-8 text-center text-sm text-slate-500">No profit &amp; loss activity in this period.</p>
+            <p className="px-4 py-8 text-center text-sm text-slate-500">{t('common.noData')}</p>
           ) : (
             <>
-              <SectionTitle>Revenue</SectionTitle>
+              <SectionTitle>{t('finance.totalRevenue')}</SectionTitle>
               {pl.revenueLines.map((line) => (
                 <StatementRow key={`rev-${line.label}`} label={line.label} amount={line.amount} count={line.count} />
               ))}
-              <StatementRow label="Total Revenue" amount={pl.totalRevenue} strong />
+              <StatementRow label={t('finance.totalRevenue')} amount={pl.totalRevenue} strong />
 
-              <SectionTitle>Expenses</SectionTitle>
+              <SectionTitle>{t('finance.totalExpenses')}</SectionTitle>
               {pl.expenseLines.length === 0 ? (
                 <p className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">No paid expenses in this period.</p>
               ) : (
@@ -164,11 +167,11 @@ export default function ProfitLossReport() {
                   <StatementRow key={`exp-${line.label}`} label={line.label} amount={line.amount} count={line.count} />
                 ))
               )}
-              <StatementRow label="Total Expenses" amount={pl.totalExpenses} strong />
+              <StatementRow label={t('finance.totalExpenses')} amount={pl.totalExpenses} strong />
 
-              <SectionTitle>Result</SectionTitle>
+              <SectionTitle>{t('finance.profitLoss.title')}</SectionTitle>
               <StatementRow
-                label={pl.netProfit >= 0 ? 'Net Profit' : 'Net Loss'}
+                label={pl.netProfit >= 0 ? t('finance.netProfit') : t('finance.netLoss')}
                 amount={pl.netProfit}
                 strong
                 negativeHighlight

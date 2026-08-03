@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { get, post, put, del } from '../../lib/api.js'
+import { useLanguage } from '../../context/LanguageContext.jsx'
 import PageHeader from '../../components/ui/PageHeader.jsx'
 import Button from '../../components/ui/Button.jsx'
 import DataTable from '../../components/ui/DataTable.jsx'
@@ -34,6 +35,7 @@ function findExistingFinish(rows, { studentId, program, excludeId }) {
 }
 
 export default function StudentFinish() {
+  const { t } = useLanguage()
   const [rows, setRows] = useState([])
   const [students, setStudents] = useState([])
   const [form, setForm] = useState(emptyForm)
@@ -263,7 +265,7 @@ export default function StudentFinish() {
     {
       key: 'cert',
       label: 'Certificate',
-      render: (r) => <Badge variant={r.cert ? 'success' : 'neutral'}>{r.cert ? 'Issued' : 'Pending'}</Badge>,
+      render: (r) => <Badge variant={r.cert ? 'success' : 'neutral'}>{r.cert ? 'Issued' : t('common.pending')}</Badge>,
     },
     {
       key: 'actions',
@@ -271,8 +273,8 @@ export default function StudentFinish() {
       className: 'text-right',
       render: (row) => (
         <div className="flex justify-end gap-2">
-          <Button size="sm" variant="secondary" onClick={() => startEdit(row)}>Edit</Button>
-          <Button size="sm" variant="danger" onClick={() => remove(row.id)}>Delete</Button>
+          <Button size="sm" variant="secondary" onClick={() => startEdit(row)}>{t('common.edit')}</Button>
+          <Button size="sm" variant="danger" onClick={() => remove(row.id)}>{t('common.delete')}</Button>
         </div>
       ),
     },
@@ -283,8 +285,8 @@ export default function StudentFinish() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Student & Finish"
-        subtitle="Graduation records, final grades, and certificates"
+        title={t('students.finish.title')}
+        subtitle={t('students.finish.subtitle')}
       />
 
       <FormAlert message={message} error={error} />
@@ -364,9 +366,9 @@ export default function StudentFinish() {
           </div>
         </div>
         <div className="mt-6 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800 pt-6">
-          <Button type="button" variant="secondary" onClick={reset}>Cancel</Button>
+          <Button type="button" variant="secondary" onClick={reset}>{t('common.cancel')}</Button>
           <Button type="submit" disabled={saving || (blockSave && !editingIssuedSelf)}>
-            {saving ? 'Saving…' : editingId ? 'Update Record' : 'Save Record'}
+            {saving ? t('common.saving') : editingId ? 'Update Record' : 'Save Record'}
           </Button>
         </div>
       </form>

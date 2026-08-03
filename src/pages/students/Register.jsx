@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useLanguage } from '../../context/LanguageContext.jsx'
 import { formatDisplayDate, formatDisplayDateTime, isValidIsoDate } from '../../lib/dateFormat.js'
 import DateField from '../../components/ui/DateField.jsx'
 import ProgramCourseField from './components/ProgramCourseField.jsx'
@@ -90,6 +91,7 @@ function validatePersonal(form) {
 }
 
 export default function StudentRegister() {
+  const { t } = useLanguage()
   const [form, setForm] = useState(emptyForm)
   const [students, setStudents] = useState([])
   const [editingId, setEditingId] = useState(null)
@@ -303,13 +305,13 @@ export default function StudentRegister() {
     },
     {
       key: 'name',
-      label: 'Full Name',
+      label: t('common.fullName'),
       className: 'whitespace-nowrap',
       render: (r) => r.name || fullName(r.firstName, r.lastName) || '—',
     },
     { key: 'gender', label: 'Gender', className: 'whitespace-nowrap', render: (r) => r.gender || '—' },
-    { key: 'email', label: 'Email', className: 'whitespace-nowrap' },
-    { key: 'phone', label: 'Phone', className: 'whitespace-nowrap', render: (r) => r.phone || '—' },
+    { key: 'email', label: t('common.email'), className: 'whitespace-nowrap' },
+    { key: 'phone', label: t('common.phone'), className: 'whitespace-nowrap', render: (r) => r.phone || '—' },
     {
       key: 'program',
       label: 'Program',
@@ -333,8 +335,8 @@ export default function StudentRegister() {
       className: 'whitespace-nowrap text-right',
       render: (row) => (
         <div className="flex justify-end gap-2">
-          <Button size="sm" variant="secondary" onClick={() => startEdit(row)}>Edit</Button>
-          <Button size="sm" variant="danger" onClick={() => remove(row.id)}>Delete</Button>
+          <Button size="sm" variant="secondary" onClick={() => startEdit(row)}>{t('common.edit')}</Button>
+          <Button size="sm" variant="danger" onClick={() => remove(row.id)}>{t('common.delete')}</Button>
         </div>
       ),
     },
@@ -343,8 +345,8 @@ export default function StudentRegister() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Student Register"
-        subtitle="Create, view, update, and delete student records"
+        title={t('students.register.title')}
+        subtitle={t('students.register.subtitle')}
         actions={!editingId && <Button variant="secondary" onClick={startCreate}>New Student</Button>}
       />
 
@@ -539,7 +541,7 @@ export default function StudentRegister() {
         )}
 
         <div className="mt-6 flex justify-between gap-3 border-t border-slate-100 pt-6 dark:border-slate-800">
-          <Button type="button" variant="secondary" onClick={reset}>Cancel</Button>
+          <Button type="button" variant="secondary" onClick={reset}>{t('common.cancel')}</Button>
           <div className="flex gap-3">
             {step > 0 && (
               <Button type="button" variant="secondary" onClick={goBack}>
@@ -552,7 +554,7 @@ export default function StudentRegister() {
               </Button>
             ) : (
               <Button type="submit" disabled={saving}>
-                {saving ? 'Saving…' : editingId ? 'Update Student' : 'Register Student'}
+                {saving ? t('common.saving') : editingId ? 'Update Student' : 'Register Student'}
               </Button>
             )}
           </div>

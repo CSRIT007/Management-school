@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { get, put } from '../../lib/api.js'
 import { useAuth } from '../../context/AuthContext.jsx'
+import { useLanguage } from '../../context/LanguageContext.jsx'
 import { ROLES } from '../../lib/roles.js'
 import { formatInvNo, sortInvoicesNewestFirst } from '../../lib/invoiceId.js'
 import { formatDisplayDate } from '../../lib/dateFormat.js'
@@ -29,6 +30,7 @@ function money(n) {
 
 export default function PendingPayments() {
   const { role } = useAuth()
+  const { t } = useLanguage()
   const canEdit = role === ROLES.ADMIN || role === ROLES.FINANCE
 
   const [payments, setPayments] = useState([])
@@ -91,18 +93,18 @@ export default function PendingPayments() {
     }
   }
 
-  const columns = [
+  const columns = useMemo(() => [
     { key: 'id', label: 'INV No', className: 'font-mono font-semibold', render: (r) => formatInvNo(r.id) },
     { key: 'studentId', label: 'Student ID', render: (r) => r.studentId || '—' },
     { key: 'studentName', label: 'Student' },
-    { key: 'date', label: 'Date', render: (r) => formatDisplayDate(r.date) },
-    { key: 'purpose', label: 'Purpose', render: (r) => r.purpose || '—' },
-    { key: 'amount', label: 'Amount', render: (r) => money(r.amount) },
-    { key: 'method', label: 'Method' },
+    { key: 'date', label: t('common.date'), render: (r) => formatDisplayDate(r.date) },
+    { key: 'purpose', label: t('common.purpose'), render: (r) => r.purpose || '—' },
+    { key: 'amount', label: t('common.amount'), render: (r) => money(r.amount) },
+    { key: 'method', label: t('common.method') },
     {
       key: 'status',
-      label: 'Status',
-      render: () => <Badge variant="warning">Pending</Badge>,
+      label: t('common.status'),
+      render: () => <Badge variant="warning">{t('common.pending')}</Badge>,
     },
     ...(canEdit
       ? [{
@@ -116,18 +118,18 @@ export default function PendingPayments() {
               disabled={savingId === row.id}
               onClick={() => markPaid(row)}
             >
-              {savingId === row.id ? 'Saving…' : 'Mark Paid'}
+              {savingId === row.id ? t('common.saving') : t('finance.markPaid')}
             </Button>
           ),
         }]
       : []),
-  ]
+  ], [t, canEdit, savingId])
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Pending Payments"
-        subtitle="Outstanding invoices waiting to be collected"
+        title={t('finance.pending.title')}
+        subtitle={t('finance.pending.subtitle')}
       />
 
       <FormAlert message={message} error={error} />
@@ -140,27 +142,28 @@ export default function PendingPayments() {
       <div className="panel p-5">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
           <div>
-            <label className="label">Method</label>
+            <label className="label">{t('common.method')}</label>
             <select className="input" value={filters.method} onChange={(e) => setFilters((f) => ({ ...f, method: e.target.value }))}>
-              <option value="all">All</option>
+              <option value="all">{t('common.all')}</option>
               {methods.map((m) => <option key={m} value={m}>{m}</option>)}
             </select>
           </div>
           <div>
-            <label className="label">Purpose</label>
+            <label className="label">{t('common.purpose')}</label>
             <select className="input" value={filters.purpose} onChange={(e) => setFilters((f) => ({ ...f, purpose: e.target.value }))}>
-              <option value="all">All</option>
+              <option value="all">{t('common.all')}</option>
               {purposes.map((p) => <option key={p} value={p}>{p}</option>)}
             </select>
           </div>
-          <DateField label="From" value={filters.dateFrom} onChange={(v) => setFilters((f) => ({ ...f, dateFrom: v }))} />
-          <DateField label="To" value={filters.dateTo} onChange={(v) => setFilters((f) => ({ ...f, dateTo: v }))} />
+          <DateField label={t('common.from')} value={filters.dateFrom} onChange={(v) => setFilters((f) => ({ ...f, dateFrom: v }))} />
+          <DateField label={t('common.to')} value={filters.dateTo} onChange={(v) => setFilters((f) => ({ ...f, dateTo: v }))} />
         </div>
       </div>
 
       <div>
         <TableExportHeader title="Outstanding Payments" count={filtered.length}>
           <ExportReportButton
+            label={t('common.downloadCsv')}
             reportTitle={PENDING_PAYMENTS_REPORT_TITLE}
             columnDefs={PENDING_EXPORT_COLUMNS}
             getRows={(exportFilters) => filterPendingPayments(payments, { ...filters, ...exportFilters })}
@@ -168,7 +171,7 @@ export default function PendingPayments() {
             disabled={loading || filtered.length === 0}
           />
         </TableExportHeader>
-        <DataTable columns={columns} rows={filtered} emptyMessage={loading ? 'Loading…' : 'No pending payments.'} />
+        <DataTable columns={columns} rows={filtered} emptyMessage={loading ? t('common.loading') : t('common.noData')} />
       </div>
     </div>
   )

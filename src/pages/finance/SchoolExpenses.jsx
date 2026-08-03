@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { get, post, put } from '../../lib/api.js'
 import { useAuth } from '../../context/AuthContext.jsx'
+import { useLanguage } from '../../context/LanguageContext.jsx'
 import { canEditPayments } from '../../lib/roles.js'
 import { formatDisplayDate, todayIso } from '../../lib/dateFormat.js'
 import PageHeader from '../../components/ui/PageHeader.jsx'
@@ -43,6 +44,7 @@ const emptyExpense = {
 
 export default function SchoolExpenses() {
   const { role } = useAuth()
+  const { t } = useLanguage()
   const canEdit = canEditPayments(role)
 
   const [expenses, setExpenses] = useState([])
@@ -176,24 +178,24 @@ export default function SchoolExpenses() {
     }
   }
 
-  const columns = [
+  const columns = useMemo(() => [
     { key: 'id', label: 'ID', className: 'whitespace-nowrap font-mono font-semibold' },
-    { key: 'category', label: 'Category', className: 'whitespace-nowrap' },
+    { key: 'category', label: t('common.category'), className: 'whitespace-nowrap' },
     { key: 'title', label: 'Title', className: 'font-semibold' },
     { key: 'period', label: 'Period', className: 'whitespace-nowrap font-mono' },
     {
       key: 'date',
-      label: 'Date',
+      label: t('common.date'),
       className: 'whitespace-nowrap',
       render: (r) => formatDisplayDate(r.date),
     },
     {
       key: 'amount',
-      label: 'Amount',
+      label: t('common.amount'),
       className: 'whitespace-nowrap',
       render: (r) => money(r.amount),
     },
-    { key: 'method', label: 'Method', className: 'whitespace-nowrap' },
+    { key: 'method', label: t('common.method'), className: 'whitespace-nowrap' },
     {
       key: 'vendor',
       label: 'Vendor',
@@ -202,7 +204,7 @@ export default function SchoolExpenses() {
     },
     {
       key: 'status',
-      label: 'Status',
+      label: t('common.status'),
       className: 'whitespace-nowrap',
       render: (r) => (
         <Badge variant={r.status === 'Paid' ? 'success' : 'warning'}>{r.status}</Badge>
@@ -214,17 +216,17 @@ export default function SchoolExpenses() {
           label: '',
           className: 'whitespace-nowrap text-right',
           render: (row) => (
-            <Button size="sm" variant="secondary" onClick={() => startEdit(row)}>Edit</Button>
+            <Button size="sm" variant="secondary" onClick={() => startEdit(row)}>{t('common.edit')}</Button>
           ),
         }]
       : []),
-  ]
+  ], [t, canEdit])
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="School Operating Expenses"
-        subtitle="Rental, utility, commission, and other school costs outside salary"
+        title={t('finance.expenses.title')}
+        subtitle={t('finance.expenses.subtitle')}
       />
 
       {error && (
@@ -252,28 +254,28 @@ export default function SchoolExpenses() {
 
       <div className="panel grid grid-cols-1 gap-4 p-5 md:grid-cols-2 lg:grid-cols-5">
         <div>
-          <label className="label">Category</label>
+          <label className="label">{t('common.category')}</label>
           <select
             className="input"
             value={filters.category}
             onChange={(e) => setFilters((f) => ({ ...f, category: e.target.value }))}
           >
-            <option value="all">All</option>
+            <option value="all">{t('common.all')}</option>
             {EXPENSE_CATEGORIES.map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
           </select>
         </div>
         <div>
-          <label className="label">Status</label>
+          <label className="label">{t('common.status')}</label>
           <select
             className="input"
             value={filters.status}
             onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
           >
-            <option value="all">All</option>
-            <option value="Paid">Paid</option>
-            <option value="Pending">Pending</option>
+            <option value="all">{t('common.all')}</option>
+            <option value="Paid">{t('common.paid')}</option>
+            <option value="Pending">{t('common.pending')}</option>
           </select>
         </div>
         <div>
@@ -285,8 +287,8 @@ export default function SchoolExpenses() {
             onChange={(e) => setFilters((f) => ({ ...f, period: e.target.value }))}
           />
         </div>
-        <DateField label="From" value={filters.dateFrom} onChange={(dateFrom) => setFilters((f) => ({ ...f, dateFrom }))} />
-        <DateField label="To" value={filters.dateTo} onChange={(dateTo) => setFilters((f) => ({ ...f, dateTo }))} />
+        <DateField label={t('common.from')} value={filters.dateFrom} onChange={(dateFrom) => setFilters((f) => ({ ...f, dateFrom }))} />
+        <DateField label={t('common.to')} value={filters.dateTo} onChange={(dateTo) => setFilters((f) => ({ ...f, dateTo }))} />
       </div>
 
       {canEdit && (
@@ -296,7 +298,7 @@ export default function SchoolExpenses() {
           </h3>
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
             <div>
-              <label className="label">Category <span className="text-rose-500">*</span></label>
+              <label className="label">{t('common.category')} <span className="text-rose-500">*</span></label>
               <select
                 className="input"
                 value={form.category}
@@ -347,7 +349,7 @@ export default function SchoolExpenses() {
               />
             </div>
             <div>
-              <label className="label">Method</label>
+              <label className="label">{t('common.method')}</label>
               <select
                 className="input"
                 value={form.method}
@@ -360,7 +362,7 @@ export default function SchoolExpenses() {
               </select>
             </div>
             <div>
-              <label className="label">Status</label>
+              <label className="label">{t('common.status')}</label>
               <select
                 className="input"
                 value={form.status}
@@ -380,7 +382,7 @@ export default function SchoolExpenses() {
               />
             </div>
             <div className="md:col-span-2 lg:col-span-3">
-              <label className="label">Note</label>
+              <label className="label">{t('common.note')}</label>
               <textarea
                 className="input min-h-[64px] resize-y"
                 value={form.note}
@@ -390,9 +392,9 @@ export default function SchoolExpenses() {
             </div>
           </div>
           <div className="mt-6 flex justify-end gap-3 border-t border-slate-100 pt-6 dark:border-slate-800">
-            <Button type="button" variant="secondary" onClick={resetForm}>Cancel</Button>
+            <Button type="button" variant="secondary" onClick={resetForm}>{t('common.cancel')}</Button>
             <Button type="submit" disabled={saving}>
-              {saving ? 'Saving…' : editingId ? 'Update expense' : 'Save expense'}
+              {saving ? t('common.saving') : editingId ? t('common.update') : t('common.save')}
             </Button>
           </div>
         </form>
@@ -401,6 +403,7 @@ export default function SchoolExpenses() {
       <div>
         <TableExportHeader title="Expense history" count={filtered.length}>
           <ExportReportButton
+            label={t('common.downloadCsv')}
             reportTitle={EXPENSE_REPORT_TITLE}
             columnDefs={EXPENSE_EXPORT_COLUMNS}
             getRows={() => filtered}
@@ -412,7 +415,7 @@ export default function SchoolExpenses() {
         <DataTable
           columns={columns}
           rows={filtered}
-          emptyMessage={loading ? 'Loading…' : 'No school expenses recorded yet.'}
+          emptyMessage={loading ? t('common.loading') : t('common.noData')}
         />
       </div>
     </div>

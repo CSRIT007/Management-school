@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { get, post, put, del } from '../../lib/api.js'
 import { useAuth } from '../../context/AuthContext.jsx'
+import { useLanguage } from '../../context/LanguageContext.jsx'
 import { canEditPayments } from '../../lib/roles.js'
 import { INVOICE_PREFIX, formatInvNo, sortInvoicesNewestFirst } from '../../lib/invoiceId.js'
 import { todayIso, formatDisplayDate } from '../../lib/dateFormat.js'
@@ -40,6 +41,7 @@ async function fetchNextInvoiceId() {
 
 export default function StudentPayment() {
   const { user, role } = useAuth()
+  const { t } = useLanguage()
   const canEdit = canEditPayments(role)
   const [payments, setPayments] = useState([])
   const [students, setStudents] = useState([])
@@ -209,11 +211,11 @@ export default function StudentPayment() {
       label: 'Student Name',
       render: (r) => r.studentName || '—',
     },
-    { key: 'date', label: 'Date', render: (r) => formatDisplayDate(r.date) },
-    { key: 'purpose', label: 'Purpose' },
-    { key: 'amount', label: 'Amount', render: (r) => formatMoney(r.amount) },
-    { key: 'method', label: 'Method' },
-    { key: 'status', label: 'Status', render: (r) => <Badge status={r.status} /> },
+    { key: 'date', label: t('common.date'), render: (r) => formatDisplayDate(r.date) },
+    { key: 'purpose', label: t('common.purpose') },
+    { key: 'amount', label: t('common.amount'), render: (r) => formatMoney(r.amount) },
+    { key: 'method', label: t('common.method') },
+    { key: 'status', label: t('common.status'), render: (r) => <Badge status={r.status} /> },
     {
       key: 'actions',
       label: '',
@@ -225,8 +227,8 @@ export default function StudentPayment() {
           </Button>
           {canEdit && (
             <>
-              <Button size="sm" variant="secondary" onClick={() => startEdit(row)}>Edit</Button>
-              <Button size="sm" variant="danger" onClick={() => remove(row.id)}>Delete</Button>
+              <Button size="sm" variant="secondary" onClick={() => startEdit(row)}>{t('common.edit')}</Button>
+              <Button size="sm" variant="danger" onClick={() => remove(row.id)}>{t('common.delete')}</Button>
             </>
           )}
         </div>
@@ -237,8 +239,8 @@ export default function StudentPayment() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Student & Payment"
-        subtitle={canEdit ? 'Record payments and print invoices when needed' : 'View payment history and print invoices'}
+        title={t('students.payment.title')}
+        subtitle={canEdit ? t('students.payment.subtitle') : 'View payment history and print invoices'}
       />
 
       <FormAlert message={message} error={error} />
@@ -286,7 +288,7 @@ export default function StudentPayment() {
             </select>
           </div>
           <DateField
-            label="Date"
+            label={t('common.date')}
             value={form.date}
             onChange={(date) => setForm((f) => ({ ...f, date }))}
             required
@@ -296,7 +298,7 @@ export default function StudentPayment() {
             onChange={(purpose) => setForm((f) => ({ ...f, purpose }))}
           />
           <div>
-            <label className="label">Amount ($)</label>
+            <label className="label">{t('common.amount')} ($)</label>
             <input type="number" step="0.01" min="0" className="input" placeholder="0.00" value={form.amount} onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))} required />
           </div>
           <div>
@@ -308,7 +310,7 @@ export default function StudentPayment() {
             </select>
           </div>
           <div>
-            <label className="label">Status</label>
+            <label className="label">{t('common.status')}</label>
             <select className="input" value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}>
               <option>Paid</option>
               <option>Pending</option>
@@ -321,9 +323,9 @@ export default function StudentPayment() {
           />
         </div>
         <div className="mt-6 flex flex-wrap justify-end gap-3 border-t border-slate-100 dark:border-slate-800 pt-6">
-          <Button type="button" variant="secondary" onClick={reset}>Cancel</Button>
+          <Button type="button" variant="secondary" onClick={reset}>{t('common.cancel')}</Button>
           <Button type="submit" variant="secondary" disabled={saving}>
-            {saving ? 'Saving…' : 'Save'}
+            {saving ? t('common.saving') : t('common.save')}
           </Button>
           <Button
             type="button"
@@ -352,7 +354,7 @@ export default function StudentPayment() {
               render: (state, setState) => (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="label">Status</label>
+                    <label className="label">{t('common.status')}</label>
                     <select
                       className="input"
                       value={state.status}
@@ -404,12 +406,12 @@ export default function StudentPayment() {
                     </select>
                   </div>
                   <DateField
-                    label="Date from"
+                    label={`${t('common.date')} ${t('common.from')}`}
                     value={state.dateFrom}
                     onChange={(dateFrom) => setState((s) => ({ ...s, dateFrom }))}
                   />
                   <DateField
-                    label="Date to"
+                    label={`${t('common.date')} ${t('common.to')}`}
                     value={state.dateTo}
                     onChange={(dateTo) => setState((s) => ({ ...s, dateTo }))}
                   />

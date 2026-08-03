@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
+import { useLanguage } from '../context/LanguageContext.jsx'
 import { getNavItemsForRole } from '../lib/roles.js'
+import { NAV_LABEL_KEYS, SECTION_LABEL_KEYS } from '../i18n/index.js'
 
 function Icon({ name }) {
   const icons = {
@@ -168,7 +170,11 @@ function SectionButton({
 export default function Sidebar({ collapsed }) {
   const location = useLocation()
   const { role } = useAuth()
+  const { t } = useLanguage()
   const visibleNav = useMemo(() => getNavItemsForRole(role), [role])
+
+  const sectionLabel = (section) => t(SECTION_LABEL_KEYS[section] || section)
+  const itemLabel = (item) => t(NAV_LABEL_KEYS[item.to] || item.label)
 
   const activeSection = useMemo(() => {
     const match = visibleNav.find((group) =>
@@ -186,10 +192,10 @@ export default function Sidebar({ collapsed }) {
   const currentLabel = useMemo(() => {
     for (const group of visibleNav) {
       const item = group.items.find((i) => pathMatches(location.pathname, i.to))
-      if (item) return item.label
+      if (item) return itemLabel(item)
     }
-    return 'Home'
-  }, [visibleNav, location.pathname])
+    return t('nav.dashboard')
+  }, [visibleNav, location.pathname, t])
 
   const toggleSection = (section) => {
     setOpenSection((prev) => {
@@ -236,7 +242,7 @@ export default function Sidebar({ collapsed }) {
               <NavItem
                 key={group.section}
                 to={item.to}
-                label={group.section}
+                label={sectionLabel(group.section)}
                 icon={group.icon || item.icon}
                 collapsed={collapsed}
               />
@@ -246,7 +252,7 @@ export default function Sidebar({ collapsed }) {
           return (
             <div key={group.section} className="space-y-0.5">
               <SectionButton
-                section={group.section}
+                section={sectionLabel(group.section)}
                 icon={group.icon}
                 open={isOpen}
                 active={isActive}
@@ -263,7 +269,9 @@ export default function Sidebar({ collapsed }) {
                   {group.items.map((item) => (
                     <NavItem
                       key={item.to}
-                      {...item}
+                      to={item.to}
+                      label={itemLabel(item)}
+                      icon={item.icon}
                       collapsed={collapsed}
                       nested
                     />
@@ -278,13 +286,13 @@ export default function Sidebar({ collapsed }) {
       {!collapsed && (
         <div className="border-t border-slate-800 p-4">
           <div className="rounded-xl bg-slate-800/50 p-3">
-            <div className="text-xs text-slate-500">Current page</div>
+            <div className="text-xs text-slate-500">{t('nav.currentPage')}</div>
             <div className="mt-0.5 truncate text-sm font-medium text-indigo-400">
               {currentLabel}
             </div>
             {activeSection && activeSection !== 'Dashboard' ? (
               <div className="mt-0.5 truncate text-[10px] uppercase tracking-wider text-slate-500">
-                {activeSection}
+                {sectionLabel(activeSection)}
               </div>
             ) : null}
           </div>

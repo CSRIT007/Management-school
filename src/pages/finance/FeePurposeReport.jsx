@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { get } from '../../lib/api.js'
+import { useLanguage } from '../../context/LanguageContext.jsx'
 import PageHeader from '../../components/ui/PageHeader.jsx'
 import DataTable from '../../components/ui/DataTable.jsx'
 import DateField from '../../components/ui/DateField.jsx'
@@ -14,6 +15,7 @@ import {
 } from '../../lib/exports/financeExtraExport.js'
 
 export default function FeePurposeReport() {
+  const { t } = useLanguage()
   const [payments, setPayments] = useState([])
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
@@ -47,8 +49,8 @@ export default function FeePurposeReport() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Fee Purpose Report"
-        subtitle="Tuition, registration, books, exams, and other fee categories"
+        title={t('finance.purpose.title')}
+        subtitle={t('finance.purpose.subtitle')}
       />
 
       {error && (
@@ -60,25 +62,26 @@ export default function FeePurposeReport() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label="Purposes" value={loading ? '…' : rows.length} accent="indigo" />
         <StatCard label="Collected" value={loading ? '…' : formatMoney(collected)} accent="emerald" />
-        <StatCard label="Pending" value={loading ? '…' : formatMoney(pending)} accent="amber" />
+        <StatCard label={t('common.pending')} value={loading ? '…' : formatMoney(pending)} accent="amber" />
       </div>
 
       <div className="panel grid grid-cols-1 gap-4 p-5 md:grid-cols-3">
         <div>
-          <label className="label">Status</label>
+          <label className="label">{t('common.status')}</label>
           <select className="input" value={status} onChange={(e) => setStatus(e.target.value)}>
-            <option value="all">All</option>
-            <option value="Paid">Paid</option>
-            <option value="Pending">Pending</option>
+            <option value="all">{t('common.all')}</option>
+            <option value="Paid">{t('common.paid')}</option>
+            <option value="Pending">{t('common.pending')}</option>
           </select>
         </div>
-        <DateField label="From" value={dateFrom} onChange={setDateFrom} />
-        <DateField label="To" value={dateTo} onChange={setDateTo} />
+        <DateField label={t('common.from')} value={dateFrom} onChange={setDateFrom} />
+        <DateField label={t('common.to')} value={dateTo} onChange={setDateTo} />
       </div>
 
       <div>
         <TableExportHeader title="By Fee Purpose" count={rows.length}>
           <ExportReportButton
+            label={t('common.downloadCsv')}
             reportTitle={PURPOSE_REPORT_TITLE}
             columnDefs={PURPOSE_COLUMNS}
             getRows={() => rows}
@@ -90,15 +93,15 @@ export default function FeePurposeReport() {
         </TableExportHeader>
         <DataTable
           columns={[
-            { key: 'purpose', label: 'Purpose', className: 'font-semibold' },
-            { key: 'paid', label: 'Collected', render: (r) => formatMoney(r.paid) },
-            { key: 'pending', label: 'Pending', render: (r) => formatMoney(r.pending) },
-            { key: 'total', label: 'Total', render: (r) => formatMoney(r.total) },
+            { key: 'purpose', label: t('common.purpose'), className: 'font-semibold' },
+            { key: 'paid', label: t('common.paid'), render: (r) => formatMoney(r.paid) },
+            { key: 'pending', label: t('common.pending'), render: (r) => formatMoney(r.pending) },
+            { key: 'total', label: t('common.total'), render: (r) => formatMoney(r.total) },
             { key: 'paidCount', label: 'Paid #' },
             { key: 'pendingCount', label: 'Pending #' },
           ]}
           rows={rows}
-          emptyMessage={loading ? 'Loading…' : 'No fee records in this period.'}
+          emptyMessage={loading ? t('common.loading') : t('common.noData')}
         />
       </div>
     </div>

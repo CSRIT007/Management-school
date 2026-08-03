@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { get } from '../../lib/api.js'
+import { useLanguage } from '../../context/LanguageContext.jsx'
 import { formatInvNo } from '../../lib/invoiceId.js'
 import { formatDisplayDate } from '../../lib/dateFormat.js'
 import PageHeader from '../../components/ui/PageHeader.jsx'
@@ -22,7 +23,7 @@ function withStudentId(payment, students) {
   return { ...payment, studentId }
 }
 
-function HistoryModal({ ledger, onClose }) {
+function HistoryModal({ ledger, onClose, t }) {
   if (!ledger) return null
 
   return (
@@ -55,15 +56,15 @@ function HistoryModal({ ledger, onClose }) {
 
         <div className="grid grid-cols-3 gap-3 border-b border-slate-100 px-6 py-4 dark:border-slate-800">
           <div className="rounded-xl bg-emerald-50 px-3 py-2 dark:bg-emerald-950/40">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Paid</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">{t('common.paid')}</p>
             <p className="mt-0.5 text-sm font-bold text-emerald-800 dark:text-emerald-300">{formatMoney(ledger.paid)}</p>
           </div>
           <div className="rounded-xl bg-amber-50 px-3 py-2 dark:bg-amber-950/40">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">Pending</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">{t('common.pending')}</p>
             <p className="mt-0.5 text-sm font-bold text-amber-800 dark:text-amber-300">{formatMoney(ledger.pending)}</p>
           </div>
           <div className="rounded-xl bg-slate-50 px-3 py-2 dark:bg-slate-800/60">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Total</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">{t('common.total')}</p>
             <p className="mt-0.5 text-sm font-bold text-slate-800 dark:text-slate-100">{formatMoney(ledger.total)}</p>
           </div>
         </div>
@@ -72,13 +73,13 @@ function HistoryModal({ ledger, onClose }) {
           <DataTable
             columns={[
               { key: 'id', label: 'INV No', className: 'whitespace-nowrap font-mono', render: (r) => formatInvNo(r.id) },
-              { key: 'date', label: 'Date', className: 'whitespace-nowrap', render: (r) => formatDisplayDate(r.date) },
-              { key: 'purpose', label: 'Purpose', render: (r) => r.purpose || '—' },
-              { key: 'amount', label: 'Amount', className: 'whitespace-nowrap', render: (r) => formatMoney(r.amount) },
-              { key: 'method', label: 'Method', className: 'whitespace-nowrap' },
+              { key: 'date', label: t('common.date'), className: 'whitespace-nowrap', render: (r) => formatDisplayDate(r.date) },
+              { key: 'purpose', label: t('common.purpose'), render: (r) => r.purpose || '—' },
+              { key: 'amount', label: t('common.amount'), className: 'whitespace-nowrap', render: (r) => formatMoney(r.amount) },
+              { key: 'method', label: t('common.method'), className: 'whitespace-nowrap' },
               {
                 key: 'status',
-                label: 'Status',
+                label: t('common.status'),
                 className: 'whitespace-nowrap',
                 render: (r) => (
                   <Badge variant={r.status === 'Paid' ? 'success' : 'warning'}>{r.status}</Badge>
@@ -95,6 +96,7 @@ function HistoryModal({ ledger, onClose }) {
 }
 
 export default function StudentLedger() {
+  const { t } = useLanguage()
   const [payments, setPayments] = useState([])
   const [students, setStudents] = useState([])
   const [studentId, setStudentId] = useState('all')
@@ -149,8 +151,8 @@ export default function StudentLedger() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Student Ledger"
-        subtitle="Payment history and balances per student"
+        title={t('finance.ledger.title')}
+        subtitle={t('finance.ledger.subtitle')}
       />
 
       {error && (
@@ -183,13 +185,14 @@ export default function StudentLedger() {
             ))}
           </select>
         </div>
-        <DateField label="From" value={dateFrom} onChange={setDateFrom} />
-        <DateField label="To" value={dateTo} onChange={setDateTo} />
+        <DateField label={t('common.from')} value={dateFrom} onChange={setDateFrom} />
+        <DateField label={t('common.to')} value={dateTo} onChange={setDateTo} />
       </div>
 
       <div>
         <TableExportHeader title="Student Balances" count={ledgers.length}>
           <ExportReportButton
+            label={t('common.downloadCsv')}
             reportTitle={STUDENT_LEDGER_TITLE}
             columnDefs={LEDGER_SUMMARY_COLUMNS}
             getRows={() => ledgers}
@@ -203,9 +206,9 @@ export default function StudentLedger() {
           columns={[
             { key: 'studentId', label: 'Student ID', className: 'whitespace-nowrap font-mono' },
             { key: 'studentName', label: 'Name', className: 'whitespace-nowrap font-semibold' },
-            { key: 'paid', label: 'Paid', className: 'whitespace-nowrap', render: (r) => formatMoney(r.paid) },
-            { key: 'pending', label: 'Pending', className: 'whitespace-nowrap', render: (r) => formatMoney(r.pending) },
-            { key: 'total', label: 'Total', className: 'whitespace-nowrap', render: (r) => formatMoney(r.total) },
+            { key: 'paid', label: t('common.paid'), className: 'whitespace-nowrap', render: (r) => formatMoney(r.paid) },
+            { key: 'pending', label: t('common.pending'), className: 'whitespace-nowrap', render: (r) => formatMoney(r.pending) },
+            { key: 'total', label: t('common.total'), className: 'whitespace-nowrap', render: (r) => formatMoney(r.total) },
             { key: 'count', label: 'Invoices', className: 'whitespace-nowrap' },
             {
               key: 'actions',
@@ -223,11 +226,11 @@ export default function StudentLedger() {
             },
           ]}
           rows={ledgers}
-          emptyMessage={loading ? 'Loading…' : 'No student payments found.'}
+          emptyMessage={loading ? t('common.loading') : t('common.noData')}
         />
       </div>
 
-      <HistoryModal ledger={historyLedger} onClose={() => setHistoryLedger(null)} />
+      <HistoryModal ledger={historyLedger} onClose={() => setHistoryLedger(null)} t={t} />
     </div>
   )
 }

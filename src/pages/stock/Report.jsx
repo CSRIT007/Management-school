@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { get } from '../../lib/api.js'
 import { useAuth } from '../../context/AuthContext.jsx'
+import { useLanguage } from '../../context/LanguageContext.jsx'
 import { orderToInvoice } from '../../lib/posInvoice.js'
 import { formatInvNo } from '../../lib/invoiceId.js'
 import { formatDisplayDate, todayIso, toIsoDate } from '../../lib/dateFormat.js'
@@ -39,6 +40,7 @@ const paymentVariant = {
 
 export default function StockReport() {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [summary, setSummary] = useState({ totalProducts: 0, lowStockItems: 0, totalSalesToday: 0 })
   const [products, setProducts] = useState([])
   const [orders, setOrders] = useState([])
@@ -137,9 +139,9 @@ export default function StockReport() {
     [summary, orders, low, sales, top, products, unitsInStock, ordersToday]
   )
 
-  const lowStockColumns = [
-    { key: 'name', label: 'Product', className: 'font-semibold text-slate-900 dark:text-slate-100' },
-    { key: 'category', label: 'Category' },
+  const lowStockColumns = useMemo(() => [
+    { key: 'name', label: t('nav.product'), className: 'font-semibold text-slate-900 dark:text-slate-100' },
+    { key: 'category', label: t('common.category') },
     { key: 'sku', label: 'SKU', className: 'font-mono text-xs' },
     { key: 'price', label: 'Price', render: (r) => formatMoney(r.price) },
     {
@@ -149,13 +151,13 @@ export default function StockReport() {
         <Badge variant={Number(r.stock) === 0 ? 'danger' : 'warning'}>{r.stock}</Badge>
       ),
     },
-  ]
+  ], [t])
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Stock Report"
-        subtitle="POS sales, inventory levels, and low-stock alerts"
+        title={t('stock.report.title')}
+        subtitle={t('stock.report.subtitle')}
       />
 
       {error && (
@@ -192,16 +194,16 @@ export default function StockReport() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <SalesChart data={salesChart} loading={loading} />
-        <TopProductsCard data={top} loading={loading} />
+        <SalesChart data={salesChart} loading={loading} t={t} />
+        <TopProductsCard data={top} loading={loading} t={t} />
       </div>
 
       <TableExportHeader
         title={STOCK_REPORT_TITLE}
-        subtitle="Download POS sales, inventory, and summary data below."
+        subtitle={t('stock.report.subtitle')}
       >
         <ExportReportButton
-          label="Download CSV"
+          label={t('common.downloadCsv')}
           reportTitle={STOCK_REPORT_TITLE}
           modalTitle="Export Stock Report"
           description="Choose report sections and filters, then download as one CSV file."
@@ -212,12 +214,12 @@ export default function StockReport() {
             render: (state, setState) => (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <DateField
-                  label="POS sales — date from"
+                  label={`${t('common.from')} — POS`}
                   value={state.dateFrom}
                   onChange={(dateFrom) => setState((s) => ({ ...s, dateFrom }))}
                 />
                 <DateField
-                  label="POS sales — date to"
+                  label={`${t('common.to')} — POS`}
                   value={state.dateTo}
                   onChange={(dateTo) => setState((s) => ({ ...s, dateTo }))}
                 />
@@ -296,6 +298,7 @@ export default function StockReport() {
             loading={loading}
             onView={(order) => setViewInvoice(toInvoice(order))}
             onPrint={(order) => printInvoice(toInvoice(order))}
+            t={t}
           />
         </section>
 
@@ -341,7 +344,7 @@ export default function StockReport() {
   )
 }
 
-function RecentSalesList({ orders, loading, onView, onPrint }) {
+function RecentSalesList({ orders, loading, onView, onPrint, t }) {
   const emptyMessage = 'No POS sales yet. Complete a sale from Point of Sale.'
 
   return (
@@ -362,7 +365,7 @@ function RecentSalesList({ orders, loading, onView, onPrint }) {
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {loading ? (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-slate-400">Loading…</td>
+                <td colSpan={7} className="px-4 py-12 text-center text-slate-400">{t('common.loading')}</td>
               </tr>
             ) : orders.length === 0 ? (
               <tr>
@@ -425,7 +428,7 @@ function RecentSalesList({ orders, loading, onView, onPrint }) {
   )
 }
 
-function SalesChart({ data, loading }) {
+function SalesChart({ data, loading, t }) {
   const maxVal = Math.max(...data.map((d) => d.total || 0), 1)
 
   return (
@@ -435,7 +438,7 @@ function SalesChart({ data, loading }) {
         <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Daily revenue from POS orders (last 7 days)</p>
       </div>
       {loading ? (
-        <div className="flex h-48 items-center justify-center text-sm text-slate-400">Loading…</div>
+        <div className="flex h-48 items-center justify-center text-sm text-slate-400">{t('common.loading')}</div>
       ) : data.length === 0 ? (
         <div className="flex h-48 items-center justify-center text-sm text-slate-400">No sales recorded yet</div>
       ) : (
@@ -464,7 +467,7 @@ function SalesChart({ data, loading }) {
   )
 }
 
-function TopProductsCard({ data, loading }) {
+function TopProductsCard({ data, loading, t }) {
   const maxQty = Math.max(...data.map((d) => d.qty || 0), 1)
 
   return (
@@ -474,7 +477,7 @@ function TopProductsCard({ data, loading }) {
         <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Most sold items from POS checkout</p>
       </div>
       {loading ? (
-        <div className="flex h-48 items-center justify-center text-sm text-slate-400">Loading…</div>
+        <div className="flex h-48 items-center justify-center text-sm text-slate-400">{t('common.loading')}</div>
       ) : data.length === 0 ? (
         <div className="flex h-48 items-center justify-center text-sm text-slate-400">No product sales yet</div>
       ) : (

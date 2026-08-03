@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { get, put } from '../../lib/api.js'
 import { useAuth } from '../../context/AuthContext.jsx'
+import { useLanguage } from '../../context/LanguageContext.jsx'
 import { ROLES } from '../../lib/roles.js'
 import { todayIso, formatDisplayDate } from '../../lib/dateFormat.js'
 import PageHeader from '../../components/ui/PageHeader.jsx'
@@ -31,6 +32,7 @@ function statusVariant(status) {
 
 export default function ClassAttendance() {
   const { user, role } = useAuth()
+  const { t } = useLanguage()
   const isTeacher = role === ROLES.TEACHER
 
   const [classes, setClasses] = useState([])
@@ -181,12 +183,12 @@ export default function ClassAttendance() {
     },
     {
       key: 'studentName',
-      label: 'Name',
+      label: t('common.name'),
       className: 'whitespace-nowrap font-semibold',
     },
     {
       key: 'status',
-      label: 'Status',
+      label: t('common.status'),
       className: 'whitespace-nowrap',
       render: (r) => (
         <select
@@ -208,7 +210,7 @@ export default function ClassAttendance() {
     },
     {
       key: 'note',
-      label: 'Note',
+      label: t('common.note'),
       render: (r) => (
         <input
           className="input py-1.5 text-sm"
@@ -223,11 +225,11 @@ export default function ClassAttendance() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Class Attendance"
+        title={t('students.attendance.title')}
         subtitle={
           isTeacher
             ? 'Mark daily attendance for your assigned classes'
-            : 'Daily roll call — Present, Absent, Late, or Excused'
+            : t('students.attendance.subtitle')
         }
       />
 
@@ -244,10 +246,10 @@ export default function ClassAttendance() {
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Present" value={sheetLoading ? '…' : counts.Present} accent="emerald" />
-        <StatCard label="Absent" value={sheetLoading ? '…' : counts.Absent} accent="rose" />
-        <StatCard label="Late" value={sheetLoading ? '…' : counts.Late} accent="amber" />
-        <StatCard label="Excused" value={sheetLoading ? '…' : counts.Excused} accent="indigo" />
+        <StatCard label={t('common.present')} value={sheetLoading ? '…' : counts.Present} accent="emerald" />
+        <StatCard label={t('common.absent')} value={sheetLoading ? '…' : counts.Absent} accent="rose" />
+        <StatCard label={t('common.late')} value={sheetLoading ? '…' : counts.Late} accent="amber" />
+        <StatCard label={t('common.excused')} value={sheetLoading ? '…' : counts.Excused} accent="indigo" />
       </div>
 
       <div className="panel grid grid-cols-1 gap-4 p-5 md:grid-cols-3">
@@ -272,13 +274,13 @@ export default function ClassAttendance() {
             </p>
           )}
         </div>
-        <DateField label="Date" value={date} onChange={setDate} />
+        <DateField label={t('common.date')} value={date} onChange={setDate} />
         <div className="flex flex-wrap items-end gap-2">
           <Button type="button" variant="secondary" onClick={() => loadSheet()} disabled={sheetLoading || !classId}>
             Reload
           </Button>
           <Button type="button" onClick={save} disabled={saving || !rows.length || sheetLoading}>
-            {saving ? 'Saving…' : dirty ? 'Save attendance' : 'Save attendance'}
+            {saving ? t('common.saving') : dirty ? 'Save attendance' : 'Save attendance'}
           </Button>
         </div>
       </div>
@@ -318,7 +320,7 @@ export default function ClassAttendance() {
           rows={rows}
           emptyMessage={
             loading || sheetLoading
-              ? 'Loading…'
+              ? t('common.loading')
               : !classId
                 ? 'Select a class to take attendance.'
                 : 'No students enrolled in this class.'

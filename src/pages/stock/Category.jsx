@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { get, post, put, del } from '../../lib/api.js'
+import { useLanguage } from '../../context/LanguageContext.jsx'
 import PageHeader from '../../components/ui/PageHeader.jsx'
 import Button from '../../components/ui/Button.jsx'
 import FormAlert from '../../components/ui/FormAlert.jsx'
@@ -7,6 +8,7 @@ import FormAlert from '../../components/ui/FormAlert.jsx'
 const emptyForm = { id: '', name: '', description: '' }
 
 export default function CategoryManagement() {
+  const { t } = useLanguage()
   const [items, setItems] = useState([])
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
@@ -83,8 +85,8 @@ export default function CategoryManagement() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Category Management"
-        subtitle="Create, view, update, and delete product categories"
+        title={t('stock.category.title')}
+        subtitle={t('stock.category.subtitle')}
       />
 
       <FormAlert message={message} error={error} />
@@ -115,9 +117,9 @@ export default function CategoryManagement() {
               <textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} className="input resize-none" rows={3} placeholder="Optional description" />
             </div>
             <div className="flex gap-2">
-              {editingId && <Button type="button" variant="secondary" onClick={reset} className="flex-1">Cancel</Button>}
+              {editingId && <Button type="button" variant="secondary" onClick={reset} className="flex-1">{t('common.cancel')}</Button>}
               <Button type="submit" disabled={saving} className="flex-1">
-                {saving ? 'Saving…' : editingId ? 'Update' : 'Add Category'}
+                {saving ? t('common.saving') : editingId ? t('common.update') : t('common.add')}
               </Button>
             </div>
           </div>
@@ -147,8 +149,8 @@ export default function CategoryManagement() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="secondary" onClick={() => startEdit(c)}>Edit</Button>
-                  <Button size="sm" variant="danger" onClick={() => remove(c.id)}>Delete</Button>
+                  <Button size="sm" variant="secondary" onClick={() => startEdit(c)}>{t('common.edit')}</Button>
+                  <Button size="sm" variant="danger" onClick={() => remove(c.id)}>{t('common.delete')}</Button>
                 </div>
               </li>
             ))}

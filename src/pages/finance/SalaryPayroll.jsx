@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { get, post, put } from '../../lib/api.js'
 import { useAuth } from '../../context/AuthContext.jsx'
+import { useLanguage } from '../../context/LanguageContext.jsx'
 import { canEditPayments } from '../../lib/roles.js'
 import { formatDisplayDate, todayIso } from '../../lib/dateFormat.js'
 import PageHeader from '../../components/ui/PageHeader.jsx'
@@ -64,6 +65,7 @@ const emptyPayout = {
 
 export default function SalaryPayroll() {
   const { role } = useAuth()
+  const { t } = useLanguage()
   const canEdit = canEditPayments(role)
 
   const [roster, setRoster] = useState([])
@@ -243,9 +245,9 @@ export default function SalaryPayroll() {
     }
   }
 
-  const rosterColumns = [
+  const rosterColumns = useMemo(() => [
     { key: 'id', label: 'ID', className: 'whitespace-nowrap font-mono font-semibold' },
-    { key: 'name', label: 'Full Name', className: 'whitespace-nowrap font-semibold' },
+    { key: 'name', label: t('common.fullName'), className: 'whitespace-nowrap font-semibold' },
     {
       key: 'personKind',
       label: 'Kind',
@@ -266,19 +268,19 @@ export default function SalaryPayroll() {
     },
     {
       key: 'active',
-      label: 'Status',
+      label: t('common.status'),
       className: 'whitespace-nowrap',
       render: (r) => (
         <Badge variant={r.active !== false ? 'success' : 'danger'}>
-          {r.active !== false ? 'Active' : 'Inactive'}
+          {r.active !== false ? t('common.active') : t('common.inactive')}
         </Badge>
       ),
     },
-  ]
+  ], [t])
 
-  const payoutColumns = [
+  const payoutColumns = useMemo(() => [
     { key: 'id', label: 'ID', className: 'whitespace-nowrap font-mono font-semibold' },
-    { key: 'userName', label: 'Name', className: 'whitespace-nowrap font-semibold' },
+    { key: 'userName', label: t('common.name'), className: 'whitespace-nowrap font-semibold' },
     {
       key: 'personKind',
       label: 'Kind',
@@ -288,7 +290,7 @@ export default function SalaryPayroll() {
     { key: 'period', label: 'Period', className: 'whitespace-nowrap font-mono' },
     {
       key: 'date',
-      label: 'Date',
+      label: t('common.date'),
       className: 'whitespace-nowrap',
       render: (r) => formatDisplayDate(r.date),
     },
@@ -300,14 +302,14 @@ export default function SalaryPayroll() {
     },
     {
       key: 'amount',
-      label: 'Amount',
+      label: t('common.amount'),
       className: 'whitespace-nowrap',
       render: (r) => money(r.amount),
     },
-    { key: 'method', label: 'Method', className: 'whitespace-nowrap' },
+    { key: 'method', label: t('common.method'), className: 'whitespace-nowrap' },
     {
       key: 'status',
-      label: 'Status',
+      label: t('common.status'),
       className: 'whitespace-nowrap',
       render: (r) => (
         <Badge variant={r.status === 'Paid' ? 'success' : 'warning'}>{r.status}</Badge>
@@ -319,17 +321,17 @@ export default function SalaryPayroll() {
           label: '',
           className: 'whitespace-nowrap text-right',
           render: (row) => (
-            <Button size="sm" variant="secondary" onClick={() => startEdit(row)}>Edit</Button>
+            <Button size="sm" variant="secondary" onClick={() => startEdit(row)}>{t('common.edit')}</Button>
           ),
         }]
       : []),
-  ]
+  ], [t, canEdit])
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Staff & Teacher Salary"
-        subtitle="Pay roster from Teacher/Staff Info and record monthly salary payouts"
+        title={t('finance.salary.title')}
+        subtitle={t('finance.salary.subtitle')}
       />
 
       {error && (
@@ -359,9 +361,9 @@ export default function SalaryPayroll() {
             value={filters.personKind}
             onChange={(e) => setFilters((f) => ({ ...f, personKind: e.target.value }))}
           >
-            <option value="all">All</option>
-            <option value="teacher">Teacher</option>
-            <option value="staff">Staff</option>
+            <option value="all">{t('common.all')}</option>
+            <option value="teacher">{t('roles.teacher')}</option>
+            <option value="staff">{t('common.staff')}</option>
           </select>
         </div>
         <div>
@@ -383,9 +385,9 @@ export default function SalaryPayroll() {
             value={filters.status}
             onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
           >
-            <option value="all">All</option>
-            <option value="Paid">Paid</option>
-            <option value="Pending">Pending</option>
+            <option value="all">{t('common.all')}</option>
+            <option value="Paid">{t('common.paid')}</option>
+            <option value="Pending">{t('common.pending')}</option>
           </select>
         </div>
         <div>
@@ -398,8 +400,8 @@ export default function SalaryPayroll() {
           />
         </div>
         <div className="grid grid-cols-2 gap-2 md:col-span-3 lg:col-span-1 lg:grid-cols-1">
-          <DateField label="From" value={filters.dateFrom} onChange={(dateFrom) => setFilters((f) => ({ ...f, dateFrom }))} />
-          <DateField label="To" value={filters.dateTo} onChange={(dateTo) => setFilters((f) => ({ ...f, dateTo }))} />
+          <DateField label={t('common.from')} value={filters.dateFrom} onChange={(dateFrom) => setFilters((f) => ({ ...f, dateFrom }))} />
+          <DateField label={t('common.to')} value={filters.dateTo} onChange={(dateTo) => setFilters((f) => ({ ...f, dateTo }))} />
         </div>
       </div>
 
@@ -473,7 +475,7 @@ export default function SalaryPayroll() {
               />
             </div>
             <div>
-              <label className="label">Method</label>
+              <label className="label">{t('common.method')}</label>
               <select
                 className="input"
                 value={form.method}
@@ -486,7 +488,7 @@ export default function SalaryPayroll() {
               </select>
             </div>
             <div>
-              <label className="label">Status</label>
+              <label className="label">{t('common.status')}</label>
               <select
                 className="input"
                 value={form.status}
@@ -497,7 +499,7 @@ export default function SalaryPayroll() {
               </select>
             </div>
             <div className="md:col-span-2 lg:col-span-3">
-              <label className="label">Note</label>
+              <label className="label">{t('common.note')}</label>
               <textarea
                 className="input min-h-[64px] resize-y"
                 value={form.note}
@@ -507,9 +509,9 @@ export default function SalaryPayroll() {
             </div>
           </div>
           <div className="mt-6 flex justify-end gap-3 border-t border-slate-100 pt-6 dark:border-slate-800">
-            <Button type="button" variant="secondary" onClick={resetForm}>Cancel</Button>
+            <Button type="button" variant="secondary" onClick={resetForm}>{t('common.cancel')}</Button>
             <Button type="submit" disabled={saving}>
-              {saving ? 'Saving…' : editingId ? 'Update payout' : 'Save payout'}
+              {saving ? t('common.saving') : editingId ? t('common.update') : t('common.save')}
             </Button>
           </div>
         </form>
@@ -520,13 +522,14 @@ export default function SalaryPayroll() {
         <DataTable
           columns={rosterColumns}
           rows={filteredRoster}
-          emptyMessage={loading ? 'Loading…' : 'No teachers or staff on the pay roster.'}
+          emptyMessage={loading ? t('common.loading') : t('common.noData')}
         />
       </div>
 
       <div>
         <TableExportHeader title="Payout history" count={filteredPayouts.length}>
           <ExportReportButton
+            label={t('common.downloadCsv')}
             reportTitle={SALARY_REPORT_TITLE}
             columnDefs={SALARY_PAYOUT_EXPORT_COLUMNS}
             getRows={() => filteredPayouts}
@@ -538,7 +541,7 @@ export default function SalaryPayroll() {
         <DataTable
           columns={payoutColumns}
           rows={filteredPayouts}
-          emptyMessage={loading ? 'Loading…' : 'No salary payouts recorded yet.'}
+          emptyMessage={loading ? t('common.loading') : t('common.noData')}
         />
       </div>
     </div>

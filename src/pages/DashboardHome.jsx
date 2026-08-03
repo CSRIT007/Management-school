@@ -2,19 +2,20 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { get } from '../lib/api.js'
 import { useAuth } from '../context/AuthContext.jsx'
+import { useLanguage } from '../context/LanguageContext.jsx'
 import { canAccessRoute } from '../lib/roles.js'
 import StatCard from '../components/ui/StatCard.jsx'
 
-const quickLinks = [
-  { title: 'Student Register', desc: 'Enroll new students', to: '/students/register', icon: 'user', color: 'from-indigo-500 to-violet-600' },
-  { title: 'Class Management', desc: 'Manage classes & rosters', to: '/students/classes', icon: 'class', color: 'from-sky-500 to-blue-600' },
-  { title: 'Class Attendance', desc: 'Daily roll call & check-in', to: '/students/attendance', icon: 'attendance', color: 'from-lime-500 to-green-600' },
-  { title: 'Student & Dateline', desc: 'Track deadlines & tasks', to: '/students/dateline', icon: 'calendar', color: 'from-amber-500 to-orange-500' },
-  { title: 'Student & Payment', desc: 'Invoices & payments', to: '/students/payment', icon: 'payment', color: 'from-emerald-500 to-teal-600' },
-  { title: 'Category Management', desc: 'Organize stock categories', to: '/stock/category', icon: 'tag', color: 'from-rose-500 to-pink-600' },
-  { title: 'Point of Sale', desc: 'Process sales quickly', to: '/stock/pos', icon: 'cart', color: 'from-violet-500 to-purple-600' },
-  { title: 'Financial Overview', desc: 'Tuition, POS & pending at a glance', to: '/finance/overview', icon: 'finance', color: 'from-cyan-500 to-sky-600' },
-  { title: 'Daily Cash Flow', desc: 'Tuition + POS revenue by day', to: '/finance/cash-flow', icon: 'cashflow', color: 'from-teal-500 to-emerald-600' },
+const quickLinkDefs = [
+  { titleKey: 'dashboard.link.register', descKey: 'dashboard.link.registerDesc', to: '/students/register', icon: 'user', color: 'from-indigo-500 to-violet-600' },
+  { titleKey: 'dashboard.link.classes', descKey: 'dashboard.link.classesDesc', to: '/students/classes', icon: 'class', color: 'from-sky-500 to-blue-600' },
+  { titleKey: 'dashboard.link.attendance', descKey: 'dashboard.link.attendanceDesc', to: '/students/attendance', icon: 'attendance', color: 'from-lime-500 to-green-600' },
+  { titleKey: 'dashboard.link.dateline', descKey: 'dashboard.link.datelineDesc', to: '/students/dateline', icon: 'calendar', color: 'from-amber-500 to-orange-500' },
+  { titleKey: 'dashboard.link.payment', descKey: 'dashboard.link.paymentDesc', to: '/students/payment', icon: 'payment', color: 'from-emerald-500 to-teal-600' },
+  { titleKey: 'dashboard.link.category', descKey: 'dashboard.link.categoryDesc', to: '/stock/category', icon: 'tag', color: 'from-rose-500 to-pink-600' },
+  { titleKey: 'dashboard.link.pos', descKey: 'dashboard.link.posDesc', to: '/stock/pos', icon: 'cart', color: 'from-violet-500 to-purple-600' },
+  { titleKey: 'dashboard.link.finance', descKey: 'dashboard.link.financeDesc', to: '/finance/overview', icon: 'finance', color: 'from-cyan-500 to-sky-600' },
+  { titleKey: 'dashboard.link.cashflow', descKey: 'dashboard.link.cashflowDesc', to: '/finance/cash-flow', icon: 'cashflow', color: 'from-teal-500 to-emerald-600' },
 ]
 
 const icons = {
@@ -38,13 +39,23 @@ const defaultStats = {
 
 export default function DashboardHome() {
   const { role } = useAuth()
+  const { t } = useLanguage()
   const [stats, setStats] = useState(defaultStats)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  const quickLinks = useMemo(
+    () => quickLinkDefs.map((item) => ({
+      ...item,
+      title: t(item.titleKey),
+      desc: t(item.descKey),
+    })),
+    [t]
+  )
+
   const visibleLinks = useMemo(
     () => quickLinks.filter((item) => canAccessRoute(role, item.to)),
-    [role]
+    [role, quickLinks]
   )
 
   useEffect(() => {
@@ -70,24 +81,24 @@ export default function DashboardHome() {
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 p-8 text-white shadow-xl shadow-indigo-600/20">
         <div className="absolute -right-8 -top-8 h-48 w-48 rounded-full bg-white/10 blur-2xl" />
         <div className="relative">
-          <p className="text-sm font-medium text-indigo-200">Welcome back</p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight">Smile International School</h1>
+          <p className="text-sm font-medium text-indigo-200">{t('dashboard.welcome')}</p>
+          <h1 className="mt-1 text-3xl font-bold tracking-tight">{t('dashboard.title')}</h1>
           <p className="mt-2 max-w-lg text-indigo-100/80">
-            Manage students, classes, payments, and inventory from one unified dashboard.
+            {t('dashboard.subtitle')}
           </p>
         </div>
       </div>
 
       {error && (
         <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/50 dark:text-rose-400">
-          Could not load dashboard stats: {error}
+          {t('dashboard.statsError', { error })}
         </div>
       )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          label="Active Students"
+          label={t('dashboard.activeStudents')}
           value={display(stats.activeStudents)}
           accent="indigo"
           icon={
@@ -97,7 +108,7 @@ export default function DashboardHome() {
           }
         />
         <StatCard
-          label="Open Classes"
+          label={t('dashboard.openClasses')}
           value={display(stats.openClasses)}
           accent="emerald"
           icon={
@@ -107,7 +118,7 @@ export default function DashboardHome() {
           }
         />
         <StatCard
-          label="Pending Payments"
+          label={t('dashboard.pendingPayments')}
           value={display(stats.pendingPayments)}
           accent="amber"
           icon={
@@ -117,7 +128,7 @@ export default function DashboardHome() {
           }
         />
         <StatCard
-          label="Products in Stock"
+          label={t('dashboard.productsInStock')}
           value={display(stats.productsInStock)}
           accent="rose"
           icon={
@@ -130,7 +141,7 @@ export default function DashboardHome() {
 
       {/* Quick links */}
       <div>
-        <h2 className="mb-4 text-lg font-bold text-slate-900 dark:text-slate-100">Quick Access</h2>
+        <h2 className="mb-4 text-lg font-bold text-slate-900 dark:text-slate-100">{t('dashboard.quickAccess')}</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {visibleLinks.map((item) => (
             <Link

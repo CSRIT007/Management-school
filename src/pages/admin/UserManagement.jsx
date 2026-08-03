@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { get, post, put } from '../../lib/api.js'
 import { useAuth } from '../../context/AuthContext.jsx'
-import { ROLE_LABELS, ROLE_OPTIONS } from '../../lib/roles.js'
+import { useLanguage } from '../../context/LanguageContext.jsx'
+import { ROLES } from '../../lib/roles.js'
 import PageHeader from '../../components/ui/PageHeader.jsx'
 import Button from '../../components/ui/Button.jsx'
 import DataTable from '../../components/ui/DataTable.jsx'
@@ -18,6 +19,7 @@ const emptyForm = {
 
 export default function UserManagement() {
   const { user: currentUser } = useAuth()
+  const { t } = useLanguage()
   const [rows, setRows] = useState([])
   const [form, setForm] = useState(emptyForm)
   const [editingId, setEditingId] = useState(null)
@@ -25,6 +27,11 @@ export default function UserManagement() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState(false)
+
+  const roleOptions = useMemo(
+    () => Object.values(ROLES).map((value) => ({ value, label: t(`roles.${value}`) })),
+    [t]
+  )
 
   const load = async () => {
     try {
@@ -67,7 +74,7 @@ export default function UserManagement() {
   const submit = async (e) => {
     e.preventDefault()
     if (!form.name.trim() || !form.email.trim()) {
-      showMsg('Name and email are required.', true)
+      showMsg(t('admin.users.nameEmailRequired'), true)
       return
     }
 
@@ -85,10 +92,10 @@ export default function UserManagement() {
         }
         if (password.trim()) payload.password = password.trim()
         await put(`/api/users/${editingId}`, payload)
-        showMsg(password.trim() ? 'User updated and password reset.' : 'User updated successfully.')
+        showMsg(password.trim() ? t('admin.users.updatedPassword') : t('common.updated'))
       } else {
         if (!form.password || form.password.length < 6) {
-          showMsg('Password must be at least 6 characters.', true)
+          showMsg(t('admin.users.passwordMinLength'), true)
           setSaving(false)
           return
         }
@@ -99,7 +106,7 @@ export default function UserManagement() {
           role: form.role,
           active: form.active,
         })
-        showMsg('User created successfully.')
+        showMsg(t('common.saved'))
       }
       reset()
       await load()
@@ -111,20 +118,20 @@ export default function UserManagement() {
   }
 
   const columns = [
-    { key: 'id', label: 'User ID', className: 'font-mono font-semibold text-slate-900 dark:text-slate-100' },
-    { key: 'name', label: 'Name' },
-    { key: 'email', label: 'Email' },
+    { key: 'id', label: t('admin.users.userId'), className: 'font-mono font-semibold text-slate-900 dark:text-slate-100' },
+    { key: 'name', label: t('common.name') },
+    { key: 'email', label: t('common.email') },
     {
       key: 'role',
-      label: 'Role',
-      render: (r) => ROLE_LABELS[r.role] || r.role,
+      label: t('common.role'),
+      render: (r) => t(`roles.${r.role}`) || r.role,
     },
     {
       key: 'active',
-      label: 'Status',
+      label: t('common.status'),
       render: (r) => (
         <Badge variant={r.active ? 'success' : 'neutral'}>
-          {r.active ? 'Active' : 'Inactive'}
+          {r.active ? t('common.active') : t('common.inactive')}
         </Badge>
       ),
     },
@@ -134,7 +141,7 @@ export default function UserManagement() {
       className: 'text-right',
       render: (row) => (
         <div className="flex justify-end gap-2">
-          <Button size="sm" variant="secondary" onClick={() => startEdit(row)}>Edit</Button>
+          <Button size="sm" variant="secondary" onClick={() => startEdit(row)}>{t('common.edit')}</Button>
         </div>
       ),
     },
@@ -143,19 +150,19 @@ export default function UserManagement() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="User Management"
-        subtitle="Create accounts and assign roles: Admin, School Admin, Finance, Teacher"
+        title={t('admin.users.title')}
+        subtitle={t('admin.users.subtitle')}
       />
 
       <FormAlert message={message} error={error} />
 
       <form onSubmit={submit} className="panel p-6">
         <h3 className="mb-4 text-base font-bold text-slate-900 dark:text-slate-100">
-          {editingId ? `Edit User — ${editingId}` : 'Add New User'}
+          {editingId ? t('admin.users.editUser', { id: editingId }) : t('admin.users.addNew')}
         </h3>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
-            <label className="label">Full Name</label>
+            <label className="label">{t('common.fullName')}</label>
             <input
               className="input"
               value={form.name}
@@ -164,7 +171,7 @@ export default function UserManagement() {
             />
           </div>
           <div>
-            <label className="label">Email</label>
+            <label className="label">{t('common.email')}</label>
             <input
               type="email"
               className="input"
@@ -174,32 +181,32 @@ export default function UserManagement() {
             />
           </div>
           <div>
-            <label className="label">Role</label>
+            <label className="label">{t('common.role')}</label>
             <select
               className="input"
               value={form.role}
               onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
             >
-              {ROLE_OPTIONS.map((opt) => (
+              {roleOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="label">Status</label>
+            <label className="label">{t('common.status')}</label>
             <select
               className="input"
               value={form.active ? 'active' : 'inactive'}
               onChange={(e) => setForm((f) => ({ ...f, active: e.target.value === 'active' }))}
               disabled={editingId === currentUser?.id}
             >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+              <option value="active">{t('common.active')}</option>
+              <option value="inactive">{t('common.inactive')}</option>
             </select>
           </div>
           <div className="md:col-span-2">
             <label className="label">
-              {editingId ? 'New Password (optional)' : 'Password'}
+              {editingId ? t('admin.users.newPasswordOptional') : t('common.password')}
             </label>
             <input
               type="password"
@@ -210,25 +217,25 @@ export default function UserManagement() {
                   ? setPassword(e.target.value)
                   : setForm((f) => ({ ...f, password: e.target.value }))
               }
-              placeholder={editingId ? 'Leave blank to keep current password' : 'Minimum 6 characters'}
+              placeholder={editingId ? t('admin.users.passwordPlaceholderEdit') : t('admin.users.passwordPlaceholderNew')}
               required={!editingId}
               minLength={editingId ? undefined : 6}
             />
           </div>
         </div>
         <div className="mt-6 flex justify-end gap-3 border-t border-slate-100 pt-6 dark:border-slate-800">
-          <Button type="button" variant="secondary" onClick={reset}>Cancel</Button>
+          <Button type="button" variant="secondary" onClick={reset}>{t('common.cancel')}</Button>
           <Button type="submit" disabled={saving}>
-            {saving ? 'Saving…' : editingId ? 'Update User' : 'Create User'}
+            {saving ? t('common.saving') : editingId ? t('admin.users.updateUser') : t('admin.users.createUser')}
           </Button>
         </div>
       </form>
 
       <div>
         <h3 className="mb-4 text-lg font-bold text-slate-900 dark:text-slate-100">
-          System Users ({rows.length})
+          {t('admin.users.systemUsers', { count: rows.length })}
         </h3>
-        <DataTable columns={columns} rows={rows} emptyMessage="No users yet." />
+        <DataTable columns={columns} rows={rows} emptyMessage={t('admin.users.noUsers')} />
       </div>
     </div>
   )

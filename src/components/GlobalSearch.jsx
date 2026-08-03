@@ -2,7 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { get } from '../lib/api.js'
 import { useAuth } from '../context/AuthContext.jsx'
+import { useLanguage } from '../context/LanguageContext.jsx'
 import { getNavItemsForRole } from '../lib/roles.js'
+import { NAV_LABEL_KEYS, SECTION_LABEL_KEYS } from '../i18n/index.js'
 
 /** Extra words so short queries like "finance" / "pos" / "stock" find pages. */
 const PAGE_KEYWORDS = {
@@ -100,7 +102,7 @@ function scoreMatch(query, ...parts) {
   return score
 }
 
-function buildPageCatalog(role) {
+function buildPageCatalog(role, t) {
   const groups = getNavItemsForRole(role)
   const pages = []
   for (const group of groups) {
@@ -108,8 +110,9 @@ function buildPageCatalog(role) {
       pages.push({
         id: `page-${item.to}`,
         type: 'Page',
-        title: item.label,
-        subtitle: group.section,
+        typeKey: 'search.type.page',
+        title: t(NAV_LABEL_KEYS[item.to] || item.label),
+        subtitle: t(SECTION_LABEL_KEYS[group.section] || group.section),
         path: item.to,
         keywords: PAGE_KEYWORDS[item.to] || [],
         section: group.section,
@@ -146,6 +149,7 @@ function searchRecords(students, products, classes, query) {
       results.push({
         id: `student-${s.id}`,
         type: 'Student',
+        typeKey: 'search.type.student',
         title: s.name || s.id,
         subtitle: [s.id, s.program].filter(Boolean).join(' · '),
         path: '/students/register',
@@ -160,6 +164,7 @@ function searchRecords(students, products, classes, query) {
       results.push({
         id: `product-${p.id}`,
         type: 'Product',
+        typeKey: 'search.type.product',
         title: p.name || p.id,
         subtitle: [p.id, p.category].filter(Boolean).join(' · '),
         path: '/stock/product',
@@ -174,6 +179,7 @@ function searchRecords(students, products, classes, query) {
       results.push({
         id: `class-${c.id}`,
         type: 'Class',
+        typeKey: 'search.type.class',
         title: c.name || c.id,
         subtitle: [c.id, c.instructor].filter(Boolean).join(' · '),
         path: '/students/classes',
@@ -207,6 +213,7 @@ const typeColors = {
 
 export default function GlobalSearch() {
   const { role } = useAuth()
+  const { t } = useLanguage()
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
   const [results, setResults] = useState([])
@@ -217,7 +224,7 @@ export default function GlobalSearch() {
   const cacheRef = useRef(null)
   const navigate = useNavigate()
 
-  const pages = useMemo(() => buildPageCatalog(role), [role])
+  const pages = useMemo(() => buildPageCatalog(role, t), [role, t])
 
   useEffect(() => {
     const q = query.trim()
@@ -332,10 +339,10 @@ export default function GlobalSearch() {
             setOpen(true)
           }}
           onFocus={() => setOpen(true)}
-          placeholder="Search pages, students…"
+          placeholder={t('search.placeholder')}
           className={`input w-full py-2 !pl-10 ${query ? '!pr-9' : '!pr-[3.25rem]'}`}
-          aria-label="Quick search (Ctrl or Cmd + K)"
-          title={`Quick search (${shortcutLabel})`}
+          aria-label={t('search.aria')}
+          title={t('search.aria')}
           autoComplete="off"
         />
         {query ? (
@@ -347,7 +354,7 @@ export default function GlobalSearch() {
               inputRef.current?.focus()
             }}
             className="absolute inset-y-0 right-0 flex w-9 items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-            aria-label="Clear search"
+            aria-label={t('search.clear')}
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
               <path fillRule="evenodd" d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 01-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z" clipRule="evenodd" />
@@ -366,7 +373,7 @@ export default function GlobalSearch() {
       {showPanel && (
         <div className="absolute right-0 z-50 mt-2 w-full min-w-[20rem] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900">
           {loading && results.length === 0 && (
-            <div className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">Searching…</div>
+            <div className="px-4 py-3 text-sm text-slate-500 dark:text-slate-400">{t('search.searching')}</div>
           )}
 
           {!loading && error && results.length === 0 && (
@@ -375,7 +382,7 @@ export default function GlobalSearch() {
 
           {!error && results.length === 0 && !loading && (
             <div className="px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400">
-              No results for &ldquo;{query.trim()}&rdquo;
+              {t('search.noResults', { query: query.trim() })}
             </div>
           )}
 
@@ -389,7 +396,7 @@ export default function GlobalSearch() {
                     className="flex w-full items-start gap-3 px-4 py-2.5 text-left transition-colors hover:bg-slate-50 dark:hover:bg-slate-800"
                   >
                     <span className={`mt-0.5 shrink-0 rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase ${typeColors[item.type] || typeColors.Page}`}>
-                      {item.type}
+                      {item.typeKey ? t(item.typeKey) : item.type}
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-medium text-slate-800 dark:text-slate-100">{item.title}</span>

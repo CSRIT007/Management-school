@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { get, post, put, del } from '../../lib/api.js'
+import { useLanguage } from '../../context/LanguageContext.jsx'
 import PageHeader from '../../components/ui/PageHeader.jsx'
 import Button from '../../components/ui/Button.jsx'
 import DataTable from '../../components/ui/DataTable.jsx'
@@ -11,6 +12,7 @@ import DateField from '../../components/ui/DateField.jsx'
 const emptyForm = { studentId: '', name: '', task: '', due: '', status: 'Pending' }
 
 export default function StudentDateline() {
+  const { t } = useLanguage()
   const [rows, setRows] = useState([])
   const [students, setStudents] = useState([])
   const [form, setForm] = useState(emptyForm)
@@ -119,15 +121,15 @@ export default function StudentDateline() {
     { key: 'name', label: 'Student Name' },
     { key: 'task', label: 'Task / Deadline' },
     { key: 'due', label: 'Due Date', render: (r) => formatDisplayDate(r.due) },
-    { key: 'status', label: 'Status', render: (r) => <Badge status={r.status} /> },
+    { key: 'status', label: t('common.status'), render: (r) => <Badge status={r.status} /> },
     {
       key: 'actions',
       label: '',
       className: 'text-right',
       render: (row) => (
         <div className="flex justify-end gap-2">
-          <Button size="sm" variant="secondary" onClick={() => startEdit(row)}>Edit</Button>
-          <Button size="sm" variant="danger" onClick={() => remove(row.id)}>Delete</Button>
+          <Button size="sm" variant="secondary" onClick={() => startEdit(row)}>{t('common.edit')}</Button>
+          <Button size="sm" variant="danger" onClick={() => remove(row.id)}>{t('common.delete')}</Button>
         </div>
       ),
     },
@@ -136,8 +138,8 @@ export default function StudentDateline() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Student & Dateline"
-        subtitle="Track student tasks, assignments, and deadlines"
+        title={t('students.dateline.title')}
+        subtitle={t('students.dateline.subtitle')}
       />
 
       <FormAlert message={message} error={error} />
@@ -167,7 +169,7 @@ export default function StudentDateline() {
           </div>
           <DateField label="Due Date" value={form.due} onChange={(due) => setForm((f) => ({ ...f, due }))} required />
           <div>
-            <label className="label">Status</label>
+            <label className="label">{t('common.status')}</label>
             <select className="input" value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}>
               <option>Pending</option>
               <option>Overdue</option>
@@ -176,9 +178,9 @@ export default function StudentDateline() {
           </div>
         </div>
         <div className="mt-6 flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800 pt-6">
-          <Button type="button" variant="secondary" onClick={reset}>Cancel</Button>
+          <Button type="button" variant="secondary" onClick={reset}>{t('common.cancel')}</Button>
           <Button type="submit" disabled={saving}>
-            {saving ? 'Saving…' : editingId ? 'Update Deadline' : 'Add Deadline'}
+            {saving ? t('common.saving') : editingId ? 'Update Deadline' : 'Add Deadline'}
           </Button>
         </div>
       </form>

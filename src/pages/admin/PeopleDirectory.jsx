@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { get, post, put } from '../../lib/api.js'
 import { useAuth } from '../../context/AuthContext.jsx'
-import { ROLE_LABELS, ROLES } from '../../lib/roles.js'
+import { useLanguage } from '../../context/LanguageContext.jsx'
+import { ROLES } from '../../lib/roles.js'
 import { formatDisplayDate } from '../../lib/dateFormat.js'
 import PageHeader from '../../components/ui/PageHeader.jsx'
 import Button from '../../components/ui/Button.jsx'
@@ -93,6 +94,7 @@ export default function PeopleDirectory({
   roleOptions = null,
 }) {
   const { user: currentUser, role: actorRole } = useAuth()
+  const { t } = useLanguage()
   const listUrl = `/api/people/${kind}`
   const isStaff = kind === 'staff'
 
@@ -304,13 +306,13 @@ export default function PeopleDirectory({
     { key: 'id', label: 'ID', className: 'whitespace-nowrap font-mono font-semibold text-slate-900 dark:text-slate-100' },
     {
       key: 'name',
-      label: 'Full Name',
+      label: t('common.fullName'),
       className: 'whitespace-nowrap',
       render: (r) => r.name || fullName(r.firstName, r.lastName) || '—',
     },
     { key: 'gender', label: 'Gender', className: 'whitespace-nowrap', render: (r) => r.gender || '—' },
-    { key: 'email', label: 'Email', className: 'whitespace-nowrap' },
-    { key: 'phone', label: 'Phone', className: 'whitespace-nowrap', render: (r) => r.phone || '—' },
+    { key: 'email', label: t('common.email'), className: 'whitespace-nowrap' },
+    { key: 'phone', label: t('common.phone'), className: 'whitespace-nowrap', render: (r) => r.phone || '—' },
     {
       key: 'dob',
       label: 'Date of Birth',
@@ -352,9 +354,9 @@ export default function PeopleDirectory({
     ...(isStaff
       ? [{
           key: 'role',
-          label: 'Role',
+          label: t('common.role'),
           className: 'whitespace-nowrap',
-          render: (r) => ROLE_LABELS[r.role] || r.role,
+          render: (r) => t(`roles.${r.role}`) || r.role,
         }]
       : []),
     {
@@ -365,11 +367,11 @@ export default function PeopleDirectory({
     },
     {
       key: 'active',
-      label: 'Status',
+      label: t('common.status'),
       className: 'whitespace-nowrap',
       render: (r) => (
         <Badge variant={r.active !== false ? 'success' : 'danger'}>
-          {r.active !== false ? 'Active' : 'Inactive'}
+          {r.active !== false ? t('common.active') : t('common.inactive')}
         </Badge>
       ),
     },
@@ -384,7 +386,7 @@ export default function PeopleDirectory({
           disabled={!canEditRow(row)}
           onClick={() => startEdit(row)}
         >
-          Edit
+          {t('common.edit')}
         </Button>
       ),
     },
@@ -406,7 +408,11 @@ export default function PeopleDirectory({
         }}
       >
         <h3 className="mb-4 text-base font-bold text-slate-900 dark:text-slate-100">
-          {editingId ? `Edit — ${editingId}` : `Add ${isStaff ? 'Staff' : 'Teacher'}`}
+          {editingId
+            ? t('admin.people.edit', { id: editingId })
+            : isStaff
+              ? t('admin.people.addStaff')
+              : t('admin.people.addTeacher')}
         </h3>
 
         {/* Left → right sections */}
@@ -656,20 +662,20 @@ export default function PeopleDirectory({
               </div>
             )}
             <div>
-              <label className="label">Status</label>
+              <label className="label">{t('common.status')}</label>
               <select
                 className="input"
                 value={form.active ? '1' : '0'}
                 onChange={(e) => setForm((f) => ({ ...f, active: e.target.value === '1' }))}
                 disabled={editingId === currentUser?.id}
               >
-                <option value="1">Active</option>
-                <option value="0">Inactive</option>
+                <option value="1">{t('common.active')}</option>
+                <option value="0">{t('common.inactive')}</option>
               </select>
             </div>
             {!editingId ? (
               <div>
-                <label className="label">Password <span className="text-rose-500">*</span></label>
+                <label className="label">{t('common.password')} <span className="text-rose-500">*</span></label>
                 <input
                   className="input"
                   type="password"
@@ -706,7 +712,7 @@ export default function PeopleDirectory({
         )}
 
         <div className="mt-6 flex justify-between gap-3 border-t border-slate-100 pt-6 dark:border-slate-800">
-          <Button type="button" variant="secondary" onClick={reset}>Cancel</Button>
+          <Button type="button" variant="secondary" onClick={reset}>{t('common.cancel')}</Button>
           <div className="flex gap-3">
             {step > 0 && (
               <Button type="button" variant="secondary" onClick={goBack}>
@@ -719,7 +725,7 @@ export default function PeopleDirectory({
               </Button>
             ) : (
               <Button type="submit" disabled={saving}>
-                {saving ? 'Saving…' : editingId ? 'Update' : 'Save'}
+                {saving ? t('common.saving') : editingId ? t('common.update') : t('common.save')}
               </Button>
             )}
           </div>
@@ -729,7 +735,7 @@ export default function PeopleDirectory({
       <DataTable
         columns={columns}
         rows={rows}
-        emptyMessage={`No ${isStaff ? 'staff' : 'teachers'} yet.`}
+        emptyMessage={isStaff ? t('admin.people.noStaff') : t('admin.people.noTeachers')}
       />
     </div>
   )

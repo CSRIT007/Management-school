@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { get } from '../../lib/api.js'
-import { ROLE_LABELS } from '../../lib/roles.js'
 import { formatDisplayDate } from '../../lib/dateFormat.js'
+import { useLanguage } from '../../context/LanguageContext.jsx'
 import PageHeader from '../../components/ui/PageHeader.jsx'
 import Button from '../../components/ui/Button.jsx'
 import DataTable from '../../components/ui/DataTable.jsx'
@@ -69,6 +69,7 @@ function actionVariant(action) {
 }
 
 export default function AuditLog() {
+  const { t } = useLanguage()
   const [rows, setRows] = useState([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -138,8 +139,8 @@ export default function AuditLog() {
     },
     {
       key: 'actorRole',
-      label: 'Role',
-      render: (r) => ROLE_LABELS[r.actorRole] || r.actorRole || '—',
+      label: t('common.role'),
+      render: (r) => (r.actorRole ? t(`roles.${r.actorRole}`) : '—'),
     },
     {
       key: 'ipAddress',
@@ -209,15 +210,15 @@ export default function AuditLog() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Audit Log"
-        subtitle="Who changed what, from which IP — login, users, students, classes, payments, and POS"
+        title={t('admin.audit.title')}
+        subtitle={t('admin.audit.subtitle')}
       />
 
       <FormAlert message={error} error />
 
       <form onSubmit={applyFilters} className="panel grid grid-cols-1 gap-4 p-5 md:grid-cols-2 lg:grid-cols-6">
         <div className="lg:col-span-2">
-          <label className="label">Search</label>
+          <label className="label">{t('common.search')}</label>
           <input
             className="input"
             value={filters.q}
@@ -253,28 +254,28 @@ export default function AuditLog() {
         </div>
         <div>
           <DateField
-            label="From"
+            label={t('common.from')}
             value={filters.from}
             onChange={(from) => setFilters((f) => ({ ...f, from }))}
           />
         </div>
         <div>
           <DateField
-            label="To"
+            label={t('common.to')}
             value={filters.to}
             onChange={(to) => setFilters((f) => ({ ...f, to }))}
           />
         </div>
         <div className="flex items-end gap-2 lg:col-span-6">
-          <Button type="submit" disabled={loading}>{loading ? 'Loading…' : 'Apply filters'}</Button>
+          <Button type="submit" disabled={loading}>{loading ? t('common.loading') : t('common.applyFilters')}</Button>
           <Button type="button" variant="secondary" onClick={resetFilters}>
-            Reset
+            {t('common.reset')}
           </Button>
         </div>
       </form>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-slate-500">{loading ? 'Loading…' : pageLabel}</p>
+        <p className="text-sm text-slate-500">{loading ? t('common.loading') : pageLabel}</p>
         <div className="flex flex-wrap items-center gap-2">
           <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
             Rows
@@ -303,7 +304,7 @@ export default function AuditLog() {
       <DataTable
         columns={columns}
         rows={rows}
-        emptyMessage={loading ? 'Loading…' : 'No audit events yet. Actions will appear here after users make changes.'}
+        emptyMessage={loading ? t('common.loading') : t('admin.audit.empty')}
       />
     </div>
   )

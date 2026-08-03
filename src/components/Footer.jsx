@@ -3,16 +3,18 @@ import {
   SCHOOL_EMAIL,
   SCHOOL_LOCATION_LINE,
 } from '../lib/schoolBrand.js'
+import { useLanguage } from '../context/LanguageContext.jsx'
 
 export default function Footer() {
   const year = new Date().getFullYear()
+  const { t } = useLanguage()
 
   return (
     <footer className="mt-auto border-t border-slate-200/80 bg-white/80 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/80">
       <div className="flex flex-col items-center justify-between gap-3 px-6 py-4 text-xs text-slate-500 dark:text-slate-400 sm:flex-row lg:px-8">
         <div>
           <span className="font-semibold text-slate-700 dark:text-slate-300">
-            © {year} All Rights Reserved
+            {t('footer.rights', { year })}
           </span>
         </div>
 

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { get } from '../../lib/api.js'
+import { useLanguage } from '../../context/LanguageContext.jsx'
 import { formatInvNo, sortInvoicesNewestFirst } from '../../lib/invoiceId.js'
 import { formatDisplayDate } from '../../lib/dateFormat.js'
 import PageHeader from '../../components/ui/PageHeader.jsx'
@@ -24,6 +25,7 @@ function money(n) {
 }
 
 export default function TuitionReport() {
+  const { t } = useLanguage()
   const [payments, setPayments] = useState([])
   const [filters, setFilters] = useState(TUITION_FILTER_INITIAL)
   const [loading, setLoading] = useState(true)
@@ -69,26 +71,26 @@ export default function TuitionReport() {
     return [...set].sort()
   }, [payments])
 
-  const columns = [
+  const columns = useMemo(() => [
     { key: 'id', label: 'INV No', className: 'font-mono font-semibold', render: (r) => formatInvNo(r.id) },
     { key: 'studentId', label: 'Student ID', render: (r) => r.studentId || '—' },
     { key: 'studentName', label: 'Student' },
-    { key: 'date', label: 'Date', render: (r) => formatDisplayDate(r.date) },
-    { key: 'purpose', label: 'Purpose', render: (r) => r.purpose || '—' },
-    { key: 'amount', label: 'Amount', render: (r) => money(r.amount) },
-    { key: 'method', label: 'Method' },
+    { key: 'date', label: t('common.date'), render: (r) => formatDisplayDate(r.date) },
+    { key: 'purpose', label: t('common.purpose'), render: (r) => r.purpose || '—' },
+    { key: 'amount', label: t('common.amount'), render: (r) => money(r.amount) },
+    { key: 'method', label: t('common.method') },
     {
       key: 'status',
-      label: 'Status',
+      label: t('common.status'),
       render: (r) => <Badge variant={r.status === 'Paid' ? 'success' : 'warning'}>{r.status}</Badge>,
     },
-  ]
+  ], [t])
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Tuition & Fees"
-        subtitle="Student payment report from tuition, registration, and other fees"
+        title={t('finance.tuition.title')}
+        subtitle={t('finance.tuition.subtitle')}
       />
 
       {error && (
@@ -100,41 +102,42 @@ export default function TuitionReport() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label="Filtered Records" value={loading ? '…' : filtered.length} accent="indigo" />
         <StatCard label="Collected" value={loading ? '…' : money(collected)} accent="emerald" />
-        <StatCard label="Pending" value={loading ? '…' : money(pending)} accent="amber" />
+        <StatCard label={t('common.pending')} value={loading ? '…' : money(pending)} accent="amber" />
       </div>
 
       <div className="panel p-5">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-5">
           <div>
-            <label className="label">Status</label>
+            <label className="label">{t('common.status')}</label>
             <select className="input" value={filters.status} onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}>
-              <option value="all">All</option>
-              <option value="Paid">Paid</option>
-              <option value="Pending">Pending</option>
+              <option value="all">{t('common.all')}</option>
+              <option value="Paid">{t('common.paid')}</option>
+              <option value="Pending">{t('common.pending')}</option>
             </select>
           </div>
           <div>
-            <label className="label">Method</label>
+            <label className="label">{t('common.method')}</label>
             <select className="input" value={filters.method} onChange={(e) => setFilters((f) => ({ ...f, method: e.target.value }))}>
-              <option value="all">All</option>
+              <option value="all">{t('common.all')}</option>
               {methods.map((m) => <option key={m} value={m}>{m}</option>)}
             </select>
           </div>
           <div>
-            <label className="label">Purpose</label>
+            <label className="label">{t('common.purpose')}</label>
             <select className="input" value={filters.purpose} onChange={(e) => setFilters((f) => ({ ...f, purpose: e.target.value }))}>
-              <option value="all">All</option>
+              <option value="all">{t('common.all')}</option>
               {purposes.map((p) => <option key={p} value={p}>{p}</option>)}
             </select>
           </div>
-          <DateField label="From" value={filters.dateFrom} onChange={(v) => setFilters((f) => ({ ...f, dateFrom: v }))} />
-          <DateField label="To" value={filters.dateTo} onChange={(v) => setFilters((f) => ({ ...f, dateTo: v }))} />
+          <DateField label={t('common.from')} value={filters.dateFrom} onChange={(v) => setFilters((f) => ({ ...f, dateFrom: v }))} />
+          <DateField label={t('common.to')} value={filters.dateTo} onChange={(v) => setFilters((f) => ({ ...f, dateTo: v }))} />
         </div>
       </div>
 
       <div>
         <TableExportHeader title="Tuition Records" count={filtered.length}>
           <ExportReportButton
+            label={t('common.downloadCsv')}
             reportTitle={TUITION_REPORT_TITLE}
             columnDefs={TUITION_EXPORT_COLUMNS}
             getRows={(exportFilters) => filterTuitionPayments(payments, { ...filters, ...exportFilters })}
@@ -142,7 +145,7 @@ export default function TuitionReport() {
             disabled={loading || payments.length === 0}
           />
         </TableExportHeader>
-        <DataTable columns={columns} rows={filtered} emptyMessage={loading ? 'Loading…' : 'No tuition records found.'} />
+        <DataTable columns={columns} rows={filtered} emptyMessage={loading ? t('common.loading') : t('common.noData')} />
       </div>
     </div>
   )
