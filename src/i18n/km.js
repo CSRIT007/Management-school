@@ -112,7 +112,7 @@ export default {
 
   'login.loading': 'កំពុងផ្ទុក…',
   'login.welcome': 'សូមស្វាគមន៍',
-  'login.subtitle': 'ចូលទៅ Smile International School',
+  'login.subtitle': 'Smile International School',
   'login.idleNotice': 'អ្នកត្រូវបានចាកចេញបន្ទាប់ពីអសកម្ម ៥ នាទី។',
   'login.email': 'អ៊ីមែល',
   'login.password': 'ពាក្យសម្ងាត់',
@@ -140,7 +140,7 @@ export default {
   'search.type.class': 'ថ្នាក់',
 
   'dashboard.welcome': 'សូមស្វាគមន៍',
-  'dashboard.title': 'Smile International School',
+  'dashboard.title': 'សាលាអន្តរជាតិស្មាញ',
   'dashboard.subtitle': 'គ្រប់គ្រងសិស្ស ថ្នាក់រៀន ការបង់ប្រាក់ និងស្តុកពីផ្ទាំង តែមួយ។',
   'dashboard.statsError': 'មិនអាចផ្ទុកស្ថិតិផ្ទាំងគ្រប់គ្រង៖ {error}',
   'dashboard.activeStudents': 'សិស្សសកម្ម',
