@@ -96,11 +96,11 @@ export default function StudentBook() {
   }
 
   const columns = [
-    { key: 'name', label: 'Student Name', className: 'font-semibold text-slate-900 dark:text-slate-100' },
-    { key: 'title', label: 'Book Title' },
-    { key: 'isbn', label: 'ISBN' },
-    { key: 'issued', label: 'Date Issued', render: (r) => formatDisplayDate(r.issued) },
-    { key: 'due', label: 'Date Due', render: (r) => formatDisplayDate(r.due) },
+    { key: 'name', label: t('table.studentName'), className: 'font-semibold text-slate-900 dark:text-slate-100' },
+    { key: 'title', label: t('table.bookTitle') },
+    { key: 'isbn', label: t('table.isbn') },
+    { key: 'issued', label: t('table.dateIssued'), render: (r) => formatDisplayDate(r.issued) },
+    { key: 'due', label: t('table.dateDue'), render: (r) => formatDisplayDate(r.due) },
     { key: 'status', label: t('common.status'), render: (r) => <Badge status={r.status} /> },
     {
       key: 'actions',

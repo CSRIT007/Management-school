@@ -94,9 +94,9 @@ export default function PendingPayments() {
   }
 
   const columns = useMemo(() => [
-    { key: 'id', label: 'INV No', className: 'font-mono font-semibold', render: (r) => formatInvNo(r.id) },
-    { key: 'studentId', label: 'Student ID', render: (r) => r.studentId || '—' },
-    { key: 'studentName', label: 'Student' },
+    { key: 'id', label: t('table.invNo'), className: 'font-mono font-semibold', render: (r) => formatInvNo(r.id) },
+    { key: 'studentId', label: t('table.studentId'), render: (r) => r.studentId || '—' },
+    { key: 'studentName', label: t('table.student') },
     { key: 'date', label: t('common.date'), render: (r) => formatDisplayDate(r.date) },
     { key: 'purpose', label: t('common.purpose'), render: (r) => r.purpose || '—' },
     { key: 'amount', label: t('common.amount'), render: (r) => money(r.amount) },

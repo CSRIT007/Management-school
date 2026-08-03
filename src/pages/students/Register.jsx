@@ -300,7 +300,7 @@ export default function StudentRegister() {
   const columns = [
     {
       key: 'id',
-      label: 'Student ID',
+      label: t('table.studentId'),
       className: 'whitespace-nowrap font-semibold text-slate-900 dark:text-slate-100',
     },
     {
@@ -309,23 +309,23 @@ export default function StudentRegister() {
       className: 'whitespace-nowrap',
       render: (r) => r.name || fullName(r.firstName, r.lastName) || '—',
     },
-    { key: 'gender', label: 'Gender', className: 'whitespace-nowrap', render: (r) => r.gender || '—' },
+    { key: 'gender', label: t('table.gender'), className: 'whitespace-nowrap', render: (r) => r.gender || '—' },
     { key: 'email', label: t('common.email'), className: 'whitespace-nowrap' },
     { key: 'phone', label: t('common.phone'), className: 'whitespace-nowrap', render: (r) => r.phone || '—' },
     {
       key: 'program',
-      label: 'Program',
+      label: t('table.program'),
       cellClassName: 'max-w-[11rem] break-words line-clamp-2',
     },
     {
       key: 'dob',
-      label: 'Date of Birth',
+      label: t('table.dob'),
       className: 'whitespace-nowrap',
       render: (r) => formatDisplayDate(r.dob),
     },
     {
       key: 'createdAt',
-      label: 'Date Created',
+      label: t('table.dateCreated'),
       className: 'whitespace-nowrap text-slate-600 dark:text-slate-300',
       render: (r) => formatDisplayDateTime(r.createdAt),
     },

@@ -106,7 +106,7 @@ export default function MonthlySummary() {
         </TableExportHeader>
         <DataTable
           columns={[
-            { key: 'month', label: 'Month', className: 'font-semibold', render: (r) => formatMonthLabel(r.month) },
+            { key: 'month', label: t('table.month'), className: 'font-semibold', render: (r) => formatMonthLabel(r.month) },
             { key: 'tuition', label: t('nav.tuition'), render: (r) => formatMoney(r.tuition) },
             { key: 'pending', label: t('common.pending'), render: (r) => formatMoney(r.pending) },
             { key: 'pos', label: t('nav.posRevenue'), render: (r) => formatMoney(r.pos) },

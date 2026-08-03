@@ -179,10 +179,10 @@ export default function SchoolExpenses() {
   }
 
   const columns = useMemo(() => [
-    { key: 'id', label: 'ID', className: 'whitespace-nowrap font-mono font-semibold' },
+    { key: 'id', label: t('table.id'), className: 'whitespace-nowrap font-mono font-semibold' },
     { key: 'category', label: t('common.category'), className: 'whitespace-nowrap' },
-    { key: 'title', label: 'Title', className: 'font-semibold' },
-    { key: 'period', label: 'Period', className: 'whitespace-nowrap font-mono' },
+    { key: 'title', label: t('table.title'), className: 'font-semibold' },
+    { key: 'period', label: t('table.period'), className: 'whitespace-nowrap font-mono' },
     {
       key: 'date',
       label: t('common.date'),
@@ -198,7 +198,7 @@ export default function SchoolExpenses() {
     { key: 'method', label: t('common.method'), className: 'whitespace-nowrap' },
     {
       key: 'vendor',
-      label: 'Vendor',
+      label: t('table.vendor'),
       className: 'whitespace-nowrap',
       render: (r) => r.vendor || '—',
     },

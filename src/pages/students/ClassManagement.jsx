@@ -188,10 +188,10 @@ function ClassDetailModal({ detail, students, isFull, busy, onClose }) {
             <table className="min-w-full text-sm">
               <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-800">
                 <tr>
-                  <th className="px-4 py-3">Student ID</th>
+                  <th className="px-4 py-3">{t('table.studentId')}</th>
                   <th className="px-4 py-3">{t('common.name')}</th>
                   <th className="px-4 py-3">{t('common.email')}</th>
-                  <th className="px-4 py-3">Program</th>
+                  <th className="px-4 py-3">{t('table.program')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -547,17 +547,17 @@ export default function ClassManagement() {
   const columns = [
     {
       key: 'id',
-      label: 'Class ID',
+      label: t('table.classId'),
       className: 'font-mono font-semibold text-slate-900 dark:text-slate-100',
     },
-    { key: 'name', label: 'Class Name' },
+    { key: 'name', label: t('table.className') },
     {
       key: 'teachers',
-      label: 'Teachers',
+      label: t('table.teachers'),
       render: (r) => teacherLabel(r.teachers) || r.instructor || '—',
     },
-    { key: 'schedule', label: 'Schedule' },
-    { key: 'capacity', label: 'Capacity' },
+    { key: 'schedule', label: t('table.schedule') },
+    { key: 'capacity', label: t('table.capacity') },
     {
       key: 'actions',
       label: '',

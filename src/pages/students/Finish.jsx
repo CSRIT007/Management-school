@@ -254,17 +254,17 @@ export default function StudentFinish() {
   const columns = [
     {
       key: 'studentId',
-      label: 'Student ID',
+      label: t('table.studentId'),
       className: 'whitespace-nowrap font-mono text-sm',
       render: (r) => r.studentId || '—',
     },
-    { key: 'name', label: 'Student Name', className: 'font-semibold text-slate-900 dark:text-slate-100' },
-    { key: 'program', label: 'Program Completed' },
-    { key: 'date', label: 'Completion Date', render: (r) => formatDisplayDate(r.date) },
-    { key: 'grade', label: 'Final Grade' },
+    { key: 'name', label: t('table.studentName'), className: 'font-semibold text-slate-900 dark:text-slate-100' },
+    { key: 'program', label: t('table.programCompleted') },
+    { key: 'date', label: t('table.completionDate'), render: (r) => formatDisplayDate(r.date) },
+    { key: 'grade', label: t('table.finalGrade') },
     {
       key: 'cert',
-      label: 'Certificate',
+      label: t('table.certificate'),
       render: (r) => <Badge variant={r.cert ? 'success' : 'neutral'}>{r.cert ? 'Issued' : t('common.pending')}</Badge>,
     },
     {

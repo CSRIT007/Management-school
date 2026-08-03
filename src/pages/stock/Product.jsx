@@ -119,18 +119,18 @@ export default function ProductManagement() {
   }
 
   const columns = useMemo(() => [
-    { key: 'id', label: 'ID', className: 'font-semibold text-slate-900 dark:text-slate-100' },
+    { key: 'id', label: t('table.id'), className: 'font-semibold text-slate-900 dark:text-slate-100' },
     { key: 'name', label: t('common.name') },
     { key: 'category', label: t('common.category') },
-    { key: 'sku', label: 'SKU' },
+    { key: 'sku', label: t('table.sku') },
     {
       key: 'stock',
-      label: 'Stock',
+      label: t('table.stock'),
       render: (r) => (
         <Badge variant={(r.stock ?? 0) <= 3 ? 'danger' : 'success'}>{r.stock}</Badge>
       ),
     },
-    { key: 'price', label: 'Price', render: (r) => formatMoney(r.price) },
+    { key: 'price', label: t('table.price'), render: (r) => formatMoney(r.price) },
     {
       key: 'actions',
       label: '',

@@ -303,32 +303,32 @@ export default function PeopleDirectory({
   }
 
   const columns = [
-    { key: 'id', label: 'ID', className: 'whitespace-nowrap font-mono font-semibold text-slate-900 dark:text-slate-100' },
+    { key: 'id', label: t('table.id'), className: 'whitespace-nowrap font-mono font-semibold text-slate-900 dark:text-slate-100' },
     {
       key: 'name',
       label: t('common.fullName'),
       className: 'whitespace-nowrap',
       render: (r) => r.name || fullName(r.firstName, r.lastName) || '—',
     },
-    { key: 'gender', label: 'Gender', className: 'whitespace-nowrap', render: (r) => r.gender || '—' },
+    { key: 'gender', label: t('table.gender'), className: 'whitespace-nowrap', render: (r) => r.gender || '—' },
     { key: 'email', label: t('common.email'), className: 'whitespace-nowrap' },
     { key: 'phone', label: t('common.phone'), className: 'whitespace-nowrap', render: (r) => r.phone || '—' },
     {
       key: 'dob',
-      label: 'Date of Birth',
+      label: t('table.dob'),
       className: 'whitespace-nowrap',
       render: (r) => (r.dob ? formatDisplayDate(r.dob) : '—'),
     },
-    { key: 'position', label: 'Position', className: 'whitespace-nowrap', render: (r) => r.position || '—' },
+    { key: 'position', label: t('table.position'), className: 'whitespace-nowrap', render: (r) => r.position || '—' },
     {
       key: 'employmentType',
-      label: 'Type',
+      label: t('table.type'),
       className: 'whitespace-nowrap',
       render: (r) => EMPLOYMENT_LABELS[r.employmentType] || '—',
     },
     {
       key: 'pay',
-      label: 'Pay',
+      label: t('table.pay'),
       className: 'whitespace-nowrap',
       render: (r) => {
         if (r.employmentType === 'full_time') return formatMoney(r.salary)
@@ -341,13 +341,13 @@ export default function PeopleDirectory({
     },
     {
       key: 'educationDegree',
-      label: 'Degree',
+      label: t('table.degree'),
       className: 'whitespace-nowrap',
       render: (r) => r.educationDegree || '—',
     },
     {
       key: 'majorSkill',
-      label: 'Major / Skill',
+      label: t('table.major'),
       cellClassName: 'max-w-[10rem] break-words line-clamp-2',
       render: (r) => r.majorSkill || '—',
     },
@@ -361,7 +361,7 @@ export default function PeopleDirectory({
       : []),
     {
       key: 'hireDate',
-      label: 'Hire Date',
+      label: t('table.hireDate'),
       className: 'whitespace-nowrap',
       render: (r) => (r.hireDate ? formatDisplayDate(r.hireDate) : '—'),
     },

@@ -142,11 +142,11 @@ export default function StockReport() {
   const lowStockColumns = useMemo(() => [
     { key: 'name', label: t('nav.product'), className: 'font-semibold text-slate-900 dark:text-slate-100' },
     { key: 'category', label: t('common.category') },
-    { key: 'sku', label: 'SKU', className: 'font-mono text-xs' },
-    { key: 'price', label: 'Price', render: (r) => formatMoney(r.price) },
+    { key: 'sku', label: t('table.sku'), className: 'font-mono text-xs' },
+    { key: 'price', label: t('table.price'), render: (r) => formatMoney(r.price) },
     {
       key: 'stock',
-      label: 'Stock',
+      label: t('table.stock'),
       render: (r) => (
         <Badge variant={Number(r.stock) === 0 ? 'danger' : 'warning'}>{r.stock}</Badge>
       ),
@@ -353,13 +353,13 @@ function RecentSalesList({ orders, loading, onView, onPrint, t }) {
         <table className="min-w-full text-sm">
           <thead>
             <tr className="border-b border-slate-100 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-800/80">
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">INV No</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Date</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Customer</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Payment</th>
-              <th className="min-w-[10rem] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Items</th>
-              <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total</th>
-              <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Invoice</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{t('table.invNo')}</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{t('common.date')}</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{t('table.customer')}</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{t('common.method')}</th>
+              <th className="min-w-[10rem] px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{t('table.items')}</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{t('common.total')}</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{t('table.invoices')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">

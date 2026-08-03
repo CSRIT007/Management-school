@@ -246,23 +246,23 @@ export default function SalaryPayroll() {
   }
 
   const rosterColumns = useMemo(() => [
-    { key: 'id', label: 'ID', className: 'whitespace-nowrap font-mono font-semibold' },
+    { key: 'id', label: t('table.id'), className: 'whitespace-nowrap font-mono font-semibold' },
     { key: 'name', label: t('common.fullName'), className: 'whitespace-nowrap font-semibold' },
     {
       key: 'personKind',
-      label: 'Kind',
+      label: t('table.kind'),
       className: 'whitespace-nowrap',
       render: (r) => KIND_LABELS[r.personKind] || r.personKind,
     },
     {
       key: 'employmentType',
-      label: 'Type',
+      label: t('table.type'),
       className: 'whitespace-nowrap',
       render: (r) => EMPLOYMENT_LABELS[r.employmentType] || '—',
     },
     {
       key: 'rate',
-      label: 'Rate',
+      label: t('table.rate'),
       className: 'whitespace-nowrap',
       render: (r) => formatRate(r),
     },
@@ -279,15 +279,15 @@ export default function SalaryPayroll() {
   ], [t])
 
   const payoutColumns = useMemo(() => [
-    { key: 'id', label: 'ID', className: 'whitespace-nowrap font-mono font-semibold' },
+    { key: 'id', label: t('table.id'), className: 'whitespace-nowrap font-mono font-semibold' },
     { key: 'userName', label: t('common.name'), className: 'whitespace-nowrap font-semibold' },
     {
       key: 'personKind',
-      label: 'Kind',
+      label: t('table.kind'),
       className: 'whitespace-nowrap',
       render: (r) => KIND_LABELS[r.personKind] || r.personKind,
     },
-    { key: 'period', label: 'Period', className: 'whitespace-nowrap font-mono' },
+    { key: 'period', label: t('table.period'), className: 'whitespace-nowrap font-mono' },
     {
       key: 'date',
       label: t('common.date'),
@@ -296,7 +296,7 @@ export default function SalaryPayroll() {
     },
     {
       key: 'hours',
-      label: 'Hours',
+      label: t('table.hours'),
       className: 'whitespace-nowrap',
       render: (r) => (Number(r.hours) > 0 ? Number(r.hours).toFixed(2) : '—'),
     },

@@ -114,13 +114,13 @@ export default function StudentDateline() {
   const columns = [
     {
       key: 'studentId',
-      label: 'Student ID',
+      label: t('table.studentId'),
       className: 'font-mono font-semibold text-slate-900 dark:text-slate-100',
       render: (r) => r.studentId || '—',
     },
-    { key: 'name', label: 'Student Name' },
-    { key: 'task', label: 'Task / Deadline' },
-    { key: 'due', label: 'Due Date', render: (r) => formatDisplayDate(r.due) },
+    { key: 'name', label: t('table.studentName') },
+    { key: 'task', label: t('table.task') },
+    { key: 'due', label: t('table.dueDate'), render: (r) => formatDisplayDate(r.due) },
     { key: 'status', label: t('common.status'), render: (r) => <Badge status={r.status} /> },
     {
       key: 'actions',

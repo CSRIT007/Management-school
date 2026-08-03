@@ -79,8 +79,8 @@ export default function FinanceOverview() {
 
   const exportOverview = () => {
     downloadCsv(reportFilename('Financial Overview'), [
-      { key: 'metric', label: 'Metric' },
-      { key: 'value', label: 'Value' },
+      { key: 'metric', label: t('table.metric') },
+      { key: 'value', label: t('table.value') },
     ], [
       { metric: 'Total Revenue', value: money(data.totalRevenue) },
       { metric: 'Total Expense', value: money(data.totalExpenses) },
@@ -244,8 +244,8 @@ export default function FinanceOverview() {
           </div>
           <DataTable
             columns={[
-              { key: 'id', label: 'INV', className: 'font-mono', render: (r) => formatInvNo(r.id) },
-              { key: 'studentName', label: 'Student' },
+              { key: 'id', label: t('table.inv'), className: 'font-mono', render: (r) => formatInvNo(r.id) },
+              { key: 'studentName', label: t('table.student') },
               { key: 'date', label: t('common.date'), render: (r) => formatDisplayDate(r.date) },
               { key: 'amount', label: t('common.amount'), render: (r) => money(r.amount) },
               {
@@ -265,8 +265,8 @@ export default function FinanceOverview() {
           </div>
           <DataTable
             columns={[
-              { key: 'id', label: 'INV', className: 'font-mono', render: (r) => formatInvNo(r.id) },
-              { key: 'customer', label: 'Customer' },
+              { key: 'id', label: t('table.inv'), className: 'font-mono', render: (r) => formatInvNo(r.id) },
+              { key: 'customer', label: t('table.customer') },
               { key: 'date', label: t('common.date'), render: (r) => formatDisplayDate(r.date) },
               { key: 'total', label: t('common.total'), render: (r) => money(r.total) },
             ]}
@@ -281,8 +281,8 @@ export default function FinanceOverview() {
           </div>
           <DataTable
             columns={[
-              { key: 'id', label: 'ID', className: 'font-mono' },
-              { key: 'userName', label: 'Employee' },
+              { key: 'id', label: t('table.id'), className: 'font-mono' },
+              { key: 'userName', label: t('table.employee') },
               { key: 'date', label: t('common.date'), render: (r) => formatDisplayDate(r.date) },
               { key: 'amount', label: t('common.amount'), render: (r) => money(r.amount) },
               {
@@ -302,7 +302,7 @@ export default function FinanceOverview() {
           </div>
           <DataTable
             columns={[
-              { key: 'id', label: 'ID', className: 'font-mono' },
+              { key: 'id', label: t('table.id'), className: 'font-mono' },
               { key: 'category', label: t('common.category') },
               { key: 'date', label: t('common.date'), render: (r) => formatDisplayDate(r.date) },
               { key: 'amount', label: t('common.amount'), render: (r) => money(r.amount) },

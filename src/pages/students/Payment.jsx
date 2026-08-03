@@ -196,19 +196,19 @@ export default function StudentPayment() {
   const columns = [
     {
       key: 'invoiceNo',
-      label: 'INV No',
+      label: t('table.invNo'),
       className: 'font-mono font-semibold text-slate-900 dark:text-slate-100',
       render: (r) => formatInvNo(r.id),
     },
     {
       key: 'studentId',
-      label: 'Student ID',
+      label: t('table.studentId'),
       className: 'font-mono text-slate-700 dark:text-slate-300',
       render: (r) => withStudentId(r, students).studentId || '—',
     },
     {
       key: 'studentName',
-      label: 'Student Name',
+      label: t('table.studentName'),
       render: (r) => r.studentName || '—',
     },
     { key: 'date', label: t('common.date'), render: (r) => formatDisplayDate(r.date) },

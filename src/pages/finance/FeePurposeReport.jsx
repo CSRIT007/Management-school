@@ -97,8 +97,8 @@ export default function FeePurposeReport() {
             { key: 'paid', label: t('common.paid'), render: (r) => formatMoney(r.paid) },
             { key: 'pending', label: t('common.pending'), render: (r) => formatMoney(r.pending) },
             { key: 'total', label: t('common.total'), render: (r) => formatMoney(r.total) },
-            { key: 'paidCount', label: 'Paid #' },
-            { key: 'pendingCount', label: 'Pending #' },
+            { key: 'paidCount', label: t('table.paidCount') },
+            { key: 'pendingCount', label: t('table.pendingCount') },
           ]}
           rows={rows}
           emptyMessage={loading ? t('common.loading') : t('common.noData')}

@@ -123,13 +123,13 @@ export default function AuditLog() {
   const columns = [
     {
       key: 'createdAt',
-      label: 'When',
+      label: t('table.when'),
       className: 'whitespace-nowrap font-mono text-xs',
       render: (r) => formatWhen(r.createdAt),
     },
     {
       key: 'actor',
-      label: 'Actor',
+      label: t('table.actor'),
       render: (r) => (
         <div className="min-w-0">
           <p className="truncate font-medium text-slate-900 dark:text-slate-100">{r.actorName || '—'}</p>
@@ -144,7 +144,7 @@ export default function AuditLog() {
     },
     {
       key: 'ipAddress',
-      label: 'IP address',
+      label: t('table.ip'),
       className: 'whitespace-nowrap font-mono text-xs',
       render: (r) => (
         <span className="text-slate-700 dark:text-slate-300" title={r.ipAddress || ''}>
@@ -154,12 +154,12 @@ export default function AuditLog() {
     },
     {
       key: 'action',
-      label: 'Action',
+      label: t('table.action'),
       render: (r) => <Badge variant={actionVariant(r.action)}>{r.action || '—'}</Badge>,
     },
     {
       key: 'resource',
-      label: 'Resource',
+      label: t('table.resource'),
       render: (r) => (
         <div className="min-w-0">
           <p className="font-medium text-slate-800 dark:text-slate-200">{r.resourceType || '—'}</p>
@@ -169,7 +169,7 @@ export default function AuditLog() {
     },
     {
       key: 'summary',
-      label: 'What changed',
+      label: t('table.whatChanged'),
       className: 'min-w-[18rem] max-w-2xl',
       render: (r) => {
         const changes = Array.isArray(r.meta?.changes) ? r.meta.changes : []

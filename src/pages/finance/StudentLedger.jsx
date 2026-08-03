@@ -72,7 +72,7 @@ function HistoryModal({ ledger, onClose, t }) {
         <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
           <DataTable
             columns={[
-              { key: 'id', label: 'INV No', className: 'whitespace-nowrap font-mono', render: (r) => formatInvNo(r.id) },
+              { key: 'id', label: t('table.invNo'), className: 'whitespace-nowrap font-mono', render: (r) => formatInvNo(r.id) },
               { key: 'date', label: t('common.date'), className: 'whitespace-nowrap', render: (r) => formatDisplayDate(r.date) },
               { key: 'purpose', label: t('common.purpose'), render: (r) => r.purpose || '—' },
               { key: 'amount', label: t('common.amount'), className: 'whitespace-nowrap', render: (r) => formatMoney(r.amount) },
@@ -204,12 +204,12 @@ export default function StudentLedger() {
         </TableExportHeader>
         <DataTable
           columns={[
-            { key: 'studentId', label: 'Student ID', className: 'whitespace-nowrap font-mono' },
-            { key: 'studentName', label: 'Name', className: 'whitespace-nowrap font-semibold' },
+            { key: 'studentId', label: t('table.studentId'), className: 'whitespace-nowrap font-mono' },
+            { key: 'studentName', label: t('common.name'), className: 'whitespace-nowrap font-semibold' },
             { key: 'paid', label: t('common.paid'), className: 'whitespace-nowrap', render: (r) => formatMoney(r.paid) },
             { key: 'pending', label: t('common.pending'), className: 'whitespace-nowrap', render: (r) => formatMoney(r.pending) },
             { key: 'total', label: t('common.total'), className: 'whitespace-nowrap', render: (r) => formatMoney(r.total) },
-            { key: 'count', label: 'Invoices', className: 'whitespace-nowrap' },
+            { key: 'count', label: t('table.invoices'), className: 'whitespace-nowrap' },
             {
               key: 'actions',
               label: '',

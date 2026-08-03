@@ -103,7 +103,7 @@ export default function PaymentMethodReport() {
             { key: 'count', label: t('common.count') },
             {
               key: 'share',
-              label: 'Share',
+              label: t('table.share'),
               render: (r) => (grandTotal ? `${((r.total / grandTotal) * 100).toFixed(1)}%` : '—'),
             },
           ]}

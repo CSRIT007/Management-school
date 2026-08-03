@@ -178,7 +178,7 @@ export default function ClassAttendance() {
   const columns = [
     {
       key: 'studentId',
-      label: 'Student ID',
+      label: t('table.studentId'),
       className: 'whitespace-nowrap font-mono font-semibold',
     },
     {

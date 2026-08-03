@@ -65,11 +65,11 @@ export default function PosRevenue() {
   }, [orders])
 
   const columns = useMemo(() => [
-    { key: 'id', label: 'INV No', className: 'font-mono font-semibold', render: (r) => formatInvNo(r.id) },
+    { key: 'id', label: t('table.invNo'), className: 'font-mono font-semibold', render: (r) => formatInvNo(r.id) },
     { key: 'date', label: t('common.date'), render: (r) => formatDisplayDate(r.date) },
-    { key: 'customer', label: 'Customer' },
+    { key: 'customer', label: t('table.customer') },
     { key: 'paymentMethod', label: t('common.method') },
-    { key: 'items', label: 'Items', render: (r) => formatItems(r.items) },
+    { key: 'items', label: t('table.items'), render: (r) => formatItems(r.items) },
     { key: 'total', label: t('common.total'), render: (r) => money(r.total) },
   ], [t])
 
