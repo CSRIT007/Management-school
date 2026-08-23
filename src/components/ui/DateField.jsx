@@ -1,5 +1,31 @@
-import { memo, useCallback, useEffect, useState } from 'react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { formatDisplayDate, maskDisplayDateInput, toIsoDate } from '../../lib/dateFormat.js'
+
+const PICKER_INPUT_CLASS = 'date-field-picker-input'
+
+let outsideDismissReady = false
+
+/** Close every native date picker popover on the page (Chrome keeps them open until blur). */
+export function closeAllDatePickers() {
+  if (typeof document === 'undefined') return
+  document.querySelectorAll(`.${PICKER_INPUT_CLASS}`).forEach((node) => {
+    if (node instanceof HTMLInputElement) node.blur()
+  })
+}
+
+function ensureOutsideDismiss() {
+  if (outsideDismissReady || typeof document === 'undefined') return
+  outsideDismissReady = true
+  document.addEventListener(
+    'pointerdown',
+    (event) => {
+      const target = event.target
+      if (target instanceof Element && target.closest(`.${PICKER_INPUT_CLASS}`)) return
+      closeAllDatePickers()
+    },
+    true,
+  )
+}
 
 function DateField({
   label,
@@ -11,8 +37,13 @@ function DateField({
 }) {
   const [text, setText] = useState('')
   const [focused, setFocused] = useState(false)
+  const pickerRef = useRef(null)
 
   const isoValue = toIsoDate(value) || ''
+
+  useEffect(() => {
+    ensureOutsideDismiss()
+  }, [])
 
   useEffect(() => {
     if (focused) return
@@ -31,7 +62,7 @@ function DateField({
       onChange(iso)
       setFocused(false)
     },
-    [onChange]
+    [onChange],
   )
 
   const commit = useCallback(
@@ -50,7 +81,19 @@ function DateField({
       }
       return false
     },
-    [onChange]
+    [onChange],
+  )
+
+  const handlePickerChange = useCallback(
+    (e) => {
+      applyIso(e.target.value)
+      // Chrome/Safari keep the calendar popover open until the input blurs.
+      requestAnimationFrame(() => {
+        e.target.blur()
+        closeAllDatePickers()
+      })
+    },
+    [applyIso],
   )
 
   const pickerClass = [
@@ -74,7 +117,10 @@ function DateField({
             className,
           ].join(' ')}
           value={text}
-          onFocus={() => setFocused(true)}
+          onFocus={() => {
+            closeAllDatePickers()
+            setFocused(true)
+          }}
           onChange={(e) => {
             const masked = maskDisplayDateInput(e.target.value, text)
             setText(masked)
@@ -110,10 +156,12 @@ function DateField({
             />
           </svg>
           <input
+            ref={pickerRef}
             type="date"
-            className="date-field-picker-input"
+            className={PICKER_INPUT_CLASS}
             value={isoValue}
-            onChange={(e) => applyIso(e.target.value)}
+            onChange={handlePickerChange}
+            onBlur={closeAllDatePickers}
             aria-label="Open calendar"
             title="Open calendar"
           />
