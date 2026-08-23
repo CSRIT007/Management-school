@@ -150,6 +150,39 @@ html.lang-km .input {
   @apply dark:border-slate-800 dark:bg-slate-900;
 }
 
+/* Native date picker overlay — tap opens calendar instantly (no showPicker delay). */
+.date-field-picker {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+}
+
+.date-field-picker-input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.date-field-picker-input::-webkit-calendar-picker-indicator {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
 /* iPhone / notched devices (e.g. 17 Pro Max 440×956) */
 .safe-pb {
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
