@@ -4,5 +4,5 @@ export const SCHOOL_LOGO = '/school-logo.png?v=3'
 export const SCHOOL_WEBSITE = 'www.school.csrsms.com'
 export const SCHOOL_EMAIL = 'school.csrsms@gmail.com'
 export const SCHOOL_LOCATION = 'Phnom Penh, Cambodia'
-export const SCHOOL_PHONE = 'Phone: 098 944 686'
+export const SCHOOL_PHONE = 'Phone: +855 98 944 686'
 export const SCHOOL_LOCATION_LINE = `${SCHOOL_LOCATION}, ${SCHOOL_PHONE}`
