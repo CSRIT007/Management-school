@@ -46,7 +46,8 @@ export default function Login() {
       const user = await login(email, password)
       navigate(getDefaultRouteForRole(user.role), { replace: true })
     } catch (err) {
-      setError(err.message || t('login.invalid'))
+      if (err?.status === 401) setError(t('login.invalid'))
+      else setError(err.message || t('login.invalid'))
     } finally {
       setLoading(false)
     }
